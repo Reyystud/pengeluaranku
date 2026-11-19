@@ -8,7 +8,7 @@ define NOT_YET
 	@echo "make $@ is not implemented yet (planned in task $(1); see docs/PROGRESS.md)"; exit 1
 endef
 
-.PHONY: eda splits verify-splits help setup lint format typecheck test test-integration check \
+.PHONY: thresholds eda splits verify-splits help setup lint format typecheck test test-integration check \
         data train-local up down seed-demo demo openapi train promote rollback loadtest jobs-run
 
 help: ## List targets
@@ -44,6 +44,9 @@ WORKERS ?= 4
 data: ## Generate synthetic dataset v1 into data/synthetic/v1 (make data WORKERS=8)
 	uv run python -m data_generator generate --config config/generator/default.yaml --seed 42 --out data/synthetic/v1 --workers $(WORKERS)
 
+thresholds: ## Recompute decision thresholds for the latest classifier run (PRD 7.3.4)
+	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m ml.classification.thresholds
+
 eda: ## Regenerate docs/figures + data/eda_stats.json from the train split
 	uv run python -m ml.eda.run_eda
 
@@ -53,8 +56,8 @@ splits: ## Compute + lock splits for data/synthetic/v1 into data_splits/ (refuse
 verify-splits: ## Check committed splits still match data/synthetic/v1
 	uv run python -m ml.evaluation verify-splits --data data/synthetic/v1 --dataset-version synthetic/v1
 
-train-local: ## Train baselines + register to local MLflow (stub: T-09/T-25)
-	$(call NOT_YET,T-09/T-25)
+train-local: ## Train + evaluate classifier candidates, register best as `candidate` in local MLflow
+	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m ml.classification.train
 
 up: ## docker compose up (stub: T-29)
 	$(call NOT_YET,T-29)

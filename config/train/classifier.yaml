@@ -1,0 +1,48 @@
+# Transaction classifier training config (PRD 9.1, 9.2, 11.2.1). Versioned; no thresholds here
+# except the decision rule of PRD 9.1 (macro F1 margin) which was fixed before training.
+version: classifier-train-1
+seed: 42
+dataset:
+  data_dir: data/synthetic/v1
+  assignments: data/splits/synthetic/v1/assignments.parquet
+  dataset_version: synthetic/v1
+sampling:
+  # Memory/time cap on the TRAIN split: at most this many rows per class, chosen with the seed.
+  # Rare classes are kept in full. Validation/test/unseen splits are always used in full.
+  max_rows_per_class: 25000
+tfidf:  # PRD 11.2.1
+  char_ngram: [2, 5]
+  char_min_df: 2
+  char_max_features: 100000
+  word_ngram: [1, 2]
+  merchant_ngram: [2, 4]
+  sublinear_tf: true
+lightgbm_tfidf_max_features: 5000   # per vectorizer; 100k sparse columns are impractical for trees
+models:
+  logreg:
+    C: 10.0
+    max_iter: 200
+  linear_svm:
+    C: 0.5
+    max_iter: 2000
+  lightgbm:
+    n_estimators: 300
+    learning_rate: 0.1
+    num_leaves: 31
+    min_child_samples: 20
+    colsample_bytree: 0.5
+    early_stopping_rounds: 20
+    max_rows_per_class: 8000
+evaluation:
+  ece_bins: 15
+  error_analysis_top: 50
+  coverage_thresholds: [0.5, 0.6, 0.7, 0.8, 0.85, 0.9, 0.95, 0.99]
+decision_rule:
+  baseline: logreg
+  min_macro_f1_gain_points: 2.0   # PRD 9.1 ship rule
+thresholds:  # PRD 7.3.4 calibration procedure; applied by ml/classification/thresholds.py
+  high_precision_target: 0.95   # precision required of auto-applied predictions
+  low_precision_target: 0.70    # precision required of the "suggest" band
+  band_width: 0.05              # confidence bands walked from the top down
+  min_band_support: 100         # bands with fewer validation rows are ignored
+  defaults: {t_high: 0.85, t_low: 0.60}   # PRD defaults when a constraint cannot be met
