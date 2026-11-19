@@ -28,6 +28,7 @@ dev = [
     "types-pyyaml",
     "pandas-stubs",
     "pre-commit",
+    "matplotlib>=3.11.2",
 ]
 
 [tool.pytest.ini_options]
