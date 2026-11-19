@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-08 (classifier feature module with point-in-time and parity harness)
+**Current focus:** next T-09 (baseline classifiers + MLflow + evaluation report; needs scikit-learn, lightgbm, mlflow)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,12 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-08 classifier features
+- Done: `ml/features/{__init__,classifier,point_in_time,testing}.py`, `ml/tests/test_feature_parity.py` (24 tests: batch vs online parity on hand-made rows and 5,000 synthetic rows, harness self-tests, hour-bucket boundaries).
+- T-09 must: fit TF-IDF (`desc_char_tfidf`, `desc_word_tfidf`, `merchant_char_tfidf`) and the `log_amount` scaler on the TRAIN split only, one-hot `payment_method`/`transaction_type`/`hour_bucket` using the fixed `HOUR_BUCKETS`, and save `FEATURE_VERSION` into `metadata.json`. Backend/ML service call `online_features`, never reimplement.
+- `merchant_key` comes from `resolve_merchant`; the unseen-merchant split is on `true_merchant`, so check in T-09 that held-out merchants are not trivially recognizable through alias targets.
+- New libraries for T-09 (scikit-learn, lightgbm, mlflow, joblib) are in PRD 6.5; log a DECISIONS line when adding them.
 
 ### 2026-11-20 — T-07 merchant normalization
 - Done: `ml/preprocessing/merchant.py` (`normalize_merchant`, `preprocess_description`, `derive_merchant`, `derive_merchant_key`, `resolve_merchant`), `ml/tests/test_merchant_normalization.py` (61 tests incl. hypothesis and a synthetic-data agreement test). 95.3% agreement with `true_merchant` on a 200k train sample; misses are injected typos.
@@ -69,7 +75,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
 | T-07 | `ml/preprocessing` (merchant normalization ≥ 30 tests, description preprocessing) | T-02 | done | `ml/preprocessing/merchant.py`, 61 tests |
-| T-08 | Classifier feature module + point-in-time and parity harness | T-07 | todo | |
+| T-08 | Classifier feature module + point-in-time and parity harness | T-07 | done | `ml/features/` (classifier, point_in_time, testing); parity test on 5,000 synthetic rows |
 | T-09 | Baseline LR + calibrated Linear SVM + LightGBM; MLflow; eval report | T-05, T-08 | todo | |
 | T-10 | Threshold calibration procedure (7.3.4) | T-09 | todo | |
 
