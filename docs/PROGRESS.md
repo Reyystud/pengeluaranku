@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-10 (threshold calibration, 7.3.4). Read the unseen-merchant finding first
+**Current focus:** week 2 ML core done (T-07..T-10). Next: T-11 backend scaffold (cut line A needs backend + frontend); see the T-09/T-10 notes on unseen merchants before the ML service (T-17)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,11 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-10 decision thresholds
+- Done: `ml/classification/thresholds.py` (band-walk procedure), config section `thresholds`, `make thresholds`, hook in `train.py`, `ml/tests/test_thresholds.py` (9 tests), docs (MODEL_EVALUATION, model card). Run 20261120-024213 now has `decision_thresholds` `t_high 0.90`, `t_low 0.90` in `metadata.json` (also logged to its MLflow run).
+- Behaviour: seen merchants 90.4% auto-applied at ~100% precision, 9.6% needs_review; the suggest band is empty. Unseen merchants: 45.4% auto-applied at 0.685 precision. The ML service (T-17) and backend (T-14) must treat the `suggest` decision as possibly absent and still handle all three decisions.
+- Open: novelty rule for unseen merchants, generator holdout variant, latency benchmark.
 
 ### 2026-11-20 — T-09 classifier baselines
 - Done: `ml/classification/{config,data,pipeline,calibration,metrics,train}.py`, `config/train/classifier.yaml`, `make train-local`, `docs/MODEL_EVALUATION.md`, `docs/model_cards/transaction-classifier.md`, tests (`ml/tests/test_classifier_metrics.py`, `data_generator/tests/test_classifier_smoke.py`). Run `20261120-024213`; MLflow model `transaction-classifier` v1 alias `candidate` (local sqlite in `data/mlflow/`).
@@ -84,7 +89,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-07 | `ml/preprocessing` (merchant normalization ≥ 30 tests, description preprocessing) | T-02 | done | `ml/preprocessing/merchant.py`, 61 tests |
 | T-08 | Classifier feature module + point-in-time and parity harness | T-07 | done | `ml/features/` (classifier, point_in_time, testing); parity test on 5,000 synthetic rows |
 | T-09 | Baseline LR + calibrated Linear SVM + LightGBM; MLflow; eval report | T-05, T-08 | done | `ml/classification/`, `docs/MODEL_EVALUATION.md`, model card; MLflow run bbf88d53...; baseline wins |
-| T-10 | Threshold calibration procedure (7.3.4) | T-09 | todo | |
+| T-10 | Threshold calibration procedure (7.3.4) | T-09 | done | `ml/classification/thresholds.py`; t_high 0.90, t_low 0.90 (no suggest band) |
 
 ### Week 3 — Backend core
 | ID | Task | Deps | Status | Notes |

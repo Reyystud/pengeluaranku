@@ -40,3 +40,9 @@ evaluation:
 decision_rule:
   baseline: logreg
   min_macro_f1_gain_points: 2.0   # PRD 9.1 ship rule
+thresholds:  # PRD 7.3.4 calibration procedure; applied by ml/classification/thresholds.py
+  high_precision_target: 0.95   # precision required of auto-applied predictions
+  low_precision_target: 0.70    # precision required of the "suggest" band
+  band_width: 0.05              # confidence bands walked from the top down
+  min_band_support: 100         # bands with fewer validation rows are ignored
+  defaults: {t_high: 0.85, t_low: 0.60}   # PRD defaults when a constraint cannot be met

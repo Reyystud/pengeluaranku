@@ -33,6 +33,24 @@ MLflow experiment `classifier`, run `bbf88d539f9b40ccafb82b94492d98ff`, register
 5. **Error analysis:** the 50 most confident mistakes on the test split are all rows of intentionally ambiguous merchants (ShopeeFood 13, Shopee 10, Watsons 5, ...) plus a few others (Vivo 6, Gojek 2). Calibration is correct on average per bin, but individual rows can be over-confident when the raw score is extreme; per-merchant calibration is not attempted.
 6. **Slices (test macro F1 by archetype):** student 0.89, impulsive_spender 0.94, freelancer 0.96, subscription_heavy 0.96, young_professional 0.97. The reason student is lowest was not investigated. Unseen-merchant macro F1 by archetype ranges from 0.45 to 0.58.
 
+### Decision thresholds (T-10)
+
+Chosen on the validation split only (`config/train/classifier.yaml`, section `thresholds`; report in `evaluation/thresholds.json`):
+
+| | value |
+|---|---|
+| `t_high` | **0.90** |
+| `t_low` | **0.90** (the "suggest" band is empty) |
+| flag | `no_suggest_band`: no confidence band below `t_high` reaches the 0.70 precision target |
+
+| split | auto-apply share | auto-apply precision | needs-review share | needs-review precision |
+|---|---|---|---|---|
+| validation | 90.4% | 1.0000 | 9.6% | 0.5105 |
+| temporal test | 90.4% | 0.9999 | 9.6% | 0.5042 |
+| **unseen-merchant test** | **45.4%** | **0.6846** | 54.6% | 0.2631 |
+
+Reading: on merchants the model has seen, 90% of rows are auto-categorized at near-perfect precision and the remaining 10% (the coin-flip merchants) go to review, which is the intended behaviour. On unseen merchants the same thresholds auto-apply 45% of rows at only 68% precision, far below the 0.95 target. **The 0.95 guarantee holds only for known merchants.** The PRD defaults (0.85 / 0.60) give the same validation outcome, so the data cannot prefer 0.90 over 0.85. Thresholds are not tuned on the unseen split (it is a locked test set); a novelty rule for unknown merchants is the open fix.
+
 ### Plots
 ![confusion matrix](figures/classifier_confusion_matrix.png)
 ![coverage curve](figures/classifier_coverage_curve.png)
@@ -40,5 +58,6 @@ MLflow experiment `classifier`, run `bbf88d539f9b40ccafb82b94492d98ff`, register
 ### Not done yet (and why it matters)
 - **Circularity check (PRD 9.6.6)**: `config/generator/holdout_variant.yaml` does not exist yet, so there is no evaluation on a different generator variant. Results above can overstate real performance because train and test come from the same generator.
 - **Latency SLO (PRD 9.1 ship rule, 16.3)**: only a rough measurement exists (P95 about 24 ms per row for transform + score + calibrate, single process, on a busy development machine, excluding feature extraction and HTTP). The standard benchmark belongs to T-17/T-30.
-- **Learning curve** for the 25k-per-class cap, and **thresholds** (`t_high`, `t_low`): T-10.
+- **Learning curve** for the 25k-per-class cap.
+- **Novelty handling:** lowering confidence (or forcing review) for merchants unseen in training or by the user.
 - No public dataset was evaluated (Q1 decision, `docs/DATA_SOURCES.md`).

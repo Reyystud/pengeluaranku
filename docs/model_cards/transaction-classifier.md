@@ -16,7 +16,7 @@ Synthetic dataset `synthetic/v1` (generator 1.1.0, seed 42, 2,000 users, 12 mont
 Logistic Regression baseline, run `20261120-024213` (MLflow run `bbf88d539f9b40ccafb82b94492d98ff`): temporal test macro F1 0.9687, accuracy 0.9523, ECE 0.0007 after calibration; unseen-merchant macro F1 0.5231, accuracy 0.4543, ECE 0.3148. Full tables, baseline comparison and negative results: `docs/MODEL_EVALUATION.md`.
 
 ## Decision thresholds
-Not set yet (`decision_thresholds` is null in `metadata.json`). The PRD defaults (`t_high` 0.85, `t_low` 0.60) apply until the calibration procedure runs (T-10).
+`t_high` 0.90, `t_low` 0.90 (isotonic calibration, chosen on the validation split; stored in `metadata.json`). The suggest band is empty: nothing between the needs-review and auto-apply regions reached the 0.70 precision target. On seen merchants auto-apply covers 90.4% of rows at 0.9999 precision (temporal test); on unseen merchants it covers 45.4% at 0.6846. See `docs/MODEL_EVALUATION.md`.
 
 ## Limitations and risks
 - Synthetic data only; real-world accuracy is unknown.

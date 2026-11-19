@@ -40,6 +40,7 @@ from ml.classification.pipeline import (  # noqa: E402
     make_model,
     scores,
 )
+from ml.classification.thresholds import compute_report  # noqa: E402
 from ml.features import FEATURE_VERSION  # noqa: E402
 from ml.taxonomy import MODEL_LABELS, TAXONOMY_VERSION  # noqa: E402
 
@@ -418,6 +419,10 @@ def run(argv: list[str] | None = None) -> int:
     )
     _write_markdown(report, evaluation / "report.md")
     _plots(results, winner, evaluation / "plots")
+    thresholds = compute_report(art, frames, cfg["thresholds"])
+    (evaluation / "thresholds.json").write_text(
+        json.dumps(thresholds, indent=2, default=float), encoding="utf-8"
+    )
     metadata = {
         "model_name": MODEL_NAME,
         "model_type": winner,
@@ -426,7 +431,7 @@ def run(argv: list[str] | None = None) -> int:
         "trained_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
         "git_commit": report["git_commit"],
         "dataset": {"name": "synthetic", **report["dataset"]},
-        "decision_thresholds": None,  # set by the calibration procedure (T-10)
+        "decision_thresholds": thresholds["decision_thresholds"],
         "labels": LABELS,
         "artifact_sha256": {"model.joblib": _sha256(model_dir / "model.joblib")},
     }
