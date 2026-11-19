@@ -13,6 +13,14 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
 
+### 2026-11-20 — T-14 transactions
+- Done: `GET/POST /transactions`, `GET /transactions/count`, `GET/PATCH/DELETE /transactions/{id}`, `POST /transactions/{id}/dismiss-duplicate`, `POST /transactions/bulk-delete`, `bulk-categorize`, `GET /categories` (ETag). Filters, signed cursor pagination (date or amount sort), `Idempotency-Key`, `If-Match` versions, duplicate flags, outbox events.
+- Verified: `make check` green with PostgreSQL, backend coverage 98.7%; 200 backend tests (116 before).
+- CI: new `backend-integration` job. `make check` now needs PostgreSQL (TEST_DATABASE_URL or Docker); without it the integration tests skip and the coverage gate fails.
+- Hooks for later: `Categorizer` seam in `app/services/transactions.py` (T-18); CSV import (T-15) should reuse `TransactionService` validation helpers and `find_duplicate`; the BOLA suite (T-16) can build on `test_fr_02_01_other_users_transactions_are_404_everywhere`.
+- Not done: prediction/anomaly summary on `GET /transactions/{id}`, feedback and merchant rules (T-18), idempotency cleanup job, event publisher and JSON Schemas for events.
+- Next: T-15 (CSV preview/commit).
+
 ### 2026-11-20 — T-13 auth and account lifecycle
 - Done: register, login, refresh (rotation + family revocation on reuse), logout, `GET/PATCH /users/me`, change password, delete account (hard delete + `deletion_requests` tombstone with pseudo id), `get_current_user` / `get_claims` dependencies, login 5 per email / 20 per IP per 15 min and register 5 per hour per IP, all with problem+json errors.
 - Verified: `make check` green; 116 backend tests pass with PostgreSQL (29 auth integration tests). Sentinel test confirms emails, passwords and tokens never appear in logs.
@@ -99,7 +107,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-11 | Backend scaffold: settings, logging, problem+json, request IDs, health | T-01 | done | `services/backend/app/` scaffold, 46 tests, `make api` |
 | T-12 | DB schema + Alembic + category seed + repository layer with scoping test | T-11 | done | `app/models/`, `migrations/versions/0001_initial_schema.py`, `app/repositories/`, 15 integration + 12 unit tests |
 | T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | done | `app/api/{auth,users}.py`, `app/services/auth.py`, `app/core/{security,passwords,ratelimit,periods}.py`, 29 integration + 10 unit tests |
-| T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | todo | |
+| T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | done | `app/api/transactions.py`, `app/services/{transactions,idempotency}.py`, `app/repositories/{transactions,idempotency}.py`, 67 integration + 12 unit tests |
 | T-15 | CSV preview/commit with all error codes | T-14 | todo | |
 | T-16 | BOLA/IDOR test suite | T-13, T-14 | todo | |
 

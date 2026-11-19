@@ -16,6 +16,7 @@ dependencies = [
     "psycopg[binary]>=3.3.9",
     "pydantic-settings>=2.16.3",
     "pyjwt>=2.15.1",
+    "sei-ml",
     "sqlalchemy>=2.1.9",
     "structlog>=26.1.0",
     "uvicorn>=0.54.0",
@@ -26,3 +27,6 @@ packages = ["app", "app.api", "app.core", "app.models", "app.schemas", "app.serv
 
 [tool.setuptools.package-data]
 "app.core" = ["common_passwords.txt"]
+
+[tool.uv.sources]
+sei-ml = { workspace = true }

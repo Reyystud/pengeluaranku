@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from typing import Any
 
 import structlog
@@ -10,6 +11,7 @@ from fastapi.exceptions import RequestValidationError
 from fastapi.responses import JSONResponse
 from starlette.exceptions import HTTPException as StarletteHTTPException
 
+_CODED_MESSAGE = re.compile(r"^(?:Value error, )?([A-Z][A-Z_]{3,}): (.*)$", re.S)
 PROBLEM_BASE = "https://smart-expense.dev/problems/"
 PROBLEM_CONTENT_TYPE = "application/problem+json"
 
@@ -48,6 +50,17 @@ class ProblemError(Exception):
         self.detail = detail
         self.errors = errors
         self.headers = headers or {}
+
+
+def validation_problem(field: str, code: str, message: str) -> ProblemError:
+    """422 with one field error. Never put the offending value in ``message`` (may be PII)."""
+    return ProblemError(
+        422,
+        "VALIDATION_ERROR",
+        "Validation failed",
+        "One or more fields are invalid.",
+        errors=[{"field": field, "code": code, "message": message}],
+    )
 
 
 def not_found(detail: str = "The requested resource was not found.") -> ProblemError:
@@ -93,7 +106,12 @@ def _field_errors(exc: RequestValidationError) -> list[dict[str, str]]:
         loc = [str(p) for p in item.get("loc", ()) if p not in ("body", "query", "path", "header")]
         kind = str(item.get("type", ""))
         code = "FIELD_REQUIRED" if kind == "missing" else "INVALID_VALUE"
-        errors.append({"field": ".".join(loc), "code": code, "message": str(item.get("msg", ""))})
+        message = str(item.get("msg", ""))
+        # Validators raise ``ValueError("INVALID_AMOUNT: Amount must be ...")`` to set a field code.
+        coded = _CODED_MESSAGE.match(message)
+        if coded and kind == "value_error":
+            code, message = coded.group(1), coded.group(2)
+        errors.append({"field": ".".join(loc), "code": code, "message": message})
     return errors
 
 

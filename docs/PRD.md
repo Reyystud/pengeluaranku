@@ -1637,10 +1637,10 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 - Accept `X-Request-ID` if it matches `^[A-Za-z0-9-]{8,64}$`, otherwise generate a ULID. Return it in `X-Request-ID` and in every error body. Propagate to the ML service and into events and logs. Use W3C `traceparent` when OpenTelemetry is enabled.
 
 #### 13.1.4 Pagination
-- Cursor-based: `?limit=50&cursor=<opaque>`. Cursor = base64url of `(sort_key, id)` signed with HMAC to prevent tampering. Response: `{ "items": [...], "next_cursor": "…" | null }`. No total counts on large lists (a separate `GET /transactions/count` with the same filters exists).
+- Cursor-based: `?limit=50&cursor=<opaque>`. Cursor = base64url of `(sort mode, sort_key, id, user_id)` signed with HMAC-SHA256 to prevent tampering; a cursor from another user or another sort mode is `INVALID_CURSOR`. Response: `{ "items": [...], "next_cursor": "…" | null }`. No total counts on large lists (a separate `GET /transactions/count` with the same filters exists).
 
 #### 13.1.5 Idempotency
-- `Idempotency-Key` header is **required** on `POST /transactions`, `POST /transactions/imports/{id}/commit`, and bulk endpoints; optional elsewhere. Same key + same request hash within 24 h → replay stored response. Same key + different body → 409 `IDEMPOTENCY_KEY_REUSED`. In-flight duplicate → 409 `CONFLICT` with `Retry-After: 1`.
+- `Idempotency-Key` header is **required** on `POST /transactions`, `POST /transactions/imports/{id}/commit`, and bulk endpoints; optional elsewhere. A missing required key → 400 `IDEMPOTENCY_KEY_REQUIRED`; keys are 8–128 characters and scoped per user. Same key + same request hash within 24 h → replay stored response (header `Idempotent-Replayed: true`). Same key + different body → 409 `IDEMPOTENCY_KEY_REUSED`. In-flight duplicate: the second request waits for the first to finish and then replays its response (the key is claimed inside the request's DB transaction); 409 `CONFLICT` with `Retry-After: 1` remains only for a claimed key with no stored response. Failed requests roll back and do not consume the key.
 
 #### 13.1.6 Rate limits (per user unless stated; Redis token bucket, in-memory fallback)
 
@@ -1696,8 +1696,9 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 | GET | `/transactions/{id}` | Includes latest prediction and anomaly summary |
 | PATCH | `/transactions/{id}` | Partial update; optional `If-Match: "<version>"` → 409 `VERSION_CONFLICT`. Body may include `apply_to_past_merchant_transactions: true` when changing category |
 | DELETE | `/transactions/{id}` | 204 |
-| POST | `/transactions/bulk-delete` | `{ids: [...] }` ≤ 200 |
-| POST | `/transactions/bulk-categorize` | `{ids: [...], category: "<slug>"}` ≤ 200 |
+| POST | `/transactions/{id}/dismiss-duplicate` | "Not a duplicate" (FR-02.15): clears `possible_duplicate_of`, sets `duplicate_dismissed`; 200 transaction |
+| POST | `/transactions/bulk-delete` | `{ids: [...] }` ≤ 200; atomic (any unknown id → 404, nothing deleted); 200 `{deleted: n}` |
+| POST | `/transactions/bulk-categorize` | `{ids: [...], category: "<slug>"}` ≤ 200; atomic; 200 `{updated: n}` |
 | POST | `/transactions/{id}/confirm-category` | Confirms suggestion → `user_confirmed` |
 | POST | `/transactions/{id}/recategorize` | `{force?: bool}` (FR-03.09) |
 | POST | `/transactions/{id}/not-duplicate` | FR-02.15 |

@@ -22,8 +22,15 @@ def database_url() -> Iterator[str]:
         return
     from testcontainers.postgres import PostgresContainer
 
-    with PostgresContainer("postgres:16-alpine", driver="psycopg") as pg:
-        yield pg.get_connection_url()
+    try:
+        container = PostgresContainer("postgres:16-alpine", driver="psycopg")
+        container.start()
+    except Exception as exc:  # no Docker, or Docker cannot start containers here
+        pytest.skip(f"no PostgreSQL available (set TEST_DATABASE_URL or start Docker): {exc}")
+    try:
+        yield container.get_connection_url()
+    finally:
+        container.stop()
 
 
 def reset_schema(engine: Engine) -> None:
@@ -63,3 +70,49 @@ def make_user(session: Session, email: str | None = None) -> User:
     session.add(user)
     session.flush()
     return user
+
+
+# --- API fixtures shared by endpoint tests -------------------------------------------------------
+import io  # noqa: E402
+
+from app.core.config import Settings  # noqa: E402
+from app.main import create_app  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+
+API = "/api/v1"
+PASSWORD = "correct horse battery"
+
+
+@pytest.fixture
+def log_stream() -> io.StringIO:
+    return io.StringIO()
+
+
+@pytest.fixture
+def client(engine: Engine, database_url: str, log_stream: io.StringIO) -> Iterator[TestClient]:
+    """Fresh app (so a fresh rate limiter) per test; the schema is shared."""
+    settings = Settings(  # type: ignore[call-arg]
+        _env_file=None,
+        app_env="ci",
+        database_url=database_url,
+        jwt_secret="s" * 40,
+        cookie_secure=False,
+    )
+    app = create_app(settings, log_stream=log_stream)
+    with TestClient(app, raise_server_exceptions=False) as c:
+        yield c
+    app.state.engine.dispose()
+
+
+def signup(client: TestClient) -> dict[str, str]:
+    """Register a fresh user and return its bearer headers."""
+    r = client.post(
+        f"{API}/auth/register",
+        json={
+            "email": f"u-{uuid.uuid4().hex[:10]}@example.com",
+            "password": PASSWORD,
+            "display_name": "T",
+        },
+    )
+    assert r.status_code == 201, r.text
+    return {"Authorization": f"Bearer {r.json()['access_token']}"}

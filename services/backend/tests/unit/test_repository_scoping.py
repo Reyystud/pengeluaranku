@@ -7,6 +7,7 @@ import inspect
 from app.models import Base
 from app.repositories import (
     KEYED_PENDING,
+    KEYED_REPOSITORIES,
     SCOPED_REPOSITORIES,
     UNSCOPED_BY_DESIGN,
     CategoryRepository,
@@ -23,8 +24,16 @@ def test_fr_12_every_scoped_repository_method_takes_user_id_first() -> None:
             assert params[:2] == ["self", "user_id"], f"{repo_cls.__name__}.{name}{params}"
 
 
+def test_fr_12_keyed_repository_methods_take_user_id_first() -> None:
+    for repo_cls in KEYED_REPOSITORIES.values():
+        for name, fn in inspect.getmembers(repo_cls, inspect.isfunction):
+            if name.startswith("_"):
+                continue
+            assert list(inspect.signature(fn).parameters)[:2] == ["self", "user_id"], name
+
+
 def test_fr_12_every_user_id_table_is_covered_or_explicitly_deferred() -> None:
-    covered = {repo.model.__tablename__ for repo in SCOPED_REPOSITORIES}
+    covered = {repo.model.__tablename__ for repo in SCOPED_REPOSITORIES} | set(KEYED_REPOSITORIES)
     with_user_id = {
         t.name for t in Base.metadata.sorted_tables if "user_id" in t.c and t.name != "users"
     }

@@ -8,7 +8,7 @@ define NOT_YET
 	@echo "make $@ is not implemented yet (planned in task $(1); see docs/PROGRESS.md)"; exit 1
 endef
 
-.PHONY: api eda splits verify-splits help setup lint format typecheck test test-integration check \
+.PHONY: coverage-backend api eda splits verify-splits help setup lint format typecheck test test-integration check \
         data train-local up down seed-demo demo openapi train promote rollback loadtest jobs-run
 
 help: ## List targets
@@ -31,14 +31,16 @@ format: ## Auto-format and fix
 typecheck: ## mypy --strict on ml/ and backend app/
 	uv run mypy
 
-test: ## Unit tests (no external services); backend coverage gate 80%
+test: ## Unit tests (no external services)
 	uv run pytest -m "not integration"
-	uv run pytest services/backend -m "not integration" -q --cov=app --cov-fail-under=80
 
-test-integration: ## Integration tests (testcontainers)
+test-integration: ## Integration tests (testcontainers, or TEST_DATABASE_URL=postgresql+psycopg://...)
 	uv run pytest -m integration || [ $$? -eq 5 ]
 
-check: lint typecheck test ## Lint + types + tests (must pass before finishing a task)
+coverage-backend: ## Backend unit + integration tests with the 80% line-coverage gate (needs PostgreSQL)
+	uv run pytest services/backend -q --cov=app --cov-fail-under=80
+
+check: lint typecheck test coverage-backend ## Lint + types + tests + coverage gate (must pass before finishing a task)
 	@echo "make check: OK (frontend checks are added in T-19)"
 
 WORKERS ?= 4

@@ -15,16 +15,13 @@ from app.models import (
     MerchantRule,
     Notification,
     RecurringSeries,
-    Transaction,
     TransactionImport,
 )
 from app.repositories.auth import RefreshTokenStore
 from app.repositories.base import ScopedRepository
+from app.repositories.idempotency import IdempotencyRepository
+from app.repositories.transactions import TransactionFilters, TransactionRepository
 from app.repositories.users import CategoryRepository, UserRepository
-
-
-class TransactionRepository(ScopedRepository[Transaction]):
-    model = Transaction
 
 
 class TransactionImportRepository(ScopedRepository[TransactionImport]):
@@ -86,13 +83,15 @@ SCOPED_REPOSITORIES: tuple[type[ScopedRepository[Any]], ...] = (
     NotificationRepository,
 )
 
+# Keyed (non-`id`) repositories; the scoping tests introspect them too.
+KEYED_REPOSITORIES: dict[str, type] = {"idempotency_keys": IdempotencyRepository}
+
 # Tables with a ``user_id`` column but no single ``id`` key, so the generic repository does not
 # fit. The owning task adds a keyed repository with the same user_id-first rule (PRD 12.4).
 KEYED_PENDING: dict[str, str] = {
     "budget_period_snapshots": "T-21 (budgets): keyed by (budget_id, period_id)",
     "anomaly_suppressions": "T-23 (anomaly feedback): keyed by (user_id, merchant_key)",
     "user_segments": "T-27 (clustering): one row per user",
-    "idempotency_keys": "T-14 (idempotency): keyed by (user_id, key)",
 }
 
 # Tables that carry a user_id but are not owned through the scoped repositories, with the reason.
@@ -102,6 +101,10 @@ UNSCOPED_BY_DESIGN: dict[str, str] = {
 }
 
 __all__ = [
+    "KEYED_REPOSITORIES",
+    "IdempotencyRepository",
+    "TransactionFilters",
+    "TransactionRepository",
     "KEYED_PENDING",
     "SCOPED_REPOSITORIES",
     "UNSCOPED_BY_DESIGN",

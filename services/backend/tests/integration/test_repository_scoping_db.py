@@ -14,6 +14,7 @@ from app.repositories import (
     SCOPED_REPOSITORIES,
     CategoryRepository,
     ScopedRepository,
+    TransactionFilters,
     TransactionRepository,
 )
 from sqlalchemy import event
@@ -147,3 +148,45 @@ def test_repositories_signature_is_user_first() -> None:
 
 
 _ = Engine
+
+
+def test_fr_12_transaction_query_methods_filter_by_user_id_in_sql(session: Session) -> None:
+    alice, bob = make_user(session), make_user(session)
+    cat = CategoryRepository(session).get_by_slug("food_beverage")
+    assert cat is not None
+    tx = TransactionRepository(session).add(alice.id, _tx(cat.id))
+    repo = TransactionRepository(session)
+    seen: list[tuple[str, object]] = []
+
+    @event.listens_for(session.get_bind(), "before_cursor_execute")
+    def record(conn, cursor, statement, parameters, context, executemany):  # type: ignore[no-untyped-def]
+        seen.append((statement, parameters))
+
+    try:
+        calls = {
+            "search": lambda: repo.search(bob.id, TransactionFilters(), sort="date", limit=10),
+            "count_matching": lambda: repo.count_matching(bob.id, TransactionFilters()),
+            "get_for_update": lambda: repo.get_for_update(bob.id, tx.id),
+            "get_many": lambda: repo.get_many(bob.id, [tx.id]),
+            "delete_many": lambda: repo.delete_many(bob.id, [tx.id]),
+            "set_category_many": lambda: repo.set_category_many(
+                bob.id, [tx.id], cat.id, "user_set"
+            ),
+            "find_duplicate": lambda: repo.find_duplicate(
+                bob.id,
+                transaction_type="expense",
+                amount=Decimal("1.00"),
+                merchant_key="k",
+                occurred_at=dt.datetime.now(dt.UTC),
+                has_time=True,
+                timezone="Asia/Jakarta",
+            ),
+        }
+        for name, call in calls.items():
+            seen.clear()
+            call()
+            assert seen, name
+            assert all("user_id" in stmt for stmt, _ in seen), name
+    finally:
+        event.remove(session.get_bind(), "before_cursor_execute", record)
+    assert repo.count(alice.id) == 1  # bob's calls touched nothing of alice's
