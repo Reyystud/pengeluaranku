@@ -13,6 +13,12 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
 
+### 2026-11-20 — T-11 backend scaffold
+- Done: `app/main.py` (factory), `app/core/{config,ids,logging,errors,middleware,metrics}.py`, `app/api/{health,router}.py`, `python -m app` / `make api` (http://127.0.0.1:8000, Swagger at `/docs`), 46 tests in `services/backend/tests/unit/test_scaffold.py` (health, request ids, problem+json, sentinel log test, redaction, metrics, settings). Backend coverage 96%, gate 80% enabled in `make test`.
+- Try it: `make api`, then `curl localhost:8000/healthz`, open `/docs`, `curl localhost:8000/metrics`.
+- Next: T-12 (DB schema, Alembic, category seed, repository layer with user scoping). It should register DB and migration-head readiness checks in `app.state.readiness_checks`, and add a UUIDv7 helper next to `new_ulid` in `app/core/ids.py`.
+- Branch note: this work is on `feat/backend-core`; T-08..T-10 live on `feat/classifier`. `docs/PROGRESS.md` and `docs/DECISIONS.md` were edited on both, so expect a merge conflict there: keep both sets of entries.
+
 ### 2026-11-20 — T-07 merchant normalization
 - Done: `ml/preprocessing/merchant.py` (`normalize_merchant`, `preprocess_description`, `derive_merchant`, `derive_merchant_key`, `resolve_merchant`), `ml/tests/test_merchant_normalization.py` (61 tests incl. hypothesis and a synthetic-data agreement test). 95.3% agreement with `true_merchant` on a 200k train sample; misses are injected typos.
 - Backend (T-12+) and ML service must import these functions, never reimplement them (parity rule, PRD 11.1).
@@ -76,7 +82,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 3 — Backend core
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-11 | Backend scaffold: settings, logging, problem+json, request IDs, health | T-01 | todo | |
+| T-11 | Backend scaffold: settings, logging, problem+json, request IDs, health | T-01 | done | `services/backend/app/` scaffold, 46 tests, `make api` |
 | T-12 | DB schema + Alembic + category seed + repository layer with scoping test | T-11 | todo | |
 | T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | todo | |
 | T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | todo | |

@@ -51,3 +51,6 @@ files = ["ml", "services/backend/app"]
 exclude = ["/tests/"]
 explicit_package_bases = true
 mypy_path = [".", "services/backend", "services/ml_service"]
+
+[tool.coverage.run]
+omit = ["*/tests/*", "ml/eda/*"]

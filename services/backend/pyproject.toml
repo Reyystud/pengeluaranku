@@ -7,7 +7,14 @@ name = "sei-backend"
 version = "0.0.0"
 description = "FastAPI backend (also runs as the worker role)"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.165.0",
+    "httpx>=0.28.1",
+    "prometheus-client>=0.26.0",
+    "pydantic-settings>=2.16.3",
+    "structlog>=26.1.0",
+    "uvicorn>=0.54.0",
+]
 
 [tool.setuptools]
 packages = ["app", "app.api", "app.core", "app.models", "app.schemas", "app.services", "app.repositories", "app.events", "app.jobs", "app.clients"]

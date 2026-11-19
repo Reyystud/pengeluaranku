@@ -8,7 +8,7 @@ define NOT_YET
 	@echo "make $@ is not implemented yet (planned in task $(1); see docs/PROGRESS.md)"; exit 1
 endef
 
-.PHONY: eda splits verify-splits help setup lint format typecheck test test-integration check \
+.PHONY: api eda splits verify-splits help setup lint format typecheck test test-integration check \
         data train-local up down seed-demo demo openapi train promote rollback loadtest jobs-run
 
 help: ## List targets
@@ -31,8 +31,9 @@ format: ## Auto-format and fix
 typecheck: ## mypy --strict on ml/ and backend app/
 	uv run mypy
 
-test: ## Unit tests (no external services)
+test: ## Unit tests (no external services); backend coverage gate 80%
 	uv run pytest -m "not integration"
+	uv run pytest services/backend -m "not integration" -q --cov=app --cov-fail-under=80
 
 test-integration: ## Integration tests (testcontainers)
 	uv run pytest -m integration || [ $$? -eq 5 ]
@@ -43,6 +44,9 @@ check: lint typecheck test ## Lint + types + tests (must pass before finishing a
 WORKERS ?= 4
 data: ## Generate synthetic dataset v1 into data/synthetic/v1 (make data WORKERS=8)
 	uv run python -m data_generator generate --config config/generator/default.yaml --seed 42 --out data/synthetic/v1 --workers $(WORKERS)
+
+api: ## Run the backend dev server on http://127.0.0.1:8000 (docs at /docs)
+	RELOAD=true uv run python -m app
 
 eda: ## Regenerate docs/figures + data/eda_stats.json from the train split
 	uv run python -m ml.eda.run_eda
