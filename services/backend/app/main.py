@@ -10,6 +10,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api import health
 from app.api.router import api_router
 from app.core.config import Settings, get_settings
+from app.core.db import create_session_factory, register_readiness
 from app.core.errors import install_error_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
@@ -28,6 +29,9 @@ def create_app(settings: Settings | None = None, log_stream: TextIO | None = Non
     )
     app.state.settings = settings
     app.state.readiness_checks = {}
+    engine = register_readiness(app.state.readiness_checks, settings)
+    app.state.engine = engine
+    app.state.session_factory = create_session_factory(engine) if engine is not None else None
     install_error_handlers(app)
     app.add_middleware(
         CORSMiddleware,

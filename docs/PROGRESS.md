@@ -13,6 +13,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
 
+### 2026-11-20 — T-12 DB schema, migrations, repositories
+- Done: 25 tables from PRD 12.2 as SQLAlchemy 2 models, reversible migration `0001` with category seed (taxonomy-1, 20 rows), `ScopedRepository`, `UserRepository`, `CategoryRepository`, `get_session` dependency, `database` and `migrations` readiness checks (registered when `DATABASE_URL` is set), `new_uuid7()`.
+- Verified: `make check` green (backend coverage 91%); 15 integration tests pass on PostgreSQL 16 (no model/DB drift, up/down/up, seed equals taxonomy, two-user SQL echo scoping, cascade delete).
+- Run integration: `TEST_DATABASE_URL=postgresql+psycopg://... make test-integration`, or just Docker with testcontainers. Migrate locally: `cd services/backend && DATABASE_URL=... uv run alembic upgrade head`.
+- Gotchas: ruff `extend-exclude` was `models`, which hid `app/models`; now anchored. Migration files ignore E501.
+- Next: T-13 (auth). Keyed repositories listed in `KEYED_PENDING` are added by their tasks. Add Alembic upgrade to the compose/startup path in the infra task (T-29).
+
 ### 2026-11-20 — T-11 backend scaffold
 - Done: `app/main.py` (factory), `app/core/{config,ids,logging,errors,middleware,metrics}.py`, `app/api/{health,router}.py`, `python -m app` / `make api` (http://127.0.0.1:8000, Swagger at `/docs`), 46 tests in `services/backend/tests/unit/test_scaffold.py` (health, request ids, problem+json, sentinel log test, redaction, metrics, settings). Backend coverage 96%, gate 80% enabled in `make test`.
 - Try it: `make api`, then `curl localhost:8000/healthz`, open `/docs`, `curl localhost:8000/metrics`.
@@ -83,7 +90,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
 | T-11 | Backend scaffold: settings, logging, problem+json, request IDs, health | T-01 | done | `services/backend/app/` scaffold, 46 tests, `make api` |
-| T-12 | DB schema + Alembic + category seed + repository layer with scoping test | T-11 | todo | |
+| T-12 | DB schema + Alembic + category seed + repository layer with scoping test | T-11 | done | `app/models/`, `migrations/versions/0001_initial_schema.py`, `app/repositories/`, 15 integration + 12 unit tests |
 | T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | todo | |
 | T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | todo | |
 | T-15 | CSV preview/commit with all error codes | T-14 | todo | |
