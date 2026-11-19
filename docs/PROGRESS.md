@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-09 (baseline classifiers + MLflow + evaluation report; needs scikit-learn, lightgbm, mlflow)
+**Current focus:** next T-10 (threshold calibration, 7.3.4). Read the unseen-merchant finding first
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-09 classifier baselines
+- Done: `ml/classification/{config,data,pipeline,calibration,metrics,train}.py`, `config/train/classifier.yaml`, `make train-local`, `docs/MODEL_EVALUATION.md`, `docs/model_cards/transaction-classifier.md`, tests (`ml/tests/test_classifier_metrics.py`, `data_generator/tests/test_classifier_smoke.py`). Run `20261120-024213`; MLflow model `transaction-classifier` v1 alias `candidate` (local sqlite in `data/mlflow/`).
+- Results: LR baseline wins (SVM and LightGBM did not gain 2.0 points). Temporal test macro F1 0.969 is saturated at the ambiguity ceiling; unseen-merchant macro F1 is 0.52 and calibration there is poor (ECE 0.31).
+- **For T-10:** thresholds fitted on the (seen-merchant) validation split will be over-optimistic for unseen merchants. Consider a novelty feature/rule and report precision on the unseen split next to the chosen thresholds. Metadata `decision_thresholds` is null until then.
+- Open: generator holdout variant (9.6.6), latency benchmark (T-17/T-30), learning curve for the 25k-per-class cap.
+- Gotchas: training needs about 3+ GB RAM and ~15 minutes (LightGBM ~6 min); run with output to a log file, not piped to `tail`. `uv run python -m ml.classification.train --max-rows-per-class 2000 --no-mlflow` is a quick smoke run.
 
 ### 2026-11-20 — T-08 classifier features
 - Done: `ml/features/{__init__,classifier,point_in_time,testing}.py`, `ml/tests/test_feature_parity.py` (24 tests: batch vs online parity on hand-made rows and 5,000 synthetic rows, harness self-tests, hour-bucket boundaries).
@@ -76,7 +83,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 |---|---|---|---|---|
 | T-07 | `ml/preprocessing` (merchant normalization ≥ 30 tests, description preprocessing) | T-02 | done | `ml/preprocessing/merchant.py`, 61 tests |
 | T-08 | Classifier feature module + point-in-time and parity harness | T-07 | done | `ml/features/` (classifier, point_in_time, testing); parity test on 5,000 synthetic rows |
-| T-09 | Baseline LR + calibrated Linear SVM + LightGBM; MLflow; eval report | T-05, T-08 | todo | |
+| T-09 | Baseline LR + calibrated Linear SVM + LightGBM; MLflow; eval report | T-05, T-08 | done | `ml/classification/`, `docs/MODEL_EVALUATION.md`, model card; MLflow run bbf88d53...; baseline wins |
 | T-10 | Threshold calibration procedure (7.3.4) | T-09 | todo | |
 
 ### Week 3 — Backend core

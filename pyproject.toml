@@ -51,3 +51,8 @@ files = ["ml", "services/backend/app"]
 exclude = ["/tests/"]
 explicit_package_bases = true
 mypy_path = [".", "services/backend", "services/ml_service"]
+
+[[tool.mypy.overrides]]
+module = ["pyarrow.*", "sklearn.*", "lightgbm.*", "mlflow.*", "joblib.*", "scipy.*", "matplotlib.*"]
+ignore_missing_imports = true
+follow_imports = "skip"

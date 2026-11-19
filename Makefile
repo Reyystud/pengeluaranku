@@ -53,8 +53,8 @@ splits: ## Compute + lock splits for data/synthetic/v1 into data_splits/ (refuse
 verify-splits: ## Check committed splits still match data/synthetic/v1
 	uv run python -m ml.evaluation verify-splits --data data/synthetic/v1 --dataset-version synthetic/v1
 
-train-local: ## Train baselines + register to local MLflow (stub: T-09/T-25)
-	$(call NOT_YET,T-09/T-25)
+train-local: ## Train + evaluate classifier candidates, register best as `candidate` in local MLflow
+	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m ml.classification.train
 
 up: ## docker compose up (stub: T-29)
 	$(call NOT_YET,T-29)
