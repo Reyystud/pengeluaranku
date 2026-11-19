@@ -8,7 +8,7 @@ define NOT_YET
 	@echo "make $@ is not implemented yet (planned in task $(1); see docs/PROGRESS.md)"; exit 1
 endef
 
-.PHONY: help setup lint format typecheck test test-integration check \
+.PHONY: splits verify-splits help setup lint format typecheck test test-integration check \
         data train-local up down seed-demo demo openapi train promote rollback loadtest jobs-run
 
 help: ## List targets
@@ -43,6 +43,12 @@ check: lint typecheck test ## Lint + types + tests (must pass before finishing a
 WORKERS ?= 4
 data: ## Generate synthetic dataset v1 into data/synthetic/v1 (make data WORKERS=8)
 	uv run python -m data_generator generate --config config/generator/default.yaml --seed 42 --out data/synthetic/v1 --workers $(WORKERS)
+
+splits: ## Compute + lock splits for data/synthetic/v1 into data_splits/ (refuses to change locked splits)
+	uv run python -m ml.evaluation make-splits --data data/synthetic/v1 --dataset-version synthetic/v1
+
+verify-splits: ## Check committed splits still match data/synthetic/v1
+	uv run python -m ml.evaluation verify-splits --data data/synthetic/v1 --dataset-version synthetic/v1
 
 train-local: ## Train baselines + register to local MLflow (stub: T-09/T-25)
 	$(call NOT_YET,T-09/T-25)

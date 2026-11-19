@@ -997,7 +997,7 @@ python -m data_generator generate --config config/generator/default.yaml --seed 
 ```
 
 Output (MUST be byte-identical for the same config + seed + generator version):
-- `transactions.parquet` and `transactions.csv` with the **same columns as the product CSV import** plus: `user_id`, `archetype`, `true_category`, `is_anomaly`, `anomaly_type`, `anomaly_severity`, `recurring_series_id`, `has_time`.
+- `transactions.parquet` and `transactions.csv` with the **same columns as the product CSV import** plus: `transaction_id`, `user_id`, `archetype`, `true_category`, `true_merchant`, `is_anomaly`, `anomaly_type`, `anomaly_severity`, `recurring_series_id`, `has_time`.
 - `users.parquet`: `user_id`, `archetype`, `income_profile`, `budget_period_start_day`, `created_at`.
 - `manifest.json`: generator version, git commit, config (inlined), seed, row counts, SHA-256 of every output file.
 

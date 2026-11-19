@@ -7,6 +7,7 @@ import pandas as pd
 import pytest
 from pandera.errors import SchemaErrors
 
+from data_generator import GENERATOR_VERSION
 from data_generator.generate import build_frames, write_dataset
 from data_generator.tests.conftest import small_config
 from ml.schemas.synthetic import (
@@ -171,7 +172,7 @@ def test_manifest_contents(tmp_path: Path) -> None:
     manifest = write_dataset(cfg, tmp_path)
     on_disk = json.loads((tmp_path / "manifest.json").read_text())
     assert on_disk == json.loads(json.dumps(manifest))
-    assert on_disk["generator_version"] == "1.0.0"
+    assert on_disk["generator_version"] == GENERATOR_VERSION
     assert on_disk["taxonomy_version"] == "taxonomy-1"
     assert on_disk["seed"] == 7
     assert on_disk["config"]["params"]["n_users"] == 20  # CLI overrides are inlined
@@ -197,3 +198,10 @@ def test_build_frames_validates_its_own_output() -> None:
     tx, users = build_frames(small_config(n_users=10, months=2))
     validate_transactions(tx)
     assert len(users) == 10
+
+
+def test_true_merchant_is_always_present_and_clean(frames) -> None:  # type: ignore[no-untyped-def]
+    tx, _ = frames
+    assert tx["true_merchant"].notna().all()
+    provided = tx[tx["merchant"].notna()]
+    assert (provided["merchant"] == provided["true_merchant"]).all()

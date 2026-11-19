@@ -246,6 +246,7 @@ class UserSim:
                 "user_id": self.user_id,
                 "archetype": self.arch.name,
                 "true_category": label,
+                "true_merchant": merchant,
                 "is_anomaly": anomaly is not None,
                 "anomaly_type": anomaly[0] if anomaly else None,
                 "anomaly_severity": anomaly[1] if anomaly else None,

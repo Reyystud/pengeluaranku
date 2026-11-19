@@ -43,6 +43,7 @@ TRANSACTIONS_ARROW_SCHEMA = pa.schema(
         ("user_id", pa.string()),
         ("archetype", pa.string()),
         ("true_category", pa.string()),
+        ("true_merchant", pa.string()),
         ("is_anomaly", pa.bool_()),
         ("anomaly_type", pa.string()),
         ("anomaly_severity", pa.string()),

@@ -1,0 +1,46 @@
+{
+  "counts": {
+    "anomaly": {
+      "test": 326671,
+      "train": 1519032,
+      "validation": 325655
+    },
+    "classifier": {
+      "test": 271888,
+      "test_unseen_merchant": 365207,
+      "train": 1263380,
+      "validation": 270883
+    },
+    "forecast_periods": 8000,
+    "heldout_merchants": 42,
+    "transactions": 2171358,
+    "users": 2000
+  },
+  "dataset": {
+    "dataset_version": "synthetic/v1",
+    "generator_version": "1.1.0",
+    "seed": 42,
+    "transactions_parquet_sha256": "6d517121e6a284c665149c58ce8512add621e62196690e5f660b535bef7e05d2"
+  },
+  "hashes": {
+    "assignments": "b74d93a0dcb59d2079d18f3c8ae7a0fd903fac948abdfed81deb29a4d1531767",
+    "cluster_users": "ae9f109a857cb87e99e0889dd51075616f39ccdd4cb0b7de54c7d72603826e83",
+    "forecast_periods": "f67b782a9d4abf37647d0bd9df34309869744feee1b976b68905faa543f129cd",
+    "heldout_merchants": "a664fe22f2d22e213e2184d4d0f968cc61c383340ca5466b21a96716b7f48f88",
+    "split_hash": "cc7b019c3718c3b21f7756892314356fb0ae15eb603dc6b3c16046a19e8b1b3d"
+  },
+  "params": {
+    "forecast_periods": 4,
+    "merchant_holdout_pct": 15,
+    "origin_days": [
+      5,
+      10,
+      15,
+      20
+    ],
+    "seed": 42,
+    "train_pct": 70,
+    "validation_pct": 15
+  },
+  "split_version": "splits-1"
+}
