@@ -1,0 +1,48 @@
+# Merchant alias map, applied as step 7 of normalize_merchant (PRD 7.3.2).
+# Keys are already in normalized form (lowercase, letters/digits/single spaces).
+# Values are canonical normalized merchant names that exist in config/generator/merchants.yaml.
+# No chains: a value is never also a key. Add entries only for aliases seen in data or tests.
+version: aliases-1
+aliases:
+  indomart: indomaret
+  indo maret: indomaret
+  indomrt: indomaret
+  alfa mart: alfamart
+  alfamrt: alfamart
+  alfa midi: alfamidi
+  gojek goride: gojek
+  gojek gocar: gojek
+  go ride: gojek
+  go car: gojek
+  go jek: gojek
+  gojeck: gojek
+  grab car: grab
+  grab bike: grab
+  grabbike: grab
+  grabcar: grab
+  go food: gofood
+  grab food: grabfood
+  shopee food: shopeefood
+  kopken: kopi kenangan
+  kpi knngn: kopi kenangan
+  starbuck: starbucks
+  sbux: starbucks
+  mcd: mcdonalds
+  mc donalds: mcdonalds
+  kentucky fried chicken: kfc
+  tokped: tokopedia
+  toko pedia: tokopedia
+  krl: krl commuterline
+  commuter line: krl commuterline
+  mrt: mrt jakarta
+  trans jakarta: transjakarta
+  busway: transjakarta
+  bluebird: blue bird
+  token pln: token listrik
+  indi home: indihome
+  hotstar: disney hotstar
+  yt premium: youtube premium
+  cgv cinemas: cgv
+  kimia farma apotek: kimia farma
+  k 24: k24
+  kitabisa com: kitabisa

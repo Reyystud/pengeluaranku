@@ -1,0 +1,94 @@
+# Indonesian national holidays and collective leave days, 2025-2027 (PRD 11.2.3).
+# Source: SKB 3 Menteri (Agama, Ketenagakerjaan, PANRB). Checked 2026-11-19 against
+#   2025: SKB signed 2024-10-14 (https://news.detik.com/berita/d-7588474/) + amendment signed 2025-08-07
+#         adding 2025-08-18 as cuti bersama
+#   2026: SKB signed 2025-09-19 (https://www.setneg.go.id/baca/index/inilah_skb_3_menteri_libur_nasional_dan_cuti_bersama_2026)
+#   2027: SKB signed 2026-09-15 (https://setneg.go.id/baca/index/inilah_skb_3_menteri_libur_nasional_dan_cuti_bersama_2027)
+# kind: national = libur nasional, collective_leave = cuti bersama.
+# Which kinds count as `is_holiday` is decided in the feature task (T-08); both are provided.
+# Dates outside covered_years are unknown: features must set is_holiday=0 and holiday_known=0.
+version: holidays-1
+covered_years: [2025, 2026, 2027]
+holidays:
+  # ---- 2025 ----
+  - {date: "2025-01-01", kind: national, name: Tahun Baru Masehi 2025}
+  - {date: "2025-01-27", kind: national, name: Isra Mikraj Nabi Muhammad SAW}
+  - {date: "2025-01-28", kind: collective_leave, name: Tahun Baru Imlek 2576 Kongzili}
+  - {date: "2025-01-29", kind: national, name: Tahun Baru Imlek 2576 Kongzili}
+  - {date: "2025-03-28", kind: collective_leave, name: Hari Suci Nyepi}
+  - {date: "2025-03-29", kind: national, name: Hari Suci Nyepi (Tahun Baru Saka 1947)}
+  - {date: "2025-03-31", kind: national, name: Idulfitri 1446 H}
+  - {date: "2025-04-01", kind: national, name: Idulfitri 1446 H}
+  - {date: "2025-04-02", kind: collective_leave, name: Idulfitri 1446 H}
+  - {date: "2025-04-03", kind: collective_leave, name: Idulfitri 1446 H}
+  - {date: "2025-04-04", kind: collective_leave, name: Idulfitri 1446 H}
+  - {date: "2025-04-07", kind: collective_leave, name: Idulfitri 1446 H}
+  - {date: "2025-04-18", kind: national, name: Wafat Yesus Kristus}
+  - {date: "2025-04-20", kind: national, name: Kebangkitan Yesus Kristus (Paskah)}
+  - {date: "2025-05-01", kind: national, name: Hari Buruh Internasional}
+  - {date: "2025-05-12", kind: national, name: Hari Raya Waisak 2569 BE}
+  - {date: "2025-05-13", kind: collective_leave, name: Hari Raya Waisak 2569 BE}
+  - {date: "2025-05-29", kind: national, name: Kenaikan Yesus Kristus}
+  - {date: "2025-05-30", kind: collective_leave, name: Kenaikan Yesus Kristus}
+  - {date: "2025-06-01", kind: national, name: Hari Lahir Pancasila}
+  - {date: "2025-06-06", kind: national, name: Iduladha 1446 H}
+  - {date: "2025-06-09", kind: collective_leave, name: Iduladha 1446 H}
+  - {date: "2025-06-27", kind: national, name: 1 Muharam Tahun Baru Islam 1447 H}
+  - {date: "2025-08-17", kind: national, name: Proklamasi Kemerdekaan}
+  - {date: "2025-08-18", kind: collective_leave, name: Cuti bersama Proklamasi Kemerdekaan (added by 2025-08-07 amendment)}
+  - {date: "2025-09-05", kind: national, name: Maulid Nabi Muhammad SAW}
+  - {date: "2025-12-25", kind: national, name: Kelahiran Yesus Kristus}
+  - {date: "2025-12-26", kind: collective_leave, name: Kelahiran Yesus Kristus}
+  # ---- 2026 ----
+  - {date: "2026-01-01", kind: national, name: Tahun Baru 2026 Masehi}
+  - {date: "2026-01-16", kind: national, name: Isra Mikraj Nabi Muhammad SAW}
+  - {date: "2026-02-16", kind: collective_leave, name: Tahun Baru Imlek 2577 Kongzili}
+  - {date: "2026-02-17", kind: national, name: Tahun Baru Imlek 2577 Kongzili}
+  - {date: "2026-03-18", kind: collective_leave, name: Hari Suci Nyepi}
+  - {date: "2026-03-19", kind: national, name: Hari Suci Nyepi (Tahun Baru Saka 1948)}
+  - {date: "2026-03-20", kind: collective_leave, name: Idulfitri 1447 H}
+  - {date: "2026-03-21", kind: national, name: Idulfitri 1447 H}
+  - {date: "2026-03-22", kind: national, name: Idulfitri 1447 H}
+  - {date: "2026-03-23", kind: collective_leave, name: Idulfitri 1447 H}
+  - {date: "2026-03-24", kind: collective_leave, name: Idulfitri 1447 H}
+  - {date: "2026-04-03", kind: national, name: Wafat Yesus Kristus}
+  - {date: "2026-04-05", kind: national, name: Kebangkitan Yesus Kristus (Paskah)}
+  - {date: "2026-05-01", kind: national, name: Hari Buruh Internasional}
+  - {date: "2026-05-14", kind: national, name: Kenaikan Yesus Kristus}
+  - {date: "2026-05-15", kind: collective_leave, name: Kenaikan Yesus Kristus}
+  - {date: "2026-05-27", kind: national, name: Iduladha 1447 H}
+  - {date: "2026-05-28", kind: collective_leave, name: Iduladha 1447 H}
+  - {date: "2026-05-31", kind: national, name: Hari Raya Waisak 2570 BE}
+  - {date: "2026-06-01", kind: national, name: Hari Lahir Pancasila}
+  - {date: "2026-06-16", kind: national, name: 1 Muharam Tahun Baru Islam 1448 H}
+  - {date: "2026-08-17", kind: national, name: Proklamasi Kemerdekaan}
+  - {date: "2026-08-25", kind: national, name: Maulid Nabi Muhammad SAW}
+  - {date: "2026-12-24", kind: collective_leave, name: Kelahiran Yesus Kristus}
+  - {date: "2026-12-25", kind: national, name: Kelahiran Yesus Kristus}
+  # ---- 2027 ----
+  - {date: "2027-01-01", kind: national, name: Tahun Baru 2027 Masehi}
+  - {date: "2027-01-05", kind: national, name: Isra Mikraj Nabi Muhammad SAW}
+  - {date: "2027-02-05", kind: collective_leave, name: Tahun Baru Imlek 2578 Kongzili}
+  - {date: "2027-02-06", kind: national, name: Tahun Baru Imlek 2578 Kongzili}
+  - {date: "2027-03-08", kind: national, name: Hari Suci Nyepi (Tahun Baru Saka 1949)}
+  - {date: "2027-03-09", kind: collective_leave, name: Idulfitri 1448 H}
+  - {date: "2027-03-10", kind: national, name: Idulfitri 1448 H}
+  - {date: "2027-03-11", kind: national, name: Idulfitri 1448 H}
+  - {date: "2027-03-12", kind: collective_leave, name: Idulfitri 1448 H}
+  - {date: "2027-03-15", kind: collective_leave, name: Idulfitri 1448 H}
+  - {date: "2027-03-25", kind: collective_leave, name: Wafat Yesus Kristus}
+  - {date: "2027-03-26", kind: national, name: Wafat Yesus Kristus}
+  - {date: "2027-03-28", kind: national, name: Kebangkitan Yesus Kristus (Paskah)}
+  - {date: "2027-05-01", kind: national, name: Hari Buruh Internasional}
+  - {date: "2027-05-06", kind: national, name: Kenaikan Yesus Kristus}
+  - {date: "2027-05-17", kind: national, name: Iduladha 1448 H}
+  - {date: "2027-05-18", kind: collective_leave, name: Iduladha 1448 H}
+  - {date: "2027-05-19", kind: collective_leave, name: Hari Raya Waisak 2571 BE}
+  - {date: "2027-05-20", kind: national, name: Hari Raya Waisak 2571 BE}
+  - {date: "2027-06-01", kind: national, name: Hari Lahir Pancasila}
+  - {date: "2027-06-06", kind: national, name: 1 Muharam Tahun Baru Islam 1449 H}
+  - {date: "2027-08-15", kind: national, name: Maulid Nabi Muhammad SAW}
+  - {date: "2027-08-17", kind: national, name: Proklamasi Kemerdekaan}
+  - {date: "2027-12-24", kind: collective_leave, name: Kelahiran Yesus Kristus}
+  - {date: "2027-12-25", kind: national, name: Kelahiran Yesus Kristus}
+  - {date: "2027-12-26", kind: national, name: Isra Mikraj Nabi Muhammad SAW}

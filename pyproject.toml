@@ -25,6 +25,7 @@ dev = [
     "hypothesis",
     "ruff",
     "mypy",
+    "types-pyyaml",
     "pre-commit",
 ]
 

@@ -2510,7 +2510,7 @@ smart-expense-intelligence/
 │   └── tests/
 ├── data_generator/                 # synthetic generator (+ tests)
 ├── pipelines/                      # Prefect flows: train, evaluate, gate, register, promote, drift, exports
-├── config/                         # generator/, train/, insights.yaml, merchant_aliases.yaml, holidays_id.yaml, label_maps/
+├── config/                         # generator/ (incl. merchants.yaml), train/, insights.yaml, merchant_aliases.yaml, holidays_id.yaml, cities_id.yaml, label_maps/
 ├── schemas/events/                 # JSON Schemas for events
 ├── monitoring/                     # Grafana dashboards, Prometheus config, alert rules, Evidently config
 ├── infrastructure/
