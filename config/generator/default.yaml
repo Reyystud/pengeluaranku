@@ -1,0 +1,88 @@
+# Default synthetic dataset configuration (PRD 10.1).
+# ALL numbers here are illustrative generator inputs, NOT real behavioural statistics.
+# Any evaluation report built on this data must say so.
+dataset_name: synthetic
+n_users: 2000
+months: 12
+start_date: "2025-01-01"          # must be the 1st of a month
+timezone: Asia/Jakarta
+
+# Files below are relative to this file's directory.
+merchants_file: merchants.yaml
+subscriptions_file: subscriptions.yaml
+archetype_files:
+  - archetypes/student.yaml
+  - archetypes/young_professional.yaml
+  - archetypes/freelancer.yaml
+  - archetypes/impulsive_spender.yaml
+  - archetypes/subscription_heavy.yaml
+
+calendar_effects: true             # holiday factors (uses config/holidays_id.yaml)
+weekend_lambda_factor: 1.15
+holiday_lambda_factor: 1.10
+payday: {days: 3, lambda_factor: 1.5}
+category_boost_on_weekend_or_holiday:
+  food_beverage: 1.4
+  entertainment: 1.4
+
+has_time_missing_rate: 0.15        # share of rows with date only (has_time=false)
+duplicate_rate: 0.003              # exact duplicates injected (tests FR-02.12)
+ambiguous_label_prob: 0.50         # for merchants with ambiguous_with, chance of the alternative label
+favourite_merchants: {min: 3, max: 6, habit_prob: 0.8}
+user_amount_sigma: 0.20            # per-user spending-scale log-normal sigma
+category_share_sigma: 0.25         # per-user tilt of the archetype category shares
+
+noise:                             # text noise (PRD 10.1); probabilities are multiplied by `scale`
+  scale: 1.0
+  merchant_provided_prob: 0.60     # product CSV `merchant` column filled with the clean name
+  case_probs: {as_is: 0.30, upper: 0.35, lower: 0.30, random: 0.05}
+  typo_prob: 0.05
+  abbrev_prob: 0.30                # only for merchants that define abbrevs
+  prefix_prob: 0.25
+  reference_prob: 0.25
+  location_prob: 0.20
+  notes_prob: 0.05
+
+# Log-normal amount model per category: median in IDR, sigma of log amount.
+amounts:
+  food_beverage:   {median: 28000,  sigma: 0.55}
+  groceries:       {median: 55000,  sigma: 0.60}
+  transportation:  {median: 22000,  sigma: 0.60}
+  utilities:       {median: 100000, sigma: 0.50}
+  housing:         {median: 1500000, sigma: 0.30}
+  shopping:        {median: 150000, sigma: 0.80}
+  entertainment:   {median: 60000,  sigma: 0.60}
+  health:          {median: 90000,  sigma: 0.70}
+  education:       {median: 80000,  sigma: 0.80}
+  personal_care:   {median: 60000,  sigma: 0.60}
+  gifts_donations: {median: 75000,  sigma: 0.80}
+  fees_charges:    {median: 7500,   sigma: 0.40}
+  other_expense:   {median: 50000,  sigma: 0.80}
+  transfer:        {median: 150000, sigma: 0.70}
+  refund:          {median: 45000,  sigma: 0.80}
+  other_income:    {median: 100000, sigma: 0.90}
+
+# Hour-of-day mixtures per category: [mean_hour, sigma_hours, weight].
+hours:
+  default:         [[13, 4.0, 1.0]]
+  food_beverage:   [[8, 1.0, 0.20], [12.3, 1.0, 0.40], [19, 1.2, 0.40]]
+  groceries:       [[10, 2.0, 0.40], [17.5, 2.0, 0.60]]
+  transportation:  [[8, 1.0, 0.45], [17.8, 1.2, 0.45], [13, 3.0, 0.10]]
+  entertainment:   [[15, 2.5, 0.30], [20, 2.0, 0.70]]
+  shopping:        [[12, 3.0, 0.50], [20, 2.0, 0.50]]
+  utilities:       [[10, 3.0, 1.0]]
+  transfer:        [[11, 3.5, 1.0]]
+
+# Payment method probabilities per category (rows are normalized). Missing -> default.
+payment_methods:
+  default:         {cash: 0.15, bank_transfer: 0.10, debit_card: 0.15, credit_card: 0.05, e_wallet: 0.40, qris: 0.15}
+  food_beverage:   {cash: 0.20, debit_card: 0.08, credit_card: 0.02, e_wallet: 0.45, qris: 0.25}
+  groceries:       {cash: 0.25, debit_card: 0.20, credit_card: 0.05, e_wallet: 0.20, qris: 0.30}
+  transportation:  {cash: 0.10, debit_card: 0.05, e_wallet: 0.70, qris: 0.15}
+  utilities:       {bank_transfer: 0.35, e_wallet: 0.50, debit_card: 0.10, other: 0.05}
+  housing:         {bank_transfer: 0.80, cash: 0.20}
+  shopping:        {e_wallet: 0.35, credit_card: 0.25, debit_card: 0.15, bank_transfer: 0.15, qris: 0.10}
+  entertainment:   {e_wallet: 0.35, credit_card: 0.30, debit_card: 0.10, qris: 0.15, cash: 0.10}
+  fees_charges:    {bank_transfer: 0.60, debit_card: 0.30, other: 0.10}
+  transfer:        {bank_transfer: 0.60, debit_card: 0.30, cash: 0.10}
+  income:          {bank_transfer: 0.90, e_wallet: 0.10}

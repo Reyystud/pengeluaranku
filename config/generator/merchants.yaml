@@ -1,0 +1,302 @@
+# Merchant catalogue for the synthetic generator (PRD 10.1).
+# weight: relative popularity within the category (positive integer).
+# abbrevs: optional noisy forms the generator may emit (text noise, PRD 10.1).
+# ambiguous_with: category slugs this merchant is sometimes labelled with (ambiguity, ~5% of rows).
+# Expense and transfer categories have >= 15 entries. Income categories hold counterparties /
+# description templates (>= 5) because brands are not meaningful there (see DECISIONS.md).
+# These are generator inputs, not real behavioural statistics.
+version: merchants-1
+taxonomy_version: taxonomy-1
+categories:
+  food_beverage:
+    - {name: Kopi Kenangan, weight: 10, abbrevs: [kpi knngn, kopken]}
+    - {name: Starbucks, weight: 7, abbrevs: [sbux]}
+    - {name: Janji Jiwa, weight: 6}
+    - {name: Fore Coffee, weight: 5}
+    - {name: Tomoro Coffee, weight: 4}
+    - {name: GoFood, weight: 12}
+    - {name: GrabFood, weight: 10}
+    - {name: ShopeeFood, weight: 9, ambiguous_with: [shopping]}
+    - {name: Mie Gacoan, weight: 9}
+    - {name: Warteg Bahari, weight: 8}
+    - {name: McDonalds, weight: 7, abbrevs: [mcd]}
+    - {name: KFC, weight: 6}
+    - {name: Burger King, weight: 4}
+    - {name: Pizza Hut, weight: 3}
+    - {name: Richeese Factory, weight: 4}
+    - {name: Chatime, weight: 4}
+    - {name: Es Teh Indonesia, weight: 4}
+    - {name: Bakso Solo, weight: 4}
+    - {name: Warung Padang, weight: 5}
+    - {name: Nasi Goreng Gila, weight: 3}
+    - {name: HokBen, weight: 3}
+    - {name: Solaria, weight: 2}
+    - {name: Yoshinoya, weight: 3}
+    - {name: Dunkin, weight: 3}
+    - {name: Warkop, weight: 3}
+  groceries:
+    - {name: Indomaret, weight: 12, abbrevs: [indomrt], ambiguous_with: [personal_care]}
+    - {name: Alfamart, weight: 11, abbrevs: [alfamrt], ambiguous_with: [personal_care]}
+    - {name: Alfamidi, weight: 4}
+    - {name: Superindo, weight: 6}
+    - {name: Hypermart, weight: 4}
+    - {name: Lotte Mart, weight: 3}
+    - {name: Giant, weight: 2}
+    - {name: Transmart, weight: 3}
+    - {name: Ranch Market, weight: 2}
+    - {name: Farmers Market, weight: 2}
+    - {name: Yogya Supermarket, weight: 2}
+    - {name: Hero Supermarket, weight: 2}
+    - {name: Pasar Tradisional, weight: 5}
+    - {name: Tukang Sayur Keliling, weight: 3}
+    - {name: Lawson, weight: 2}
+    - {name: Circle K, weight: 2}
+    - {name: Segari, weight: 2}
+    - {name: Sayurbox, weight: 2}
+  transportation:
+    - {name: Gojek, weight: 12}
+    - {name: Grab, weight: 11}
+    - {name: Maxim, weight: 4}
+    - {name: inDrive, weight: 3}
+    - {name: Blue Bird, weight: 3}
+    - {name: KRL Commuterline, weight: 8}
+    - {name: MRT Jakarta, weight: 5}
+    - {name: TransJakarta, weight: 6}
+    - {name: LRT Jakarta, weight: 2}
+    - {name: Whoosh, weight: 1}
+    - {name: KAI Access, weight: 2}
+    - {name: Damri, weight: 2}
+    - {name: Pertamina, weight: 8}
+    - {name: Shell, weight: 3}
+    - {name: BP, weight: 2}
+    - {name: Vivo, weight: 1}
+    - {name: Parkir, weight: 6}
+    - {name: Tol, weight: 4}
+    - {name: Traveloka, weight: 2}
+  utilities:
+    - {name: PLN, weight: 6}
+    - {name: Token Listrik, weight: 8}
+    - {name: PDAM, weight: 4}
+    - {name: IndiHome, weight: 6}
+    - {name: Biznet, weight: 3}
+    - {name: MyRepublic, weight: 2}
+    - {name: First Media, weight: 2}
+    - {name: Telkomsel, weight: 9}
+    - {name: Indosat Ooredoo, weight: 5}
+    - {name: XL Axiata, weight: 5}
+    - {name: Smartfren, weight: 2}
+    - {name: Tri, weight: 3}
+    - {name: by.U, weight: 3}
+    - {name: Gas LPG, weight: 3}
+    - {name: Iuran Sampah, weight: 2}
+    - {name: Pulsa Hp, weight: 6}
+  housing:
+    - {name: Mamikos, weight: 3}
+    - {name: Rukita, weight: 2}
+    - {name: Kos Bulanan, weight: 10}
+    - {name: Sewa Apartemen, weight: 5}
+    - {name: IPL Apartemen, weight: 4}
+    - {name: Sewa Kontrakan, weight: 3}
+    - {name: Sewa Rumah, weight: 2}
+    - {name: Iuran Keamanan, weight: 2}
+    - {name: Iuran Kebersihan, weight: 2}
+    - {name: DP Kos, weight: 1}
+    - {name: Perpanjang Kos, weight: 3}
+    - {name: Service Charge Apartemen, weight: 2}
+    - {name: Biaya Maintenance, weight: 1}
+    - {name: Perbaikan Kos, weight: 1}
+    - {name: Ongkos Pindahan, weight: 1}
+  shopping:
+    - {name: Tokopedia, weight: 12, abbrevs: [tokped]}
+    - {name: Shopee, weight: 14, ambiguous_with: [food_beverage]}
+    - {name: Lazada, weight: 5}
+    - {name: Blibli, weight: 3}
+    - {name: Bukalapak, weight: 2}
+    - {name: Uniqlo, weight: 4}
+    - {name: H&M, weight: 2}
+    - {name: Zara, weight: 2}
+    - {name: Erafone, weight: 2}
+    - {name: iBox, weight: 2}
+    - {name: Miniso, weight: 3}
+    - {name: Daiso, weight: 2}
+    - {name: Ace Hardware, weight: 2}
+    - {name: Informa, weight: 2}
+    - {name: Matahari, weight: 2}
+    - {name: Zalora, weight: 2}
+    - {name: Eiger, weight: 2}
+    - {name: Decathlon, weight: 2}
+    - {name: TikTok Shop, weight: 6}
+  entertainment:
+    - {name: Netflix, weight: 10}
+    - {name: Spotify, weight: 10}
+    - {name: Disney+ Hotstar, weight: 5}
+    - {name: Vidio, weight: 4}
+    - {name: YouTube Premium, weight: 5}
+    - {name: Viu, weight: 2}
+    - {name: Prime Video, weight: 2}
+    - {name: XXI, weight: 6}
+    - {name: CGV, weight: 5}
+    - {name: Cinepolis, weight: 2}
+    - {name: Steam, weight: 5}
+    - {name: PlayStation Store, weight: 2}
+    - {name: Google Play Games, weight: 3}
+    - {name: Top Up Mobile Legends, weight: 5}
+    - {name: Top Up Free Fire, weight: 4}
+    - {name: Timezone, weight: 1}
+    - {name: Dufan, weight: 1}
+    - {name: Inul Vizta, weight: 1}
+    - {name: Tiket Konser, weight: 2}
+  health:
+    - {name: Kimia Farma, weight: 8}
+    - {name: Guardian, weight: 5}
+    - {name: Century, weight: 3}
+    - {name: K24, weight: 3}
+    - {name: Halodoc, weight: 4}
+    - {name: Good Doctor, weight: 2}
+    - {name: Alodokter, weight: 1}
+    - {name: Apotek, weight: 6}
+    - {name: Klinik, weight: 5}
+    - {name: RS Siloam, weight: 2}
+    - {name: RS Mitra Keluarga, weight: 2}
+    - {name: Prodia, weight: 2}
+    - {name: Optik Melawai, weight: 1}
+    - {name: BPJS Kesehatan, weight: 4}
+    - {name: Dokter Gigi, weight: 2}
+    - {name: Vitamin dan Suplemen, weight: 3}
+  education:
+    - {name: UKT, weight: 6}
+    - {name: SPP, weight: 4}
+    - {name: Coursera, weight: 3}
+    - {name: Udemy, weight: 3}
+    - {name: Ruangguru, weight: 3}
+    - {name: Zenius, weight: 1}
+    - {name: Dicoding, weight: 2}
+    - {name: Gramedia, weight: 6}
+    - {name: Fotokopi, weight: 7}
+    - {name: Percetakan Skripsi, weight: 2}
+    - {name: Alat Tulis, weight: 4}
+    - {name: Les Privat, weight: 2}
+    - {name: Kursus Bahasa Inggris, weight: 2}
+    - {name: Duolingo, weight: 1}
+    - {name: Skillshare, weight: 1}
+    - {name: TOEFL, weight: 1}
+  personal_care:
+    - {name: Barbershop, weight: 8}
+    - {name: Salon, weight: 6}
+    - {name: Laundry Kiloan, weight: 8}
+    - {name: Laundry Express, weight: 4}
+    - {name: Watsons, weight: 4, ambiguous_with: [health]}
+    - {name: Sociolla, weight: 3}
+    - {name: Sephora, weight: 2}
+    - {name: Erha Clinic, weight: 2}
+    - {name: Natasha Skin Clinic, weight: 2}
+    - {name: Potong Rambut, weight: 5}
+    - {name: Creambath, weight: 2}
+    - {name: Spa dan Massage, weight: 2}
+    - {name: Nail Art, weight: 2}
+    - {name: Cukur Rambut, weight: 3}
+    - {name: Skincare Online, weight: 3}
+    - {name: Dry Clean, weight: 2}
+  gifts_donations:
+    - {name: Kado, weight: 6}
+    - {name: Zakat, weight: 5}
+    - {name: Donasi, weight: 6}
+    - {name: Kitabisa, weight: 5}
+    - {name: Dompet Dhuafa, weight: 2}
+    - {name: Infaq Masjid, weight: 4}
+    - {name: Sedekah Jumat, weight: 3}
+    - {name: Rumah Zakat, weight: 1}
+    - {name: Sumbangan, weight: 3}
+    - {name: Amplop Nikah, weight: 3}
+    - {name: Angpao Imlek, weight: 1}
+    - {name: THR Keponakan, weight: 2}
+    - {name: Bunga Hadiah, weight: 2}
+    - {name: Kado Ulang Tahun, weight: 5}
+    - {name: Patungan Kado, weight: 3}
+    - {name: BAZNAS, weight: 1}
+    - {name: Wakaf, weight: 1}
+  fees_charges:
+    - {name: Biaya Admin, weight: 10}
+    - {name: Biaya Transfer, weight: 8}
+    - {name: Denda Keterlambatan, weight: 3}
+    - {name: Denda, weight: 3}
+    - {name: Biaya Bulanan Rekening, weight: 6}
+    - {name: Biaya Kartu Kredit, weight: 3}
+    - {name: Bunga Kartu Kredit, weight: 3}
+    - {name: Iuran Tahunan Kartu, weight: 2}
+    - {name: Biaya Materai, weight: 2}
+    - {name: Biaya Layanan Aplikasi, weight: 4}
+    - {name: Biaya Tarik Tunai ATM, weight: 4}
+    - {name: Biaya Administrasi Bank, weight: 5}
+    - {name: Biaya SMS Banking, weight: 1}
+    - {name: Pajak Bunga, weight: 1}
+    - {name: Biaya Penalti, weight: 1}
+    - {name: Biaya Cetak Buku Tabungan, weight: 1}
+  other_expense:
+    - {name: Lain-lain, weight: 8}
+    - {name: Biaya Tak Terduga, weight: 4}
+    - {name: Bengkel, weight: 5}
+    - {name: Servis Motor, weight: 5}
+    - {name: Ganti Oli, weight: 4}
+    - {name: Tambal Ban, weight: 2}
+    - {name: Cuci Motor, weight: 3}
+    - {name: Servis HP, weight: 2}
+    - {name: Servis Laptop, weight: 2}
+    - {name: JNE, weight: 3}
+    - {name: J&T Express, weight: 3}
+    - {name: SiCepat, weight: 2}
+    - {name: Pos Indonesia, weight: 1}
+    - {name: Perpanjang SIM, weight: 1}
+    - {name: Pajak Kendaraan, weight: 2}
+  transfer:
+    - {name: Top Up GoPay, weight: 12}
+    - {name: Top Up OVO, weight: 8}
+    - {name: Top Up DANA, weight: 9}
+    - {name: Top Up ShopeePay, weight: 7}
+    - {name: Top Up LinkAja, weight: 2}
+    - {name: Top Up Flazz BCA, weight: 3}
+    - {name: Top Up E-Money Mandiri, weight: 3}
+    - {name: Top Up Brizzi BRI, weight: 2}
+    - {name: Top Up Tapcash BNI, weight: 2}
+    - {name: Tarik Tunai ATM, weight: 8}
+    - {name: Tarik Tunai Minimarket, weight: 2}
+    - {name: Pindah ke Tabungan, weight: 4}
+    - {name: Transfer Antar Rekening Sendiri, weight: 4}
+    - {name: Top Up Jenius, weight: 2}
+    - {name: Pindah ke Dana Darurat, weight: 2}
+  allowance:
+    - {name: Uang Saku, weight: 10}
+    - {name: Kiriman Orang Tua, weight: 8}
+    - {name: Uang Bulanan, weight: 6}
+    - {name: Kiriman Ortu, weight: 5}
+    - {name: Transfer Ayah, weight: 3}
+    - {name: Transfer Ibu, weight: 3}
+  salary:
+    - {name: Gaji, weight: 10}
+    - {name: Gaji Bulanan, weight: 8}
+    - {name: Payroll, weight: 6}
+    - {name: Gaji PT, weight: 4}
+    - {name: THR, weight: 2}
+    - {name: Bonus Tahunan, weight: 1}
+    - {name: Tunjangan, weight: 2}
+  freelance:
+    - {name: Proyek, weight: 8}
+    - {name: Honor, weight: 6}
+    - {name: Fee Freelance, weight: 6}
+    - {name: Pembayaran Klien, weight: 6}
+    - {name: Honor Mengajar, weight: 3}
+    - {name: Jasa Desain, weight: 3}
+  refund:
+    - {name: Refund, weight: 8}
+    - {name: Cashback, weight: 8}
+    - {name: Pengembalian Dana, weight: 5}
+    - {name: Refund Tokopedia, weight: 3}
+    - {name: Cashback GoPay, weight: 3}
+    - {name: Cashback Shopee, weight: 3}
+  other_income:
+    - {name: Hadiah Uang, weight: 4}
+    - {name: Bunga Tabungan, weight: 5}
+    - {name: Angpao Diterima, weight: 3}
+    - {name: Hadiah Lomba, weight: 1}
+    - {name: Jual Barang Bekas, weight: 3}
+    - {name: Beasiswa, weight: 2}

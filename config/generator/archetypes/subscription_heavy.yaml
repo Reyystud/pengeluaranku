@@ -1,0 +1,30 @@
+archetype: subscription_heavy
+weight: 0.10
+income_profile: salary
+monthly_income:
+  kind: salary
+  amount: 6000000
+  sigma_pct: 0.20
+  day_of_month: 25
+  jitter_days: 1
+daily_tx_lambda: 2.2
+amount_scale: 0.74
+category_share:
+  food_beverage: 0.28
+  groceries: 0.14
+  transportation: 0.14
+  shopping: 0.12
+  entertainment: 0.10
+  utilities: 0.06
+  health: 0.04
+  personal_care: 0.04
+  other_expense: 0.08
+monthly_bills:
+  - {category: housing, probability: 0.70, user_sigma: 0.25, day_min: 1, day_max: 5, amount_scale: 0.74}
+subscriptions: [streaming_video, music, cloud_storage, gym, internet]
+subscription_adoption: 1.0
+subscription_extra_services: 2     # extra distinct subscriptions on top of one per kind
+transfers_per_month: [1, 3]
+anomalies:
+  rate: 0.01
+  types: [amount_spike, frequency_burst, new_merchant_high_value, category_surge]

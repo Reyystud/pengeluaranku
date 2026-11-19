@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sei-backend"
+version = "0.0.0"
+description = "FastAPI backend (also runs as the worker role)"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.setuptools]
+packages = ["app", "app.api", "app.core", "app.models", "app.schemas", "app.services", "app.repositories", "app.events", "app.jobs", "app.clients"]

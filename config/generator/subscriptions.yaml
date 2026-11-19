@@ -1,0 +1,36 @@
+# Subscription / bill catalogue for the generator (PRD 10.1 "Subscriptions").
+# Prices are illustrative inputs, not real price lists.
+# `merchant` is the description base; `category` must be a valid model label.
+version: subscriptions-1
+price_change_prob_per_year: 0.05   # chance of one price increase per simulated year
+price_change_range: [0.10, 0.20]
+cancel_prob_per_year: 0.20         # chance the subscription is cancelled mid-simulation
+billing_jitter_days: 3             # each charge lands 0..3 days after the nominal billing day
+kinds:
+  streaming_video:
+    category: entertainment
+    options:
+      - {merchant: Netflix, amounts: [54000, 70000, 186000]}
+      - {merchant: Disney+ Hotstar, amounts: [39000, 59000]}
+      - {merchant: Vidio, amounts: [29000, 49000]}
+      - {merchant: YouTube Premium, amounts: [59000]}
+  music:
+    category: entertainment
+    options:
+      - {merchant: Spotify, amounts: [54990, 65000]}
+  cloud_storage:
+    category: other_expense
+    options:
+      - {merchant: Google One, amounts: [30000, 45000]}
+      - {merchant: iCloud, amounts: [15000, 45000]}
+  gym:
+    category: health
+    options:
+      - {merchant: Celebrity Fitness, amounts: [350000, 450000]}
+      - {merchant: Gym Membership, amounts: [250000, 300000]}
+  internet:
+    category: utilities
+    options:
+      - {merchant: IndiHome, amounts: [320000, 400000]}
+      - {merchant: Biznet, amounts: [350000, 450000]}
+      - {merchant: MyRepublic, amounts: [300000, 380000]}

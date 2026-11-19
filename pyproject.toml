@@ -1,0 +1,53 @@
+[project]
+name = "smart-expense-intelligence"
+version = "0.0.0"
+description = "Smart Expense Intelligence - workspace root (see docs/PRD.md)"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.uv]
+package = false
+
+[tool.uv.workspace]
+members = ["ml", "data_generator", "services/backend", "services/ml_service", "pipelines"]
+
+[tool.uv.sources]
+sei-ml = { workspace = true }
+sei-data-generator = { workspace = true }
+sei-backend = { workspace = true }
+sei-ml-service = { workspace = true }
+sei-pipelines = { workspace = true }
+
+[dependency-groups]
+dev = [
+    "pytest",
+    "pytest-cov",
+    "hypothesis",
+    "ruff",
+    "mypy",
+    "types-pyyaml",
+    "pandas-stubs",
+    "pre-commit",
+    "matplotlib>=3.11.2",
+]
+
+[tool.pytest.ini_options]
+addopts = "--import-mode=importlib"
+testpaths = ["ml", "data_generator", "pipelines", "services"]
+markers = ["integration: needs real PostgreSQL / services (testcontainers)"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+extend-exclude = ["graphify-out", "data", "models"]
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+files = ["ml", "services/backend/app"]
+exclude = ["/tests/"]
+explicit_package_bases = true
+mypy_path = [".", "services/backend", "services/ml_service"]

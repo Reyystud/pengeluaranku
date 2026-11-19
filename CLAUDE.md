@@ -45,7 +45,7 @@ Precedence when sources disagree (§0.2): PRD v3.0 → accepted ADRs that amend 
 | `make setup` | Install toolchains (uv, pnpm), pre-commit, copy `.env.example` → `.env` |
 | `make check` | Lint + types + tests + coverage gates — **must pass before finishing a task** |
 | `make test` / `make test-integration` | Unit / integration (testcontainers) tests |
-| `make data` | Generate synthetic dataset (default seed) |
+| `make data` | Generate synthetic dataset v1 into `data/synthetic/v1` (seed 42, `WORKERS=n`) |
 | `make train-local` | Train baselines, register to local MLflow |
 | `make demo` | `data` + `train-local` + `up` + `seed-demo` |
 | `make up` / `make down` | Docker compose up/down |

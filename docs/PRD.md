@@ -997,7 +997,7 @@ python -m data_generator generate --config config/generator/default.yaml --seed 
 ```
 
 Output (MUST be byte-identical for the same config + seed + generator version):
-- `transactions.parquet` and `transactions.csv` with the **same columns as the product CSV import** plus: `user_id`, `archetype`, `true_category`, `is_anomaly`, `anomaly_type`, `anomaly_severity`, `recurring_series_id`, `has_time`.
+- `transactions.parquet` and `transactions.csv` with the **same columns as the product CSV import** plus: `transaction_id`, `user_id`, `archetype`, `true_category`, `true_merchant`, `is_anomaly`, `anomaly_type`, `anomaly_severity`, `recurring_series_id`, `has_time`.
 - `users.parquet`: `user_id`, `archetype`, `income_profile`, `budget_period_start_day`, `created_at`.
 - `manifest.json`: generator version, git commit, config (inlined), seed, row counts, SHA-256 of every output file.
 
@@ -2494,7 +2494,7 @@ smart-expense-intelligence/
 │   │   ├── tests/{unit,integration,security}/
 │   │   └── openapi.json            # generated
 │   └── ml_service/                 # FastAPI: inference only
-│       ├── app/{api,loading,shadow,metrics}/
+│       ├── ml_service/{api,loading,shadow,metrics}/   # import package; not `app`, which would collide with backend's `app` in the shared uv venv (see DECISIONS.md)
 │       ├── tests/
 │       └── openapi.json
 ├── ml/                             # installable library used by pipelines, backend, ml_service
@@ -2510,7 +2510,7 @@ smart-expense-intelligence/
 │   └── tests/
 ├── data_generator/                 # synthetic generator (+ tests)
 ├── pipelines/                      # Prefect flows: train, evaluate, gate, register, promote, drift, exports
-├── config/                         # generator/, train/, insights.yaml, merchant_aliases.yaml, holidays_id.yaml, label_maps/
+├── config/                         # generator/ (incl. merchants.yaml), train/, insights.yaml, merchant_aliases.yaml, holidays_id.yaml, cities_id.yaml, label_maps/
 ├── schemas/events/                 # JSON Schemas for events
 ├── monitoring/                     # Grafana dashboards, Prometheus config, alert rules, Evidently config
 ├── infrastructure/

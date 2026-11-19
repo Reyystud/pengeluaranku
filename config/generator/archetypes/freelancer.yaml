@@ -1,0 +1,30 @@
+archetype: freelancer
+weight: 0.10
+income_profile: irregular
+monthly_income:
+  kind: irregular
+  payments_per_month: [1, 4]
+  median: 2500000
+  sigma: 0.60
+  day_of_month: 1          # budget period start day for freelancers
+daily_tx_lambda: 2.4
+amount_scale: 0.75
+category_share:
+  food_beverage: 0.30
+  groceries: 0.12
+  transportation: 0.12
+  shopping: 0.10
+  entertainment: 0.08
+  education: 0.06
+  utilities: 0.06
+  health: 0.04
+  fees_charges: 0.02
+  other_expense: 0.10
+monthly_bills:
+  - {category: housing, probability: 0.70, user_sigma: 0.25, day_min: 1, day_max: 7, amount_scale: 0.75}
+subscriptions: [streaming_video, music, cloud_storage, internet]
+subscription_adoption: 0.7
+transfers_per_month: [1, 4]
+anomalies:
+  rate: 0.01
+  types: [amount_spike, frequency_burst, new_merchant_high_value, category_surge]

@@ -1,0 +1,52 @@
+# Location tokens removed by merchant normalization step 5 (PRD 7.3.2).
+# Lowercase, alphanumeric words only. Multi-word entries are matched as phrases.
+version: cities-1
+cities:
+  - jakarta
+  - jakarta selatan
+  - jakarta pusat
+  - jakarta barat
+  - jakarta timur
+  - jakarta utara
+  - bandung
+  - surabaya
+  - medan
+  - semarang
+  - makassar
+  - palembang
+  - tangerang
+  - tangerang selatan
+  - depok
+  - bekasi
+  - bogor
+  - yogyakarta
+  - malang
+  - denpasar
+  - balikpapan
+  - batam
+  - pekanbaru
+  - padang
+  - solo
+  - surakarta
+  - bandar lampung
+  - manado
+  - pontianak
+  - banjarmasin
+  - samarinda
+  - cirebon
+  - bali
+abbreviations:
+  - jkt
+  - jaksel
+  - jakpus
+  - jakbar
+  - jaktim
+  - jakut
+  - bdg
+  - sby
+  - tangsel
+  - bks
+  - jogja
+  - yogya
+  - mlg
+  - smg
