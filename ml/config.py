@@ -49,10 +49,8 @@ class Holiday:
     name: str
 
 
-@lru_cache(maxsize=1)
-def load_merchants() -> tuple[Merchant, ...]:
-    """All generator merchants, in file order (``config/generator/merchants.yaml``)."""
-    data = _load_yaml("generator/merchants.yaml")
+def merchants_from_mapping(data: dict[str, Any]) -> tuple[Merchant, ...]:
+    """Parse the ``categories`` section of a merchants file (also used by the generator)."""
     merchants: list[Merchant] = []
     for category, entries in data["categories"].items():
         for entry in entries:
@@ -66,6 +64,12 @@ def load_merchants() -> tuple[Merchant, ...]:
                 )
             )
     return tuple(merchants)
+
+
+@lru_cache(maxsize=1)
+def load_merchants() -> tuple[Merchant, ...]:
+    """All generator merchants, in file order (``config/generator/merchants.yaml``)."""
+    return merchants_from_mapping(_load_yaml("generator/merchants.yaml"))
 
 
 @lru_cache(maxsize=1)

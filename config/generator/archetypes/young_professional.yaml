@@ -1,0 +1,31 @@
+archetype: young_professional
+weight: 0.35
+income_profile: salary
+monthly_income:
+  kind: salary
+  amount: 7000000
+  sigma_pct: 0.25
+  day_of_month: 25
+  jitter_days: 1
+daily_tx_lambda: 2.6
+amount_scale: 0.77
+category_share:
+  food_beverage: 0.28
+  groceries: 0.12
+  transportation: 0.14
+  shopping: 0.12
+  entertainment: 0.08
+  health: 0.04
+  personal_care: 0.05
+  utilities: 0.05
+  gifts_donations: 0.04
+  fees_charges: 0.02
+  other_expense: 0.06
+monthly_bills:
+  - {category: housing, probability: 0.80, user_sigma: 0.25, day_min: 1, day_max: 5, amount_scale: 0.77}
+subscriptions: [streaming_video, music, cloud_storage, gym, internet]
+subscription_adoption: 0.7
+transfers_per_month: [1, 4]
+anomalies:
+  rate: 0.01
+  types: [amount_spike, frequency_burst, new_merchant_high_value, category_surge]

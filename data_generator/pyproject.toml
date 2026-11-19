@@ -7,8 +7,11 @@ name = "sei-data-generator"
 version = "0.0.0"
 description = "Seeded synthetic transaction generator"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = ["sei-ml", "numpy", "pandas", "pyarrow"]
 
 [tool.setuptools]
 package-dir = {"data_generator" = "."}
 packages = ["data_generator"]
+
+[tool.uv.sources]
+sei-ml = { workspace = true }

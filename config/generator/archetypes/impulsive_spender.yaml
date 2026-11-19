@@ -1,0 +1,30 @@
+archetype: impulsive_spender
+weight: 0.10
+income_profile: salary
+monthly_income:
+  kind: salary
+  amount: 5000000
+  sigma_pct: 0.20
+  day_of_month: 25
+  jitter_days: 1
+daily_tx_lambda: 3.4
+amount_scale: 0.46
+payday: {days: 4, lambda_factor: 1.9}
+category_share:
+  food_beverage: 0.28
+  shopping: 0.22
+  entertainment: 0.16
+  transportation: 0.10
+  groceries: 0.06
+  personal_care: 0.06
+  gifts_donations: 0.04
+  fees_charges: 0.02
+  other_expense: 0.06
+monthly_bills:
+  - {category: housing, probability: 0.60, user_sigma: 0.25, day_min: 1, day_max: 5, amount_scale: 0.46}
+subscriptions: [streaming_video, music]
+subscription_adoption: 0.8
+transfers_per_month: [2, 4]
+anomalies:
+  rate: 0.01
+  types: [amount_spike, frequency_burst, new_merchant_high_value, category_surge]

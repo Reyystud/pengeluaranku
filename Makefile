@@ -40,8 +40,9 @@ test-integration: ## Integration tests (testcontainers)
 check: lint typecheck test ## Lint + types + tests (must pass before finishing a task)
 	@echo "make check: OK (frontend checks are added in T-19)"
 
-data: ## Generate synthetic dataset (stub: T-03)
-	$(call NOT_YET,T-03)
+WORKERS ?= 4
+data: ## Generate synthetic dataset v1 into data/synthetic/v1 (make data WORKERS=8)
+	uv run python -m data_generator generate --config config/generator/default.yaml --seed 42 --out data/synthetic/v1 --workers $(WORKERS)
 
 train-local: ## Train baselines + register to local MLflow (stub: T-09/T-25)
 	$(call NOT_YET,T-09/T-25)
