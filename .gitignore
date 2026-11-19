@@ -20,8 +20,8 @@ build/
 dist/
 
 # data and models (PRD section 22): never commit datasets or artifacts
-data/
-models/
+/data/
+/models/
 mlruns/
 mlartifacts/
 *.parquet
