@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** week 1 complete (T-01..T-06). Next: week 2, T-07 `normalize_merchant` (>= 30 tests)
+**Current focus:** next T-08 (classifier feature module with point-in-time and parity harness)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,11 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-07 merchant normalization
+- Done: `ml/preprocessing/merchant.py` (`normalize_merchant`, `preprocess_description`, `derive_merchant`, `derive_merchant_key`, `resolve_merchant`), `ml/tests/test_merchant_normalization.py` (61 tests incl. hypothesis and a synthetic-data agreement test). 95.3% agreement with `true_merchant` on a 200k train sample; misses are injected typos.
+- Backend (T-12+) and ML service must import these functions, never reimplement them (parity rule, PRD 11.1).
+- Next: T-08 features (needs T-07). Note the unseen-merchant split uses `true_merchant`; once real `merchant_key` features exist, check that held-out merchants do not leak through `normalize_merchant` aliases.
 
 ### 2026-11-20 — T-05 locked splits
 - Done: `ml/evaluation/splits.py` (classifier, anomaly, forecast, clustering splits), CLI (`python -m ml.evaluation make-splits|verify-splits`), `make splits`/`make verify-splits`, `data_splits/README.md`, committed `data_splits/synthetic/v1/` files. Generator bumped to 1.1.0 (new `true_merchant` column), dataset regenerated. `make check` green (83 tests incl. the lock test against the full dataset).
@@ -63,7 +68,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 2 — Classifier
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-07 | `ml/preprocessing` (merchant normalization ≥ 30 tests, description preprocessing) | T-02 | todo | |
+| T-07 | `ml/preprocessing` (merchant normalization ≥ 30 tests, description preprocessing) | T-02 | done | `ml/preprocessing/merchant.py`, 61 tests |
 | T-08 | Classifier feature module + point-in-time and parity harness | T-07 | todo | |
 | T-09 | Baseline LR + calibrated Linear SVM + LightGBM; MLflow; eval report | T-05, T-08 | todo | |
 | T-10 | Threshold calibration procedure (7.3.4) | T-09 | todo | |
