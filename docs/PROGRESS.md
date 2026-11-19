@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** T-01 (repo scaffold)
+**Current focus:** T-02 (category taxonomy + merchant lists)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-19 — T-01 repo scaffold
+- Done: folder structure per PRD §22, uv workspace (5 members), pnpm workspace (frontend placeholder), `Makefile` (real: setup/lint/format/typecheck/test/test-integration/check; stubs for the rest, each naming its task), `.pre-commit-config.yaml` (hygiene, ruff, gitleaks), `.github/workflows/ci.yml` (python lint/types/tests + gitleaks), `.env.example` (all §19.4 vars), full `.gitignore`.
+- Verified: `make check` passes; `pre-commit run --all-files` passes; stubs fail with a clear message.
+- Not verified: CI on GitHub (push needed); `make setup` end to end (installs git hooks; run it once yourself).
+- Next: T-02 (taxonomy, merchant lists, alias map, holidays config) in `config/` and `ml/`. Needs PRD §4.6, §7.3.2, §10.1.
+- Gotchas: use `uv sync --all-packages` (plain `uv sync` skips members). ML service package is `ml_service`, not `app`. Node on this machine is v26; project targets Node 22 (`.nvmrc`).
 
 ### 2026-11-19 — pre-coding docs
 - Done: `CLAUDE.md`, `docs/PROGRESS.md`, `docs/DECISIONS.md`, ADR template + ADR-0001…0009, skeleton `README.md`, `.github/pull_request_template.md`, `docs/PRIVACY.md`, `SECURITY.md`.
@@ -26,7 +33,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 1 — Data foundation
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-01 | Repo scaffold: structure, uv workspace, pnpm, pre-commit, Makefile skeleton, CI lint job, ADR template, `.env.example` | — | todo | ADR template already in `docs/adr/0000-template.md` |
+| T-01 | Repo scaffold: structure, uv workspace, pnpm, pre-commit, Makefile skeleton, CI lint job, ADR template, `.env.example` | — | done | `make check` green locally (ruff, mypy --strict, 5 smoke tests); pre-commit passes. CI workflow not yet run on GitHub. Deviations logged in DECISIONS.md |
 | T-02 | Category taxonomy + merchant lists + alias map + holidays config | T-01 | todo | |
 | T-03 | Synthetic generator v1 with manifest + Pandera self-validation | T-02 | todo | |
 | T-04 | EDA notebook → `docs/EDA.md` | T-03 | todo | |

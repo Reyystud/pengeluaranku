@@ -1,0 +1,13 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sei-ml-service"
+version = "0.0.0"
+description = "Stateless ML inference service"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.setuptools]
+packages = ["ml_service", "ml_service.api", "ml_service.loading", "ml_service.shadow", "ml_service.metrics"]

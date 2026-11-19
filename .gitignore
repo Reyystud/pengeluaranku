@@ -1,1 +1,49 @@
+# local knowledge graph output
 graphify-out/
+
+# secrets / env
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.coverage
+htmlcov/
+*.egg-info/
+build/
+dist/
+
+# data and models (PRD section 22): never commit datasets or artifacts
+data/
+models/
+mlruns/
+mlartifacts/
+*.parquet
+*.joblib
+*.pkl
+!data_splits/**
+
+# node
+node_modules/
+.next/
+.turbo/
+coverage/
+playwright-report/
+test-results/
+
+# terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+
+# editors / os
+.idea/
+.vscode/
+.DS_Store

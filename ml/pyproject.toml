@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sei-ml"
+version = "0.0.0"
+description = "Shared ML library: preprocessing, features, models, evaluation"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"ml" = "."}
+packages = ["ml", "ml.preprocessing", "ml.features", "ml.classification", "ml.anomaly_detection", "ml.forecasting", "ml.clustering", "ml.recurring", "ml.evaluation", "ml.schemas"]

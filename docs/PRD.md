@@ -2494,7 +2494,7 @@ smart-expense-intelligence/
 │   │   ├── tests/{unit,integration,security}/
 │   │   └── openapi.json            # generated
 │   └── ml_service/                 # FastAPI: inference only
-│       ├── app/{api,loading,shadow,metrics}/
+│       ├── ml_service/{api,loading,shadow,metrics}/   # import package; not `app`, which would collide with backend's `app` in the shared uv venv (see DECISIONS.md)
 │       ├── tests/
 │       └── openapi.json
 ├── ml/                             # installable library used by pipelines, backend, ml_service

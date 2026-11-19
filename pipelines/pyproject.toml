@@ -1,0 +1,14 @@
+[build-system]
+requires = ["setuptools>=75"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "sei-pipelines"
+version = "0.0.0"
+description = "ML pipelines (Prefect flows)"
+requires-python = ">=3.12,<3.13"
+dependencies = []
+
+[tool.setuptools]
+package-dir = {"pipelines" = "."}
+packages = ["pipelines"]
