@@ -23,6 +23,9 @@ class Settings(BaseSettings):
     cursor_signing_key: SecretStr = SecretStr("dev-only-cursor-signing-key")
     export_pseudonym_key: SecretStr = SecretStr("dev-only-pseudonym-key")
     max_transaction_amount: int = 1_000_000_000
+    access_token_ttl_s: int = 900
+    refresh_token_ttl_s: int = 2_592_000
+    cookie_secure: bool = True
 
     @field_validator("jwt_secret")
     @classmethod

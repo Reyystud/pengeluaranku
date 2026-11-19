@@ -1603,7 +1603,7 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 
 #### 13.1.1 Auth
 - `Authorization: Bearer <access_token>` on all endpoints except register, login, refresh, health.
-- JWT: HS256 with `JWT_SECRET` (≥ 32 random bytes) **or** RS256 if keys are provided; claims `sub` (user_id), `iat`, `exp` (15 min), `jti`, `typ=access`. Clock skew tolerance 30 s.
+- JWT: HS256 with `JWT_SECRET` (≥ 32 random bytes) **or** RS256 if keys are provided; claims `sub` (user_id), `iat`, `exp` (15 min), `jti`, `typ=access`, and `sid` (refresh-token family of the login; lets "change password" keep the caller's own session, since the refresh cookie is not sent to `/users/*`). Clock skew tolerance 30 s. Password field error codes: `PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`, `PASSWORD_TOO_COMMON` (422 `VALIDATION_ERROR`).
 
 #### 13.1.2 Errors — RFC 9457 `application/problem+json`
 

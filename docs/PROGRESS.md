@@ -13,6 +13,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
 
+### 2026-11-20 — T-13 auth and account lifecycle
+- Done: register, login, refresh (rotation + family revocation on reuse), logout, `GET/PATCH /users/me`, change password, delete account (hard delete + `deletion_requests` tombstone with pseudo id), `get_current_user` / `get_claims` dependencies, login 5 per email / 20 per IP per 15 min and register 5 per hour per IP, all with problem+json errors.
+- Verified: `make check` green; 116 backend tests pass with PostgreSQL (29 auth integration tests). Sentinel test confirms emails, passwords and tokens never appear in logs.
+- Other endpoints must use `CurrentUser` from `app/api/deps.py` and repositories from T-12; the user id always comes from the token.
+- Not done: `GET /users/me/export` (FR-16, Could), Argon2 timing tuning on the real host, write/read rate limits (they come with their endpoints), security response headers (HSTS/CSP, belongs with infra/frontend tasks).
+- Next: T-14 (transactions CRUD, idempotency, cursor pagination, duplicates).
+
 ### 2026-11-20 — T-12 DB schema, migrations, repositories
 - Done: 25 tables from PRD 12.2 as SQLAlchemy 2 models, reversible migration `0001` with category seed (taxonomy-1, 20 rows), `ScopedRepository`, `UserRepository`, `CategoryRepository`, `get_session` dependency, `database` and `migrations` readiness checks (registered when `DATABASE_URL` is set), `new_uuid7()`.
 - Verified: `make check` green (backend coverage 91%); 15 integration tests pass on PostgreSQL 16 (no model/DB drift, up/down/up, seed equals taxonomy, two-user SQL echo scoping, cascade delete).
@@ -91,7 +98,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 |---|---|---|---|---|
 | T-11 | Backend scaffold: settings, logging, problem+json, request IDs, health | T-01 | done | `services/backend/app/` scaffold, 46 tests, `make api` |
 | T-12 | DB schema + Alembic + category seed + repository layer with scoping test | T-11 | done | `app/models/`, `migrations/versions/0001_initial_schema.py`, `app/repositories/`, 15 integration + 12 unit tests |
-| T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | todo | |
+| T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | done | `app/api/{auth,users}.py`, `app/services/auth.py`, `app/core/{security,passwords,ratelimit,periods}.py`, 29 integration + 10 unit tests |
 | T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | todo | |
 | T-15 | CSV preview/commit with all error codes | T-14 | todo | |
 | T-16 | BOLA/IDOR test suite | T-13, T-14 | todo | |

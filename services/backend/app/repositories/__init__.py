@@ -15,10 +15,10 @@ from app.models import (
     MerchantRule,
     Notification,
     RecurringSeries,
-    RefreshToken,
     Transaction,
     TransactionImport,
 )
+from app.repositories.auth import RefreshTokenStore
 from app.repositories.base import ScopedRepository
 from app.repositories.users import CategoryRepository, UserRepository
 
@@ -71,12 +71,6 @@ class NotificationRepository(ScopedRepository[Notification]):
     model = Notification
 
 
-class RefreshTokenRepository(ScopedRepository[RefreshToken]):
-    """Scoped CRUD only. Token lookup by hash (auth, T-13) is a deliberate unscoped method there."""
-
-    model = RefreshToken
-
-
 SCOPED_REPOSITORIES: tuple[type[ScopedRepository[Any]], ...] = (
     TransactionRepository,
     TransactionImportRepository,
@@ -90,7 +84,6 @@ SCOPED_REPOSITORIES: tuple[type[ScopedRepository[Any]], ...] = (
     RecurringSeriesRepository,
     InsightRepository,
     NotificationRepository,
-    RefreshTokenRepository,
 )
 
 # Tables with a ``user_id`` column but no single ``id`` key, so the generic repository does not
@@ -104,6 +97,7 @@ KEYED_PENDING: dict[str, str] = {
 
 # Tables that carry a user_id but are not owned through the scoped repositories, with the reason.
 UNSCOPED_BY_DESIGN: dict[str, str] = {
+    "refresh_tokens": "looked up by token hash before the user is known; see repositories/auth.py",
     "outbox_events": "no FK on purpose; written by the event publisher inside the same transaction",
 }
 
@@ -112,6 +106,7 @@ __all__ = [
     "SCOPED_REPOSITORIES",
     "UNSCOPED_BY_DESIGN",
     "CategoryRepository",
+    "RefreshTokenStore",
     "ScopedRepository",
     "UserRepository",
 ]

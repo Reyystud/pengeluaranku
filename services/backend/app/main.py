@@ -14,6 +14,7 @@ from app.core.db import create_session_factory, register_readiness
 from app.core.errors import install_error_handlers
 from app.core.logging import configure_logging
 from app.core.middleware import RequestContextMiddleware
+from app.core.ratelimit import RateLimiter
 
 API_VERSION = "0.1.0"
 
@@ -29,6 +30,7 @@ def create_app(settings: Settings | None = None, log_stream: TextIO | None = Non
     )
     app.state.settings = settings
     app.state.readiness_checks = {}
+    app.state.rate_limiter = RateLimiter()
     engine = register_readiness(app.state.readiness_checks, settings)
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine) if engine is not None else None
