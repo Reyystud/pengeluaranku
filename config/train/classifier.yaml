@@ -46,3 +46,9 @@ thresholds:  # PRD 7.3.4 calibration procedure; applied by ml/classification/thr
   band_width: 0.05              # confidence bands walked from the top down
   min_band_support: 100         # bands with fewer validation rows are ignored
   defaults: {t_high: 0.85, t_low: 0.60}   # PRD defaults when a constraint cannot be met
+pipeline:  # PRD 16.1 (Prefect flow `train_model`)
+  max_quarantine_share: 0.01    # step 2 fails above this share of invalid rows
+  validation_batch_rows: 200000
+  parity_sample_rows: 500       # step 4: batch vs online feature parity on a seeded sample
+gates:  # PRD 16.3 (the gates that run in T-25; the rest come with T-26)
+  max_ece: 0.05                 # calibration gate on the temporal test split

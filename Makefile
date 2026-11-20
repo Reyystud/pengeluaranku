@@ -9,7 +9,7 @@ define NOT_YET
 endef
 
 .PHONY: openapi-check web thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
-        data train-local up down seed-demo demo openapi train promote rollback loadtest jobs-run
+        data train-local prefect-server up down seed-demo demo openapi train promote rollback loadtest jobs-run
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -29,7 +29,7 @@ format: ## Auto-format and fix
 	uv run ruff check --fix .
 	uv run ruff format .
 
-typecheck: ## mypy --strict on ml/ and backend app/, tsc --noEmit on the frontend
+typecheck: ## mypy --strict on ml/, pipelines/ and backend app/, tsc --noEmit on the frontend
 	uv run mypy
 	@if [ -d frontend/node_modules ]; then pnpm --dir frontend typecheck; fi
 
@@ -95,8 +95,13 @@ openapi-check: ## Fail when the committed OpenAPI file or the generated frontend
 web: ## Run the frontend dev server on http://localhost:3000 (proxies /api/v1 to the backend)
 	pnpm --dir frontend dev
 
-train: ## make train MODEL=... DATASET=... (stub: T-25)
-	$(call NOT_YET,T-25)
+MODEL ?= transaction-classifier
+DATASET ?= synthetic/v1
+train: ## Prefect flow train_model: make train MODEL=transaction-classifier DATASET=synthetic/v1 (PRD 16.1)
+	MLFLOW_DISABLE_AGENT_HINT=1 PYTHONHASHSEED=0 uv run python -m pipelines train --model $(MODEL) --dataset $(DATASET)
+
+prefect-server: ## Run a Prefect server on :4200 in its own environment (then export PREFECT_API_URL=http://127.0.0.1:4200/api)
+	uvx --from "prefect>=3,<4" --with "fastapi<0.160" prefect server start
 
 promote: ## Promote a model version (stub: T-27)
 	$(call NOT_YET,T-27)

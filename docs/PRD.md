@@ -2819,3 +2819,11 @@ After the project is complete, add real results to this table.
 - `GET /intelligence/forecast?category=<expense slug>` always returns 200 with `ForecastOut` (`available: true`) or `{available: false, reason: "INSUFFICIENT_HISTORY", days_needed, transactions_needed}`. Unknown category 422 `UNKNOWN_CATEGORY`; non-expense 422 `CATEGORY_TYPE_MISMATCH`.
 - `ForecastOut`: `period{start,end,period_id,days_in_period,days_elapsed}`, `category|null`, `spent_to_date, predicted_total, interval_low, interval_high, predicted_remaining, expected_recurring_remaining, baseline_prediction` (strings), `method, history_level, model_version` (config version until a model exists), `generated_at`, `budget{limit_amount, predicted_over_budget, exceed_band}|null`, `estimated_period_end_balance|null` (overall only), `daily_curve[{date,p10,p50,p90}]` (cumulative period total per remaining day).
 - `BudgetOut.projected` is `on_track` | `may_exceed` | `null` (FR-05.07). Thresholds and the interval heuristic: `config/forecast.yaml`, `docs/DECISIONS.md` (T-24).
+
+### Addendum T-25: training pipeline and registry contract
+
+- `make train MODEL=transaction-classifier DATASET=synthetic/v1` runs `pipelines.train_flow.run_training` (Prefect tasks when `PREFECT_API_URL` is set, otherwise inline). Only the classifier is supported; other model names fail with `MODEL_UNSUPPORTED` until their training tasks exist.
+- Dataset layout by convention: `data/<version>/` (manifest, parquet), `data/splits/<version>/assignments.parquet`, `data_splits/<version>/splits.json`.
+- `metadata.json` (11.6) adds `mlflow_version`, `semantic_version`, `seed`, `metrics`, `gates` (name, status `pass|fail|skipped`, detail), `runtime`; `priors` stays `null` for the classifier. The ML service ignores the new keys.
+- MLflow: experiment `classifier`, run tags `dirty`, `gate` (`passed|failed`), `pipeline`; model version tag `gate`; only alias `candidate` is set by the pipeline.
+- Thresholds that belong to the pipeline are in `config/train/classifier.yaml` (`pipeline`, `gates`).

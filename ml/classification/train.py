@@ -333,6 +333,102 @@ def _log_mlflow(
                 report["mlflow"] = {"run_id": run.info.run_id, "version": str(version.version)}
 
 
+def fit_candidates(
+    cfg: dict[str, Any], frames: dict[str, pd.DataFrame], names: list[str]
+) -> dict[str, dict[str, Any]]:
+    """Fit and evaluate every candidate (PRD 16.1 step 5-7); shared by ``make train-local``/flow."""
+    seed = int(cfg["seed"])
+    train_cap = cap_per_class(frames["train"], int(cfg["sampling"]["max_rows_per_class"]), seed)
+    print(f"train cap: {len(train_cap)} rows", flush=True)
+    main_transformer = build_transformer(cfg)
+    X_train = main_transformer.fit_transform(train_cap).tocsr()
+    print(f"features: {X_train.shape}", flush=True)
+    results: dict[str, dict[str, Any]] = {}
+    for name in names:
+        print(f"training {name} ...", flush=True)
+        results[name] = _train_one(name, cfg, frames, train_cap, main_transformer, X_train)
+        r = results[name]
+        print(
+            f"  {name}: val macro F1 {r['validation']['macro_f1']:.4f}, "
+            f"test {r['test']['macro_f1']:.4f}, "
+            f"unseen {r['test_unseen_merchant']['macro_f1']:.4f}, "
+            f"fit {r['fit_seconds']:.0f}s",
+            flush=True,
+        )
+    return results
+
+
+def write_run_dir(
+    cfg: dict[str, Any],
+    frames: dict[str, pd.DataFrame],
+    results: dict[str, dict[str, Any]],
+    out: Path,
+    git_commit: str | None = None,
+    root: Path = ROOT,
+) -> tuple[dict[str, Any], Path]:
+    """Write model.joblib, evaluation files and metadata.json for the winner; return the report."""
+    ds = cfg["dataset"]
+    selection = select_winner(results, cfg)
+    winner = selection["winner"]
+    split_info = json.loads(
+        (root / "data_splits" / ds["dataset_version"] / "splits.json").read_text()
+    )
+    manifest = json.loads((root / ds["data_dir"] / "manifest.json").read_text())
+    run_id = time.strftime("%Y%m%d-%H%M%S")
+    model_dir = out / run_id
+    suffix = 1
+    while model_dir.exists():  # two runs inside one second must not share a directory
+        suffix += 1
+        model_dir = out / f"{run_id}-{suffix}"
+    model_dir.mkdir(parents=True)
+
+    art = results[winner]["_artifacts"]
+    joblib.dump(
+        {**art, "labels": LABELS, "feature_version": FEATURE_VERSION}, model_dir / "model.joblib"
+    )
+    report: dict[str, Any] = {
+        "run_id": model_dir.name,
+        "git_commit": git_commit or _git("rev-parse", "--short", "HEAD"),
+        "feature_version": FEATURE_VERSION,
+        "taxonomy_version": TAXONOMY_VERSION,
+        "dataset": {
+            "version": ds["dataset_version"],
+            "split_hash": split_info["hashes"]["split_hash"],
+            "transactions_sha256": manifest["files_sha256"]["transactions.parquet"],
+        },
+        "config": cfg,
+        "selection": selection,
+        "models": {
+            n: {k: v for k, v in r.items() if not k.startswith("_")} for n, r in results.items()
+        },
+    }
+    evaluation = model_dir / "evaluation"
+    evaluation.mkdir()
+    (evaluation / "report.json").write_text(
+        json.dumps(report, indent=2, default=float), encoding="utf-8"
+    )
+    _write_markdown(report, evaluation / "report.md")
+    _plots(results, winner, evaluation / "plots")
+    thresholds = compute_report(art, frames, cfg["thresholds"])
+    (evaluation / "thresholds.json").write_text(
+        json.dumps(thresholds, indent=2, default=float), encoding="utf-8"
+    )
+    metadata = {
+        "model_name": MODEL_NAME,
+        "model_type": winner,
+        "feature_version": FEATURE_VERSION,
+        "taxonomy_version": TAXONOMY_VERSION,
+        "trained_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
+        "git_commit": report["git_commit"],
+        "dataset": {"name": "synthetic", **report["dataset"]},
+        "decision_thresholds": thresholds["decision_thresholds"],
+        "labels": LABELS,
+        "artifact_sha256": {"model.joblib": _sha256(model_dir / "model.joblib")},
+    }
+    (model_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    return report, model_dir
+
+
 def run(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="ml.classification.train")
     parser.add_argument("--config", type=Path, default=None)
@@ -356,86 +452,15 @@ def run(argv: list[str] | None = None) -> int:
     cfg = load_train_config(args.config)
     if args.max_rows_per_class is not None:
         cfg["sampling"]["max_rows_per_class"] = args.max_rows_per_class
-    seed = int(cfg["seed"])
     ds = cfg["dataset"]
     print("loading splits ...", flush=True)
     frames = load_split_frames(ROOT / ds["data_dir"], ROOT / ds["assignments"])
     for split, frame in frames.items():
         print(f"  {split}: {len(frame)} rows", flush=True)
-    train_cap = cap_per_class(frames["train"], int(cfg["sampling"]["max_rows_per_class"]), seed)
-    print(f"train cap: {len(train_cap)} rows", flush=True)
-
-    main_transformer = build_transformer(cfg)
-    X_train = main_transformer.fit_transform(train_cap).tocsr()
-    print(f"features: {X_train.shape}", flush=True)
-
-    results: dict[str, dict[str, Any]] = {}
-    for name in args.models:
-        print(f"training {name} ...", flush=True)
-        results[name] = _train_one(name, cfg, frames, train_cap, main_transformer, X_train)
-        r = results[name]
-        print(
-            f"  {name}: val macro F1 {r['validation']['macro_f1']:.4f}, "
-            f"test {r['test']['macro_f1']:.4f}, "
-            f"unseen {r['test_unseen_merchant']['macro_f1']:.4f}, "
-            f"fit {r['fit_seconds']:.0f}s",
-            flush=True,
-        )
-
-    selection = select_winner(results, cfg)
-    winner = selection["winner"]
-    split_info = json.loads(
-        (ROOT / "data_splits" / ds["dataset_version"] / "splits.json").read_text()
-    )
-    manifest = json.loads((ROOT / ds["data_dir"] / "manifest.json").read_text())
-    run_id = time.strftime("%Y%m%d-%H%M%S")
-    model_dir = args.out / run_id
-    model_dir.mkdir(parents=True, exist_ok=True)
-
-    art = results[winner]["_artifacts"]
-    joblib.dump(
-        {**art, "labels": LABELS, "feature_version": FEATURE_VERSION}, model_dir / "model.joblib"
-    )
-    report: dict[str, Any] = {
-        "run_id": run_id,
-        "git_commit": _git("rev-parse", "--short", "HEAD"),
-        "feature_version": FEATURE_VERSION,
-        "taxonomy_version": TAXONOMY_VERSION,
-        "dataset": {
-            "version": ds["dataset_version"],
-            "split_hash": split_info["hashes"]["split_hash"],
-            "transactions_sha256": manifest["files_sha256"]["transactions.parquet"],
-        },
-        "config": cfg,
-        "selection": selection,
-        "models": {
-            n: {k: v for k, v in r.items() if not k.startswith("_")} for n, r in results.items()
-        },
-    }
+    results = fit_candidates(cfg, frames, args.models)
+    report, model_dir = write_run_dir(cfg, frames, results, args.out)
     evaluation = model_dir / "evaluation"
-    evaluation.mkdir(exist_ok=True)
-    (evaluation / "report.json").write_text(
-        json.dumps(report, indent=2, default=float), encoding="utf-8"
-    )
-    _write_markdown(report, evaluation / "report.md")
-    _plots(results, winner, evaluation / "plots")
-    thresholds = compute_report(art, frames, cfg["thresholds"])
-    (evaluation / "thresholds.json").write_text(
-        json.dumps(thresholds, indent=2, default=float), encoding="utf-8"
-    )
-    metadata = {
-        "model_name": MODEL_NAME,
-        "model_type": winner,
-        "feature_version": FEATURE_VERSION,
-        "taxonomy_version": TAXONOMY_VERSION,
-        "trained_at": time.strftime("%Y-%m-%dT%H:%M:%SZ", time.gmtime()),
-        "git_commit": report["git_commit"],
-        "dataset": {"name": "synthetic", **report["dataset"]},
-        "decision_thresholds": thresholds["decision_thresholds"],
-        "labels": LABELS,
-        "artifact_sha256": {"model.joblib": _sha256(model_dir / "model.joblib")},
-    }
-    (model_dir / "metadata.json").write_text(json.dumps(metadata, indent=2), encoding="utf-8")
+    winner = report["selection"]["winner"]
     if not args.no_mlflow:
         _log_mlflow(report, results, model_dir, cfg)
         (evaluation / "report.json").write_text(

@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-25 (Prefect training flow, MLflow registry); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-26 (offline gates, behavioural tests, latency benchmark); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-21 — T-25 Prefect training flow, MLflow registry, model card
+- Done: `pipelines/{data_steps,gates,registry,model_card,train_flow,__main__}.py`; `make train MODEL=transaction-classifier DATASET=synthetic/v1` (`PYTHONHASHSEED=0`); `make prefect-server`. Steps: manifest hash check, Pandera on every row (quarantine file with ids only, stop above 1%), locked split hash check, batch-vs-online feature parity sample, candidates + calibration + thresholds + evaluation (`ml.classification.train.fit_candidates` / `write_run_dir`, shared with `make train-local`), gates, MLflow parent run with a child per candidate, `candidate` alias, generated `model_card.md`, `summary.md` (also appended to `$GITHUB_STEP_SUMMARY`). Config: `pipeline` and `gates` sections in `config/train/classifier.yaml`.
+- Verified: 27 tests in `pipelines/tests` (tiny generated dataset with locked splits: clean run registers v1 with complete metadata and alias, parent/child runs, dirty tree never registers, ECE gate blocks, second run moves `candidate`, every data-step failure, gate rules, model card text); `make check` green (511 non-integration tests, 503 backend tests, backend coverage 98.87%, 90 Vitest). The Prefect wrapper was run once against a real Prefect server (tiny dataset, registered v1). Smoke run on the real synthetic v1 (`--models logreg --max-rows-per-class 2000`, dirty tree, scratch MLflow store): 2,171,358 rows validated with 0 quarantined, splits and parity passed, test macro F1 0.9702, ECE 0.0010 (capped training sample, not the T-09 result), gate failed only on `reproducibility` as designed.
+- Gotchas: (1) Prefect 3.8.8's server cannot start inside this workspace (FastAPI 0.165 removed `min_items`); the flow runs inline by default and as Prefect tasks when `PREFECT_API_URL` points to `make prefect-server` (isolated `uvx` environment). (2) A dirty working tree (even untracked files) makes the run `gate=failed`/`dirty=true` and it is not registered: commit first, then `make train`. (3) Full run on v1 validates 2.1M rows and trains three candidates: allow ~25 minutes and 3+ GB RAM. (4) `semantic_version` is `0.<registry version>.0`.
+- Not done / for later: slices, behavioural tests, latency benchmark and beats-production gates (T-26; listed as `skipped` in metadata), promote/rollback and `production`/`previous` aliases (T-27), reproducibility CI job (T-28), curated-label merge (needs feedback data), other models (T-38, T-41), a full `make train` registration of v1 (needs a clean tree).
+- Next: T-26.
 
 ### 2026-11-21 — T-24 Forecast run-rate + decomposition + API/UI
 - Done: `ml/forecasting` (run-rate, seasonal naive, interval heuristic, exceed band, daily P10/P50/P90 curve), `config/forecast.yaml`; backend `ForecastRepository`/`ForecastService` (compute, store in `forecasts`, lazy 6 h cache rule, prune to 30, `refresh_all()` for the daily batch), `GET /intelligence/forecast` (overall or `category`), `BudgetOut.projected` (FR-05.07), estimated period-end balance; frontend Forecast tab on `/intelligence` (estimate label, range, band in words, chart + table, "How is this calculated?") and a dashboard estimate card.
@@ -218,7 +225,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 6 — MLOps core (= Cut line A)
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-25 | Prefect training flow; MLflow registry, aliases, metadata.json, model card generation | T-09 | todo | |
+| T-25 | Prefect training flow; MLflow registry, aliases, metadata.json, model card generation | T-09 | done | 2026-11-21 |
 | T-26 | Offline gates + behavioural tests + latency benchmark | T-25 | todo | |
 | T-27 | `make promote` / `make rollback`; ML service alias polling hot-swap | T-25, T-17 | todo | |
 | T-28 | Reproducibility CI job | T-25 | todo | |
