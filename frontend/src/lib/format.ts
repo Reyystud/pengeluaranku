@@ -44,3 +44,18 @@ export function toApiDate(date: string, time: string, timeZone: string = DEFAULT
   if (!time) return date;
   return `${date}T${time}:00${zoneOffset(date, timeZone)}`;
 }
+
+/** "85.2" -> "85.2%". Percentages come from the API as strings with one decimal. */
+export function formatPercent(value: string | null | undefined): string {
+  return value === null || value === undefined ? "—" : `${value}%`;
+}
+
+/** "2026-11-05" -> "05 Nov" (no time zone maths: it is already a local calendar date). */
+export function formatDay(date: string): string {
+  const [y, m, d] = date.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-GB", {
+    day: "2-digit",
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y ?? 1970, (m ?? 1) - 1, d ?? 1)));
+}

@@ -31,3 +31,16 @@ export const PAYMENT_METHODS = [
   "other",
 ] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export type Summary = S["SummaryOut"];
+export type CategorySplit = S["CategoriesOut"];
+export type Trends = S["TrendsOut"];
+export type TrendPoint = S["TrendPoint"];
+export type Merchants = S["MerchantsOut"];
+export type Budget = S["BudgetOut"];
+export type BudgetList = S["BudgetList"];
+export type BudgetHistory = S["BudgetHistory"];
+export type BudgetStatus = Budget["status"];
+export type AppNotification = S["NotificationOut"];
+export type NotificationPage = S["NotificationPage"];
+export type RangeName = "current_period" | "previous_period" | "last_3_periods";

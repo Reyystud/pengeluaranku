@@ -126,9 +126,9 @@ def test_17_1_every_route_with_an_id_is_covered_by_this_suite(client: TestClient
     ops = discover(client)
     assert ops, "no routes with path parameters were discovered"
     uncovered = {(m, p, x) for m, p, params in ops for x in params if x not in RESOURCES}
-    assert (
-        not uncovered
-    ), f"add a victim resource factory (RESOURCES) and a body (BODIES) for: {sorted(uncovered)}"
+    assert not uncovered, (
+        f"add a victim resource factory (RESOURCES) and a body (BODIES) for: {sorted(uncovered)}"
+    )
     # Anything with an {id}-like parameter must be a known resource, never a free-form string.
     seen = {x for _, _, params in ops for x in params}
     assert {"transaction_id", "import_id", "rule_id", "budget_id", "notification_id"} <= seen

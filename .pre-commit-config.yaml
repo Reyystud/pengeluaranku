@@ -9,7 +9,7 @@ repos:
       - id: check-added-large-files
         args: ["--maxkb=500"]
   - repo: https://github.com/astral-sh/ruff-pre-commit
-    rev: v0.8.6
+    rev: v0.17.6  # keep equal to the ruff version in uv.lock (CI formats with that one)
     hooks:
       - id: ruff
         args: ["--fix"]

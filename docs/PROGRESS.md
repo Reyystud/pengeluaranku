@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-22 (dashboard + budgets pages; the notification bell goes there too); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-23 (anomaly detection); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,14 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-21 — T-22 Dashboard, budgets and notifications pages
+- Done: `/dashboard` (balance, income, expenses, net with change vs. the comparison window, savings rate, review-queue banner, budget progress, category donut, daily trend with cumulative line and budget pace, period comparison table, top merchants, period selector for this/last/last 3 periods, onboarding card for an empty ledger), `/budgets` (cards with status badge, utilization bar, remaining/over, thresholds, history of closed periods, add/edit drawer, two-step delete, warning when category limits exceed the overall limit), `/notifications` (list, unread filter, mark one/all as read, load more) and a bell with the unread count in the app shell that polls every 60 s only while the tab is visible (FR-14.04). Files: `frontend/src/features/{dashboard,budgets,notifications}/*`, `components/ui/{budget-status,chart-frame}.tsx`, `messages/en.json`, `AppShell.tsx`. Transaction writes now also refresh analytics, budgets and notifications queries.
+- Accessibility (PRD 8.2): status is icon + words, every chart has a visible text summary and a data-table toggle, the donut has a legend with amounts and shares, progress bars expose `aria-valuetext`, the bell's accessible name carries the unread count.
+- Verified: `pnpm lint`, `typecheck`, `build`; 70 Vitest tests (28 new: status and thresholds parsing, create/edit/delete/409, history, ranges, empty/error states with `request_id`, polling at 60 s with fake timers, mark read/all). A live contract test (`LIVE_API_URL=http://127.0.0.1:8000 pnpm test src/api/live.test.ts`) ran against the real backend: budget -> transaction -> `warning` status -> 80% notification -> read-all. Not checked in a real browser (no browser available in this session): look at the layout at 360 px and in dark mode before merging.
+- Decisions: see `docs/DECISIONS.md` (T-22).
+- Not done / for later: insights and active alerts on the dashboard (T-23, T-31 produce them), custom date range picker and the payment-method split (the API has both), sample-data card (T-29), settings page (T-42), Playwright E2E.
+- Next: T-23.
 
 ### 2026-11-20 — T-21 Budgets and notifications
 - Done: `GET/POST /budgets`, `GET/PATCH/DELETE /budgets/{id}`, `GET /budgets/{id}/history`; `GET /notifications` (cursor, `unread_only`), `GET /notifications/unread-count`, `POST /notifications/{id}/read`, `POST /notifications/read-all`. Code: `app/api/{budgets,notifications}.py`, `app/services/budgets.py`, `app/repositories/{budgets,notifications}.py`, `app/schemas/budgets.py`; `TransactionService.check_budgets()` runs after create, update, delete, bulk delete/categorize, recategorize and CSV commit (FR-05.06). OpenAPI file and frontend types regenerated.
@@ -187,7 +195,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 |---|---|---|---|---|
 | T-20 | Analytics endpoints (SQL aggregations) + property tests vs raw SQL | T-14 | done | 2026-11-20 |
 | T-21 | Budgets + status + thresholds + notifications (FR-05, FR-14) | T-20 | done | 2026-11-20 |
-| T-22 | Dashboard + budgets pages | T-20, T-21 | todo | |
+| T-22 | Dashboard + budgets pages | T-20, T-21 | done | 2026-11-21 |
 | T-23 | Anomaly baseline + rules + in-memory event path + anomalies API/UI + feedback | T-18 | todo | |
 | T-24 | Forecast run-rate + decomposition + API/UI | T-20 | todo | |
 
