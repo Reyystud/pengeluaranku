@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-18 (backend ML client and categorization flow); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-19 (frontend scaffold); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,12 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-18 Backend ML client and categorization flow
+- Done: `app/clients/ml.py` (`MlClient`, `CircuitBreaker`), `app/services/categorization.py` (rule -> ML -> fallback, FR-03.10), `app/repositories/categorization.py`, `app/api/merchant_rules.py`. New endpoints: `POST /transactions/categorize-preview` (60/min), `/{id}/confirm-category`, `/{id}/recategorize`, `GET/PATCH/DELETE /merchant-rules`; `PATCH /transactions/{id}` gained `apply_to_past_merchant_transactions`. Create and CSV preview/commit write `category_predictions`; category changes write `category_feedback` and upsert merchant rules. CSV preview classifies in one batch call. Saving never fails because of the ML service (tested for timeout, 5xx, connect error, garbage body, open circuit).
+- Verified: unit tests for client/breaker/interpretation (22), integration tests for the flow (25, fake ML over `MockTransport`), BOLA suite extended to `merchant-rules`; contract test against the real ML service schemas. Backend coverage ~98.7%. Decisions in `docs/DECISIONS.md`, PRD addendum at the end of `docs/PRD.md`.
+- Not done: `/internal/jobs/recategorize-needs-review` (T-37), Google ID-token auth to the ML service, anomaly/forecast calls (T-23+).
+- Next: T-19 (frontend scaffold: auth, layout, API client, transactions page, review queue, CSV import UI).
 
 ### 2026-11-20 — T-17 ML inference service
 - Done: `services/ml_service/ml_service/` (`config`, `errors`, `schemas`, `inference`, `main`, `__main__`, `api/{classify,models,health}`, `loading/{artifact,sources,registry}`, `metrics`). `POST /v1/classify`, `POST /v1/classify/batch` (≤ 500), `GET /v1/models`, `/healthz`, `/readyz`, `/metrics`. Model sources: `local_dir` and MLflow alias. Hash verification before unpickling, thresholds only from `metadata.json`. `make ml-api` runs it on :8080.
@@ -151,7 +157,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
 | T-17 | ML service: model loading, `/v1/classify`, batch, probes, metrics, hash verification | T-09 | done | `services/ml_service/ml_service/`, 66 tests, `make ml-api` |
-| T-18 | Backend ML client (timeout, circuit breaker, fallback), categorization flow, merchant rules, feedback, categorize-preview | T-14, T-17 | todo | |
+| T-18 | Backend ML client (timeout, circuit breaker, fallback), categorization flow, merchant rules, feedback, categorize-preview | T-14, T-17 | done | 2026-11-20 |
 | T-19 | Frontend scaffold: auth, layout, API client, transactions page, review queue, CSV import UI | T-13, T-18 | todo | |
 
 ### Week 5 — Budgets, analytics, intelligence baselines

@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from typing import Annotated, Literal
+from typing import Annotated, Any, Literal
 
 from pydantic import BaseModel, Field
 
@@ -36,10 +36,17 @@ class RowValues(BaseModel):
 
 
 class RowPrediction(BaseModel):
-    category: str
+    category: str  # what is stored (uncategorized when the row needs review)
+    predicted_category: str | None = None  # the top pick, for quick picks
     decision: str
-    source: str
+    source: str  # rule | model | fallback
     confidence: float | None = None
+    alternatives: list[dict[str, Any]] = []
+    model_version: str | None = None
+    feature_version: str | None = None
+    latency_ms: float | None = None
+    ml_error: str | None = None
+    rule_id: uuid.UUID | None = None
 
 
 class StagedRow(BaseModel):

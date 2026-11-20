@@ -1699,10 +1699,10 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 | POST | `/transactions/{id}/dismiss-duplicate` | "Not a duplicate" (FR-02.15): clears `possible_duplicate_of`, sets `duplicate_dismissed`; 200 transaction |
 | POST | `/transactions/bulk-delete` | `{ids: [...] }` ≤ 200; atomic (any unknown id → 404, nothing deleted); 200 `{deleted: n}` |
 | POST | `/transactions/bulk-categorize` | `{ids: [...], category: "<slug>"}` ≤ 200; atomic; 200 `{updated: n}` |
-| POST | `/transactions/{id}/confirm-category` | Confirms suggestion → `user_confirmed` |
-| POST | `/transactions/{id}/recategorize` | `{force?: bool}` (FR-03.09) |
+| POST | `/transactions/{id}/confirm-category` | Confirms suggestion → `user_confirmed`; 409 `NOT_A_SUGGESTION` otherwise |
+| POST | `/transactions/{id}/recategorize` | `{force?: bool}` (FR-03.09); body optional; 200 with the `categorization` block, same shape as create |
 | POST | `/transactions/{id}/not-duplicate` | FR-02.15 |
-| POST | `/transactions/categorize-preview` | `{description, merchant?, amount?, payment_method?, transaction_type, transaction_date?}` → prediction, nothing stored |
+| POST | `/transactions/categorize-preview` | `{description, merchant?, amount?, payment_method?, transaction_type, transaction_date?}` → `{category, category_status, categorization}`, nothing stored or counted (rules' `times_applied` too); amount defaults to `PREVIEW_DEFAULT_AMOUNT` |
 | GET | `/transactions/imports/template.csv` | Template with header and 3 example rows dated in the last days, so it imports as is |
 | POST | `/transactions/imports` | multipart `file` → 201 preview `{import_id, status, filename, summary{row_count, valid, invalid, duplicate}, rows[], next_cursor, warnings[{code, message, columns?}], expires_at}`. A row is `{row_number, status, values, prediction, errors[], duplicate_of, duplicate_of_row}` (`values` null when invalid; `duplicate_of` an existing transaction, `duplicate_of_row` an earlier row of the file). The first 500 rows are inline; the rest via `GET /transactions/imports/{id}?cursor=`. Warnings: `UNKNOWN_COLUMNS`, `FILE_ALREADY_IMPORTED`. File errors: 413 `FILE_TOO_LARGE`; 422 `INVALID_ENCODING`, `EMPTY_FILE`, `MISSING_COLUMNS`, `TOO_MANY_ROWS`, `INVALID_CSV` |
 | GET | `/transactions/imports/{id}?cursor=&limit=` | Preview/status; rows paginated by row number (max 500). After commit `rows` is empty and the counts remain |
@@ -1749,7 +1749,7 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 | Method | Path |
 |---|---|
 | GET | `/merchant-rules` |
-| PATCH | `/merchant-rules/{id}` `{category}` |
+| PATCH | `/merchant-rules/{id}` `{category}` (past transactions unchanged; `uncategorized` refused) |
 | DELETE | `/merchant-rules/{id}` |
 | GET | `/notifications` (pagination, `unread_only`) |
 | GET | `/notifications/unread-count` |
@@ -2783,3 +2783,9 @@ After the project is complete, add real results to this table.
 ---
 
 **End of document — Smart Expense Intelligence PRD v3.0**
+
+### Addendum T-18: categorization contract notes
+
+- `categorization` block (create, recategorize, preview): `{decision, source (user|rule|model|fallback), confidence, alternatives[{category, confidence}], model_version, predicted_category, ml_error}`. `predicted_category` is the model's pick even when the row stays `uncategorized`; `ml_error` is one of `timeout|unavailable|circuit_open|bad_response|rejected|disabled`.
+- `PATCH /transactions/{id}` accepts `apply_to_past_merchant_transactions` (only together with `category`) and returns `applied_to_past`. Only rows of the same merchant and compatible type with status `auto|suggested|needs_review|rule` change (status `rule`); user-chosen rows are never touched.
+- CSV preview rows carry a `prediction` object (`predicted_category`, `alternatives`, `model_version`, `ml_error`, `rule_id`...); commit writes the `category_predictions` rows and counts rule use.

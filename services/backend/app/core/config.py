@@ -26,6 +26,16 @@ class Settings(BaseSettings):
     access_token_ttl_s: int = 900
     refresh_token_ttl_s: int = 2_592_000
     cookie_secure: bool = True
+    # ML service (PRD 6.3, 6.4). An empty URL disables the client: every categorization then falls
+    # back to needs_review without a network call.
+    ml_service_url: str = ""
+    ml_timeout_ms: int = 300
+    ml_batch_timeout_ms: int = 3000
+    ml_auth: Literal["none"] = "none"
+    ml_circuit_failures: int = 5
+    ml_circuit_open_s: float = 30.0
+    # Used by categorize-preview when the draft has no amount yet (the model needs one).
+    preview_default_amount: int = 25_000
 
     @field_validator("jwt_secret")
     @classmethod

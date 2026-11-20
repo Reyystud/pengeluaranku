@@ -26,7 +26,7 @@ from app.core.cursor import Cursor, decode_cursor, encode_cursor
 from app.core.errors import ProblemError, not_found, validation_problem
 from app.core.text import clean_text, mask_long_numbers
 from app.events.outbox import enqueue
-from app.models import Transaction, TransactionImport, User
+from app.models import CategoryPrediction, Transaction, TransactionImport, User
 from app.models.base import utcnow
 from app.repositories import TransactionImportRepository, TransactionRepository
 from app.schemas.imports import (
@@ -41,8 +41,10 @@ from app.schemas.imports import (
     StagedRow,
 )
 from app.schemas.transactions import normalize_payment_method
-from app.services.transactions import Categorizer, TransactionService
+from app.services.categorization import CategorizeInput, Categorizer
+from app.services.transactions import TransactionService
 from ml.preprocessing import resolve_merchant
+from ml.taxonomy import UNCATEGORIZED
 
 MAX_FILE_BYTES = 5 * 1024 * 1024
 MAX_ROWS = 5000
@@ -90,6 +92,7 @@ class ImportService:
         self.user = user
         self.request_id = request_id
         self.tx = TransactionService(session, settings, user, request_id, categorizer)
+        self._inputs: dict[int, CategorizeInput] = {}
         self.repo = TransactionImportRepository(session)
         self.transactions = TransactionRepository(session)
 
@@ -104,9 +107,11 @@ class ImportService:
         sha = hashlib.sha256(raw).hexdigest()
 
         staged: list[StagedRow] = []
+        self._inputs = {}
         for number, cells in table.rows:
             staged.append(self._stage_row(number, cells))
         self._mark_duplicates(staged)
+        self._categorize(staged)
 
         warnings = self._warnings(table, sha)
         now = utcnow()
@@ -219,23 +224,18 @@ class ImportService:
         merchant, merchant_key = resolve_merchant(merchant_in, description)
 
         if category is not None:
-            slug, status, prediction = category.slug, "user_set", None
-        else:
-            result = self.tx.categorizer.categorize(
-                self.user,
+            slug, status = category.slug, "user_set"
+        else:  # categorized in one batch after the whole file is staged (see _categorize)
+            slug, status = UNCATEGORIZED, "needs_review"
+            self._inputs[number] = CategorizeInput(
                 transaction_type=tx_type,
                 description=description,
                 merchant=merchant,
                 merchant_key=merchant_key,
                 amount=amount,
+                payment_method=method,
                 occurred_at=occurred_at,
-            )
-            slug, status = result.category.slug, result.status
-            prediction = RowPrediction(
-                category=slug,
-                decision=result.decision,
-                source=result.source,
-                confidence=result.confidence,
+                has_time=has_time,
             )
         local = occurred_at.astimezone(self.tx.tz)
         values = RowValues(
@@ -251,7 +251,33 @@ class ImportService:
             category_status=status,
             notes=notes,
         )
-        return StagedRow(row_number=number, status="valid", values=values, prediction=prediction)
+        return StagedRow(row_number=number, status="valid", values=values)
+
+    def _categorize(self, rows: list[StagedRow]) -> None:
+        """Rules first, then one batch call to the ML service (PRD 6.3). Never fails the preview."""
+        targets = [r for r in rows if r.values is not None and r.row_number in self._inputs]
+        if not targets:
+            return
+        results = self.tx.categorizer.categorize_many(
+            self.user, [self._inputs[r.row_number] for r in targets], self.request_id
+        )
+        for row, result in zip(targets, results, strict=True):
+            assert row.values is not None
+            row.values.category = result.category.slug
+            row.values.category_status = result.status
+            row.prediction = RowPrediction(
+                category=result.category.slug,
+                predicted_category=result.predicted.slug if result.predicted else None,
+                decision=result.decision,
+                source=result.source,
+                confidence=result.confidence,
+                alternatives=list(result.alternatives),
+                model_version=result.model_version,
+                feature_version=result.feature_version,
+                latency_ms=result.latency_ms,
+                ml_error=result.ml_error,
+                rule_id=result.rule_id,
+            )
 
     def _mark_duplicates(self, rows: list[StagedRow]) -> None:
         """FR-02.14: against existing transactions (one query) and earlier rows of the file."""
@@ -386,6 +412,7 @@ class ImportService:
             pending.append((row, self._build(row, overrides.get(row.row_number), imp.id)))
 
         self.transactions.add_many(self.user.id, [t for _, t in pending])
+        self._record_predictions(pending)
         for row, tx in pending:
             if row.status == "duplicate":  # inserted on request: keep the flag (FR-02.14)
                 duplicate = self.tx.find_duplicate_of(tx)
@@ -411,6 +438,37 @@ class ImportService:
             skipped_invalid=imp.invalid_count if body.mode == "skip_invalid" else 0,
             skipped_duplicates=skipped_duplicates,
         )
+
+    def _record_predictions(self, pending: list[tuple[StagedRow, Transaction]]) -> None:
+        """FR-03.03: one ``category_predictions`` row per categorized row, even if overridden."""
+        rows: list[CategoryPrediction] = []
+        applied: dict[uuid.UUID, int] = {}
+        for row, tx in pending:
+            p = row.prediction
+            if p is None:
+                continue
+            top = self.tx.by_slug.get(p.predicted_category or p.category)
+            confidence = None if p.confidence is None else Decimal(f"{p.confidence:.4f}")
+            rows.append(
+                CategoryPrediction(
+                    transaction_id=tx.id,
+                    source={"rule": "user_rule", "model": "model"}.get(p.source, "fallback"),
+                    predicted_category_id=(top or self.tx.by_slug[p.category]).id,
+                    confidence=confidence,
+                    decision=p.decision,
+                    alternatives=list(p.alternatives),
+                    model_version=p.model_version,
+                    feature_version=p.feature_version,
+                    latency_ms=None if p.latency_ms is None else round(p.latency_ms),
+                    ml_error=p.ml_error,
+                    request_id=self.request_id or uuid.uuid4().hex,
+                )
+            )
+            if p.rule_id:
+                applied[p.rule_id] = applied.get(p.rule_id, 0) + 1
+        self.tx.predictions.add_many(self.user.id, rows)
+        for rule_id, times in applied.items():
+            self.tx.rules.mark_applied(self.user.id, [rule_id], times)
 
     def _overrides(self, body: CommitRequest, rows: dict[int, StagedRow]) -> dict[int, Any]:
         out: dict[int, Any] = {}
