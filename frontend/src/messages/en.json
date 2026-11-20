@@ -258,5 +258,56 @@
     "all": "All",
     "open": "Open",
     "viewAll": "View all notifications"
+  },
+  "intel": {
+    "title": "Intelligence",
+    "alertsTab": "Alerts",
+    "alertsIntro": "Spending that looks unusual compared with your own history. Tell us if it is normal and the next alerts get better.",
+    "filterStatus": "Status",
+    "filterSeverity": "Severity",
+    "filterType": "Type",
+    "all": "All",
+    "empty": "No unusual spending found. We keep watching as you add transactions.",
+    "emptyFiltered": "Nothing matches these filters.",
+    "status": {
+      "open": "Open",
+      "confirmed": "Confirmed",
+      "dismissed": "Dismissed",
+      "historical": "Earlier",
+      "superseded": "Replaced"
+    },
+    "severity": {
+      "low": "Low",
+      "medium": "Medium",
+      "high": "High"
+    },
+    "type": {
+      "amount_spike": "Unusually large",
+      "frequency_burst": "Many purchases",
+      "new_merchant_high_value": "New merchant, high amount",
+      "category_surge": "Category surge",
+      "amount_low": "Unusually small"
+    },
+    "alertBadge": "Alert",
+    "limitedBadge": "Limited history",
+    "why": "Why we flagged this",
+    "confirm": "Yes, unusual",
+    "dismiss": "This is normal",
+    "dismissWhy": "Why is it normal?",
+    "reason": {
+      "expected_purchase": "I expected this purchase",
+      "wrong_amount": "The amount is wrong",
+      "not_mine": "Not my transaction",
+      "other": "Other"
+    },
+    "reasonHint": "Expected purchases stop alerts for this merchant for 90 days.",
+    "send": "Save",
+    "saved": "Thanks, saved.",
+    "feedbackGiven": "You marked this as {status}.",
+    "surgeNoTx": "Category spending over the last 7 days",
+    "dashTitle": "Unusual spending",
+    "dashEmpty": "No active alerts.",
+    "dashAll": "View all",
+    "txLabel": "Transaction"
   }
 }

@@ -1,0 +1,59 @@
+source:
+  dataset: synthetic
+  seed: 42
+  generator_version: 1.1.0
+  split_hash: cc7b019c3718c3b21f7756892314356fb0ae15eb603dc6b3c16046a19e8b1b3d
+  split: anomaly train, normal expense rows
+categories:
+  education:
+    median: 11.042938
+    mad: 0.565622
+    n: 8297
+  entertainment:
+    median: 10.448744
+    mad: 0.510814
+    n: 179498
+  fees_charges:
+    median: 8.517393
+    mad: 0.356589
+    n: 16307
+  food_beverage:
+    median: 9.64866
+    mad: 0.497813
+    n: 469025
+  gifts_donations:
+    median: 10.809748
+    mad: 0.569753
+    n: 27364
+  groceries:
+    median: 10.325515
+    mad: 0.514086
+    n: 119938
+  health:
+    median: 11.258046
+    mad: 0.612597
+    n: 36760
+  housing:
+    median: 13.910822
+    mad: 0.20067
+    n: 8443
+  other_expense:
+    median: 10.16589
+    mad: 0.583917
+    n: 116574
+  personal_care:
+    median: 10.463132
+    mad: 0.487277
+    n: 76778
+  shopping:
+    median: 11.302217
+    mad: 0.693135
+    n: 126083
+  transportation:
+    median: 9.392745
+    mad: 0.510792
+    n: 182645
+  utilities:
+    median: 10.959558
+    mad: 0.52806
+    n: 77592

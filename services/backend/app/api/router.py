@@ -4,6 +4,7 @@ from fastapi import APIRouter
 
 from app.api import (
     analytics,
+    anomalies,
     auth,
     budgets,
     categories,
@@ -24,3 +25,4 @@ api_router.include_router(merchant_rules.router)
 api_router.include_router(analytics.router)
 api_router.include_router(budgets.router)
 api_router.include_router(notifications.router)
+api_router.include_router(anomalies.router)

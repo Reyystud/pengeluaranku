@@ -4,6 +4,8 @@
 import { afterAll, beforeAll, describe, expect, it, vi } from "vitest";
 import { setToken } from "@/auth/token";
 import type {
+  Anomaly,
+  AnomalyPage,
   AuthResponse,
   Budget,
   BudgetList,
@@ -124,5 +126,41 @@ describe.skipIf(!base)("live API contract", { timeout: LIVE_TIMEOUT_MS }, () => 
     expect(notes.items[0]?.type).toBe("budget_threshold");
     await api.post("/notifications/read-all");
     expect((await api.get<{ count: number }>("/notifications/unread-count")).count).toBe(0);
+  });
+
+  it("a first, very large expense is scored and the feedback round-trips", async () => {
+    const auth = await api.post<AuthResponse>(
+      "/auth/register",
+      {
+        email: `live-${crypto.randomUUID().slice(0, 8)}@example.com`,
+        password: `Pw-${crypto.randomUUID()}`,
+        display_name: "Live",
+      },
+      { anonymous: true },
+    );
+    setToken(auth.access_token);
+    await api.post(
+      "/transactions",
+      {
+        transaction_type: "expense",
+        amount: "5000000",
+        description: "Resto Mewah",
+        category: "food_beverage",
+        transaction_date: new Date().toISOString(),
+        payment_method: "cash",
+      },
+      { headers: { "Idempotency-Key": crypto.randomUUID() } },
+    );
+    const page = await api.get<AnomalyPage>("/intelligence/anomalies");
+    const spike = page.items.find((a) => a.anomaly_type === "amount_spike");
+    expect(spike?.history_level).toBe("limited"); // a brand-new account: category prior only
+    expect(spike?.reasons.at(-1)?.code).toBe("LIMITED_HISTORY");
+    expect(spike?.transaction?.amount).toBe("5000000.00");
+    const done = await api.post<Anomaly>(`/intelligence/anomalies/${spike?.id}/feedback`, {
+      action: "dismiss",
+      reason: "expected_purchase",
+    });
+    expect(done.status).toBe("dismissed");
+    expect(done.feedback_reason).toBe("expected_purchase");
   });
 });

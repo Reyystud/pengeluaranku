@@ -1,6 +1,14 @@
 "use client";
 
-import { Landmark, LayoutDashboard, LogOut, PiggyBank, Receipt, Settings } from "lucide-react";
+import {
+  Landmark,
+  LayoutDashboard,
+  LogOut,
+  PiggyBank,
+  Receipt,
+  Settings,
+  Sparkles,
+} from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect } from "react";
@@ -14,6 +22,7 @@ const NAV = [
   { href: "/dashboard", key: "nav.dashboard", Icon: LayoutDashboard },
   { href: "/transactions", key: "nav.transactions", Icon: Receipt },
   { href: "/budgets", key: "nav.budgets", Icon: PiggyBank },
+  { href: "/intelligence", key: "nav.intelligence", Icon: Sparkles },
   { href: "/settings", key: "nav.settings", Icon: Settings },
 ] as const;
 
@@ -69,7 +78,14 @@ export function AppShell({ children }: { children: React.ReactNode }) {
         </div>
       </aside>
       <div className="flex min-w-0 flex-col pb-16 md:pb-0">
-        <div className="flex justify-end px-4 pt-2 md:px-6">
+        <div className="flex items-center justify-end gap-1 px-4 pt-2 md:px-6">
+          <button
+            onClick={() => void logout()}
+            aria-label={t("nav.logout")}
+            className="inline-flex min-h-11 min-w-11 items-center justify-center rounded-md text-muted-foreground hover:bg-muted md:hidden"
+          >
+            <LogOut aria-hidden className="size-5" />
+          </button>
           <NotificationBell />
         </div>
         <main id="content" className="mx-auto w-full max-w-5xl flex-1 p-4 md:p-6">
@@ -94,13 +110,6 @@ export function AppShell({ children }: { children: React.ReactNode }) {
             {t(key)}
           </Link>
         ))}
-        <button
-          onClick={() => void logout()}
-          className="flex min-h-14 flex-col items-center justify-center gap-0.5 text-xs text-muted-foreground"
-        >
-          <LogOut aria-hidden className="size-5" />
-          {t("nav.logout")}
-        </button>
       </nav>
     </div>
   );

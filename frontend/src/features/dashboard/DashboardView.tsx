@@ -12,6 +12,8 @@ import { t } from "@/lib/i18n";
 import { formatIdr } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useBudgets } from "@/features/budgets/hooks";
+import { SeverityBadge } from "@/features/intelligence/AnomaliesView";
+import { useActiveAlerts } from "@/features/intelligence/hooks";
 import { CategoryDonut, TrendChart } from "./charts";
 import { useCategorySplit, useMerchants, useSummary, useTrend } from "./hooks";
 
@@ -28,6 +30,7 @@ export function DashboardView() {
   const trend = useTrend(range);
   const merchants = useMerchants(range);
   const budgets = useBudgets();
+  const alerts = useActiveAlerts();
 
   return (
     <div className="space-y-5">
@@ -72,6 +75,7 @@ export function DashboardView() {
       )}
 
       <BudgetProgress query={budgets} />
+      <AlertsCard query={alerts} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <Panel query={categories}>{(data) => <CategoryDonut data={data} />}</Panel>
@@ -322,4 +326,39 @@ function Panel<T>({
   if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
   if (query.isPending || query.data === undefined) return <Skeleton className="h-64" />;
   return <>{children(query.data)}</>;
+}
+
+function AlertsCard({ query }: { query: ReturnType<typeof useActiveAlerts> }) {
+  if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
+  if (query.isPending) return <Skeleton className="h-24" />;
+  const items = query.data.items;
+  return (
+    <section className="space-y-3 rounded-lg border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold">{t("intel.dashTitle")}</h2>
+        <Link href="/intelligence" className="text-sm font-medium text-primary underline">
+          {t("intel.dashAll")}
+        </Link>
+      </div>
+      {items.length === 0 ? (
+        <p className="text-sm text-muted-foreground">{t("intel.dashEmpty")}</p>
+      ) : (
+        <ul className="space-y-2">
+          {items.map((a) => (
+            <li key={a.id} className="space-y-0.5">
+              <div className="flex items-center justify-between gap-2 text-sm">
+                <span className="truncate font-medium">
+                  {a.transaction
+                    ? (a.transaction.merchant ?? a.transaction.description)
+                    : (a.category?.name ?? "")}
+                </span>
+                <SeverityBadge severity={a.severity} />
+              </div>
+              <p className="text-xs text-muted-foreground">{a.reasons[0]?.message}</p>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
 }

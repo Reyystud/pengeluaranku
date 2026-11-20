@@ -1,0 +1,51 @@
+# Baseline anomaly detector thresholds (PRD 7.6.2 - 7.6.6). Versioned: change `version` with any value.
+# Business code never hardcodes these (PRD 0.3 rule 3). Values come straight from the PRD unless a
+# comment says "decision" (then docs/DECISIONS.md has the reason).
+version: baseline-1
+feature_version: anomaly-features-1
+
+amount_spike:
+  z_threshold: 3.5            # modified z-score (Iglewicz-Hoaglin)
+  z_scale: 0.6745
+  mad_floor: 0.05
+  min_alert_amount: 50000     # MIN_ALERT_AMOUNT, Rp
+  min_ratio_to_typical: 2.0   # amount >= 2 x exp(m)
+  score_offset: 2.0           # score = clip((z - offset) / divisor, 0, 1)
+  score_divisor: 6.0
+  high_z: 5.0                 # severity high from here, medium below
+  history_days: 180
+amount_low:
+  z_threshold: -3.5           # stored as severity low, never alerts (FR-06.06)
+frequency_burst:
+  min_count: 3                # transactions in the 24 h ending at t, including t
+  max_tail_probability: 0.001
+  high_tail_probability: 0.00001
+  score_divisor: 6.0          # score = clip(-log10(p) / divisor, 0, 1)
+  rate_days: 56
+  min_rate_per_day: 0.1
+new_merchant_high_value:
+  min_amount: 500000
+  p95_multiplier_high: 3.0
+  score_medium: 0.6
+  score_high: 0.9
+  history_days: 180
+category_surge:
+  window_days: 7
+  baseline_weeks: 8
+  min_weeks_with_spend: 4
+  min_ratio: 2.0
+  min_excess_amount: 200000
+  score_divisor: 8.0          # decision: score = clip(ratio / divisor, 0, 1), so ratio 2 -> 0.25 like z 3.5
+  high_ratio: 4.0             # decision: severity high from 4x the weekly norm
+cold_start:
+  min_category_history: 30    # fewer prior transactions in the category -> global prior, limited history
+  min_history_days: 7         # younger users get no alerts (anomalies are still stored)
+  limited_max_severity: medium
+alerts:
+  per_period_cap: 3           # ANOMALY_ALERTS_PER_PERIOD
+  max_age_days: 7             # older than this at scoring time -> status historical, no alert
+  suppression_days: 90        # FR-06.05
+reasons:
+  max_reasons: 3
+dispatch:
+  max_events_per_drain: 200   # decision: bounds the work done inside one write request (CSV imports)

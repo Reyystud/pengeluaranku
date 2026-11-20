@@ -44,3 +44,10 @@ export type BudgetStatus = Budget["status"];
 export type AppNotification = S["NotificationOut"];
 export type NotificationPage = S["NotificationPage"];
 export type RangeName = "current_period" | "previous_period" | "last_3_periods";
+
+export type Anomaly = S["AnomalyOut"];
+export type AnomalyPage = S["AnomalyPage"];
+export type AnomalyStatus = Anomaly["status"];
+export type AnomalySeverity = Anomaly["severity"];
+export type AnomalyType = Anomaly["anomaly_type"];
+export type DismissReason = NonNullable<Anomaly["feedback_reason"]>;

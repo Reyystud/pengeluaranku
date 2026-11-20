@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-23 (anomaly detection); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-24 (forecasting); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,14 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-21 — T-23 Anomaly baseline, rules, event path, API/UI, feedback
+- Done: `ml/anomaly_detection` (robust z-score spike + low amount, Poisson burst, new merchant, category surge, computed reasons, cold-start prior, batch history helper, evaluation script, priors script); `config/anomaly.yaml` + `config/anomaly_priors.yaml` (from the anomaly train split of synthetic v1); backend repository/service, in-process outbox drain with `processed_events` dedupe, alert cap, suppressions, historical rows, re-score on edit, cascade on delete, `anomaly_alert` notification, `GET /intelligence/anomalies`, `GET .../{id}`, `POST .../{id}/feedback`; frontend `/intelligence` (filters, reasons, confirm/dismiss with reason) and a dashboard "Unusual spending" card.
+- Verified: `make check` green (484 tests incl. integration, coverage 98.9%); 82 Vitest tests; BOLA suite covers `anomaly_id`; SQL history is pinned to the batch helper by a parity test; point-in-time harness passes.
+- Real run (no MLflow run ID, plain script): `python -m ml.anomaly_detection.evaluate --users 60` on synthetic v1, 60 users (SHA-256 sample), validation + test anomaly splits, 18,635 scored expenses, labels used only for scoring. Any-flag row level: precision 0.214, recall 0.658 (52 of 79 labelled). Per type (flagged / labelled / precision / recall): amount_spike 118 / 19 / 0.110 / 0.684; frequency_burst 119 / 46 / 0.210 / 0.543; new_merchant_high_value 10 / 14 / 0.700 / 0.500. Small sample: indicative only; the full-dataset report with an MLflow run belongs to T-38 (`docs/MODEL_EVALUATION.md`). Precision is low because the PRD thresholds are loose on this data; they were not tuned on it.
+- Decisions: see `docs/DECISIONS.md` (T-23), PRD addendum T-23.
+- Not done / for later: ML service `/v1/anomaly/score` and IsolationForest/LOF (T-38), the daily job that calls `detect_category_surges()` (T-37), re-score on category change, anomaly insights on the dashboard (T-31), `docs/model_cards` entry, browser check of `/intelligence` at 360 px and dark mode (no browser here).
+- Next: T-24.
 
 ### 2026-11-21 — T-22 Dashboard, budgets and notifications pages
 - Done: `/dashboard` (balance, income, expenses, net with change vs. the comparison window, savings rate, review-queue banner, budget progress, category donut, daily trend with cumulative line and budget pace, period comparison table, top merchants, period selector for this/last/last 3 periods, onboarding card for an empty ledger), `/budgets` (cards with status badge, utilization bar, remaining/over, thresholds, history of closed periods, add/edit drawer, two-step delete, warning when category limits exceed the overall limit), `/notifications` (list, unread filter, mark one/all as read, load more) and a bell with the unread count in the app shell that polls every 60 s only while the tab is visible (FR-14.04). Files: `frontend/src/features/{dashboard,budgets,notifications}/*`, `components/ui/{budget-status,chart-frame}.tsx`, `messages/en.json`, `AppShell.tsx`. Transaction writes now also refresh analytics, budgets and notifications queries.
@@ -196,7 +204,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-20 | Analytics endpoints (SQL aggregations) + property tests vs raw SQL | T-14 | done | 2026-11-20 |
 | T-21 | Budgets + status + thresholds + notifications (FR-05, FR-14) | T-20 | done | 2026-11-20 |
 | T-22 | Dashboard + budgets pages | T-20, T-21 | done | 2026-11-21 |
-| T-23 | Anomaly baseline + rules + in-memory event path + anomalies API/UI + feedback | T-18 | todo | |
+| T-23 | Anomaly baseline + rules + in-memory event path + anomalies API/UI + feedback | T-18 | done | 2026-11-21 |
 | T-24 | Forecast run-rate + decomposition + API/UI | T-20 | todo | |
 
 ### Week 6 — MLOps core (= Cut line A)

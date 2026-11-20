@@ -140,6 +140,43 @@ describe("slices", () => {
   });
 });
 
+const ALERTS = {
+  items: [
+    {
+      id: "a1",
+      anomaly_type: "amount_spike",
+      severity: "high",
+      status: "open",
+      is_alert: true,
+      score: 0.8,
+      history_level: "personal",
+      category: { id: "c", slug: "food_beverage", name: "Food & Beverage" },
+      period_id: "2026-11-01",
+      reasons: [
+        {
+          code: "AMOUNT_VS_CATEGORY",
+          message: "10.0\u00d7 your typical Food & Beverage spending (Rp40.000)",
+          feature: "ratio_to_cat_median",
+          value: 10,
+          reference: 40000,
+        },
+      ],
+      transaction: {
+        id: "t1",
+        transaction_date: "2026-11-19T05:00:00+07:00",
+        amount: "400000.00",
+        merchant: "Warung Spike",
+        description: "Warung Spike",
+      },
+      model_version: "baseline-1",
+      feedback_reason: null,
+      feedback_at: null,
+      created_at: "2026-11-19T05:00:00Z",
+    },
+  ],
+  next_cursor: null,
+};
+
 describe("DashboardView", () => {
   const fetchMock = vi.fn();
   let summary: unknown;
@@ -153,6 +190,7 @@ describe("DashboardView", () => {
       if (url.includes("/analytics/categories")) return jsonResponse(CATEGORIES);
       if (url.includes("/analytics/trends")) return jsonResponse(TREND);
       if (url.includes("/analytics/merchants")) return jsonResponse(MERCHANTS);
+      if (url.includes("/intelligence/anomalies")) return jsonResponse(ALERTS);
       if (url.includes("/budgets")) return jsonResponse(BUDGETS);
       return jsonResponse({});
     });
@@ -266,9 +304,40 @@ describe("DashboardView", () => {
             ? jsonResponse(TREND)
             : url.includes("/analytics/merchants")
               ? jsonResponse(MERCHANTS)
-              : jsonResponse(BUDGETS),
+              : url.includes("/intelligence/anomalies")
+                ? jsonResponse(ALERTS)
+                : jsonResponse(BUDGETS),
     );
     renderWithQuery(<DashboardView />);
     expect(await screen.findByText("req-9")).toBeInTheDocument();
+  });
+
+  it("lists the active alerts with the reason, and links to the intelligence page", async () => {
+    renderWithQuery(<DashboardView />);
+    expect(await screen.findByText("Warung Spike")).toBeInTheDocument();
+    expect(screen.getByText(/10\.0× your typical Food & Beverage spending/)).toBeInTheDocument();
+    expect(screen.getByText("High")).toBeInTheDocument(); // severity as a word, not only a color
+    expect(urls().some((u) => u.includes("alerts_only=true") && u.includes("status=open"))).toBe(
+      true,
+    );
+    expect(screen.getByRole("link", { name: "View all" })).toHaveAttribute("href", "/intelligence");
+  });
+
+  it("says so when there are no alerts", async () => {
+    fetchMock.mockImplementation(async (url: string) =>
+      url.includes("/intelligence/anomalies")
+        ? jsonResponse({ items: [], next_cursor: null })
+        : url.includes("/analytics/summary")
+          ? jsonResponse(summary)
+          : url.includes("/analytics/categories")
+            ? jsonResponse(CATEGORIES)
+            : url.includes("/analytics/trends")
+              ? jsonResponse(TREND)
+              : url.includes("/analytics/merchants")
+                ? jsonResponse(MERCHANTS)
+                : jsonResponse(BUDGETS),
+    );
+    renderWithQuery(<DashboardView />);
+    expect(await screen.findByText("No active alerts.")).toBeInTheDocument();
   });
 });

@@ -228,6 +228,57 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/intelligence/anomalies": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Anomalies */
+        get: operations["list_anomalies_api_v1_intelligence_anomalies_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/intelligence/anomalies/{anomaly_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Anomaly */
+        get: operations["get_anomaly_api_v1_intelligence_anomalies__anomaly_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/intelligence/anomalies/{anomaly_id}/feedback": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Anomaly Feedback */
+        post: operations["anomaly_feedback_api_v1_intelligence_anomalies__anomaly_id__feedback_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/merchant-rules": {
         parameters: {
             query?: never;
@@ -636,6 +687,94 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /** AnomalyFeedback */
+        AnomalyFeedback: {
+            /**
+             * Action
+             * @enum {string}
+             */
+            action: "confirm" | "dismiss";
+            /** Reason */
+            reason?: ("expected_purchase" | "wrong_amount" | "not_mine" | "other") | null;
+        };
+        /** AnomalyOut */
+        AnomalyOut: {
+            /**
+             * Anomaly Type
+             * @enum {string}
+             */
+            anomaly_type: "amount_spike" | "frequency_burst" | "new_merchant_high_value" | "category_surge" | "amount_low";
+            category: components["schemas"]["CategoryRef"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Feedback At */
+            feedback_at: string | null;
+            /** Feedback Reason */
+            feedback_reason: ("expected_purchase" | "wrong_amount" | "not_mine" | "other") | null;
+            /**
+             * History Level
+             * @enum {string}
+             */
+            history_level: "personal" | "limited";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Is Alert */
+            is_alert: boolean;
+            /** Model Version */
+            model_version: string;
+            /**
+             * Period Id
+             * Format: date
+             */
+            period_id: string;
+            /** Reasons */
+            reasons: components["schemas"]["ReasonOut"][];
+            /** Score */
+            score: number;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "low" | "medium" | "high";
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "open" | "confirmed" | "dismissed" | "historical" | "superseded";
+            transaction: components["schemas"]["AnomalyTransaction"] | null;
+        };
+        /** AnomalyPage */
+        AnomalyPage: {
+            /** Items */
+            items: components["schemas"]["AnomalyOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
+        /** AnomalyTransaction */
+        AnomalyTransaction: {
+            /** Amount */
+            amount: string;
+            /** Description */
+            description: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Merchant */
+            merchant: string | null;
+            /**
+             * Transaction Date
+             * Format: date-time
+             */
+            transaction_date: string;
+        };
         /** AuthResponse */
         AuthResponse: {
             /** Access Token */
@@ -1132,6 +1271,19 @@ export interface components {
         ReadAllOut: {
             /** Updated */
             updated: number;
+        };
+        /** ReasonOut */
+        ReasonOut: {
+            /** Code */
+            code: string;
+            /** Feature */
+            feature: string;
+            /** Message */
+            message: string;
+            /** Reference */
+            reference: number;
+            /** Value */
+            value: number;
         };
         /** RecategorizeRequest */
         RecategorizeRequest: {
@@ -2083,6 +2235,109 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["CategoryOut"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_anomalies_api_v1_intelligence_anomalies_get: {
+        parameters: {
+            query?: {
+                status?: ("open" | "confirmed" | "dismissed" | "historical" | "superseded")[] | null;
+                severity?: ("low" | "medium" | "high") | null;
+                type?: ("amount_spike" | "frequency_burst" | "new_merchant_high_value" | "category_surge" | "amount_low") | null;
+                period_id?: string | null;
+                alerts_only?: boolean;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnomalyPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_anomaly_api_v1_intelligence_anomalies__anomaly_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anomaly_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnomalyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    anomaly_feedback_api_v1_intelligence_anomalies__anomaly_id__feedback_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                anomaly_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["AnomalyFeedback"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["AnomalyOut"];
                 };
             };
             /** @description Validation Error */
