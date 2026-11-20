@@ -8,7 +8,7 @@ define NOT_YET
 	@echo "make $@ is not implemented yet (planned in task $(1); see docs/PROGRESS.md)"; exit 1
 endef
 
-.PHONY: thresholds coverage-backend api eda splits verify-splits help setup lint format typecheck test test-integration check \
+.PHONY: thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
         data train-local up down seed-demo demo openapi train promote rollback loadtest jobs-run
 
 help: ## List targets
@@ -52,6 +52,9 @@ api: ## Run the backend dev server on http://127.0.0.1:8000 (docs at /docs)
 
 thresholds: ## Recompute decision thresholds for the latest classifier run (PRD 7.3.4)
 	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m ml.classification.thresholds
+
+ml-api: ## Run the ML service on http://127.0.0.1:8080 (set MODEL_SOURCE=local_dir to load models/ from make train-local)
+	uv run python -m ml_service
 
 eda: ## Regenerate docs/figures + data/eda_stats.json from the train split
 	uv run python -m ml.eda.run_eda

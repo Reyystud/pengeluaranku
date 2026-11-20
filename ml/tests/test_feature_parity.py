@@ -12,6 +12,7 @@ from ml.features.classifier import (
     FEATURE_COLUMNS,
     TransactionInput,
     build_feature_frame,
+    features_from_parts,
     hour_bucket,
     online_features,
     row_to_input,
@@ -196,3 +197,31 @@ def test_classifier_features_ignore_other_rows() -> None:
     alone = build_feature_frame(df.iloc[[0]])
     together = build_feature_frame(df)
     assert_frames_parity(alone, together.iloc[[0]])
+
+
+def test_fr_03_02_serving_parts_path_equals_online_features() -> None:
+    """The ML service receives derived parts; they must give the same features (PRD 14.2)."""
+    from ml.preprocessing import resolve_merchant
+
+    for row in sample_rows().to_dict("records"):
+        tx = row_to_input(row)
+        parts = features_from_parts(
+            description=tx.description,
+            merchant_key=resolve_merchant(tx.merchant, tx.description)[1],
+            amount=tx.amount,
+            payment_method=tx.payment_method,
+            transaction_type=tx.transaction_type,
+            local_hour=tx.occurred.hour if tx.has_time else None,
+            weekday=tx.occurred.weekday(),
+        )
+        assert parts == online_features(tx)
+    with pytest.raises(ValueError):
+        features_from_parts(
+            description="x",
+            merchant_key="x",
+            amount=Decimal("0"),
+            payment_method="cash",
+            transaction_type="expense",
+            local_hour=None,
+            weekday=0,
+        )

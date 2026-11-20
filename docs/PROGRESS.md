@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-17 (ML inference service); read the T-09/T-10 notes on unseen merchants and the absent `suggest` band first
+**Current focus:** next T-18 (backend ML client and categorization flow); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-17 ML inference service
+- Done: `services/ml_service/ml_service/` (`config`, `errors`, `schemas`, `inference`, `main`, `__main__`, `api/{classify,models,health}`, `loading/{artifact,sources,registry}`, `metrics`). `POST /v1/classify`, `POST /v1/classify/batch` (≤ 500), `GET /v1/models`, `/healthz`, `/readyz`, `/metrics`. Model sources: `local_dir` and MLflow alias. Hash verification before unpickling, thresholds only from `metadata.json`. `make ml-api` runs it on :8080.
+- Verified: 66 service tests (toy model trained inside the tests, MLflow registry in a temp sqlite store, tamper/threshold/label cases, parity with the offline pipeline, privacy sentinel) plus one smoke test with the real T-09 model that skips when `models/` is absent; `make check` green with PostgreSQL: 390 non-integration tests and 285 backend tests, backend coverage 98.9%. Real model: `STARBUCKS GRAND INDONESIA` gives `food_beverage`, `auto_apply`.
+- Hooks for later: T-18 builds the backend client against `ClassifyRequest`/`ClassifyResponse` (send `merchant_key` from `resolve_merchant`, `weekday` Monday = 0, explicit `local_hour: null`; handle all three decisions, `suggest` is absent with the current thresholds). T-27 adds alias polling/hot-swap on `ModelRegistry.load()`. Dockerfile and compose come with T-29.
+- Not done: anomaly, forecast, cluster endpoints and shadow mode (their tasks), Google ID-token auth, `services/ml_service/openapi.json`, load benchmark.
+- Next: T-18 (backend ML client, circuit breaker, categorization flow, merchant rules, feedback, categorize-preview).
 
 ### 2026-11-20 — T-16 BOLA/IDOR suite
 - Done: `tests/security/test_bola.py` (8 tests). Routes are auto-discovered from OpenAPI; all 7 operations with an id return 404 for another user, with the same response as a nonexistent id, and leave the victim's data unchanged. Also bulk ids in bodies (atomic), list/count/search/filter leakage, cursors of another user, 401 without or with a garbage token on every non-public route, and tokens of a deleted account.
@@ -143,7 +150,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 4 — ML service + frontend core
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-17 | ML service: model loading, `/v1/classify`, batch, probes, metrics, hash verification | T-09 | todo | |
+| T-17 | ML service: model loading, `/v1/classify`, batch, probes, metrics, hash verification | T-09 | done | `services/ml_service/ml_service/`, 66 tests, `make ml-api` |
 | T-18 | Backend ML client (timeout, circuit breaker, fallback), categorization flow, merchant rules, feedback, categorize-preview | T-14, T-17 | todo | |
 | T-19 | Frontend scaffold: auth, layout, API client, transactions page, review queue, CSV import UI | T-13, T-18 | todo | |
 
