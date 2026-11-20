@@ -7,7 +7,26 @@ name = "sei-backend"
 version = "0.0.0"
 description = "FastAPI backend (also runs as the worker role)"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "alembic>=1.20.1",
+    "argon2-cffi>=25.1.0",
+    "fastapi>=0.165.0",
+    "httpx>=0.28.1",
+    "prometheus-client>=0.26.0",
+    "psycopg[binary]>=3.3.9",
+    "pydantic-settings>=2.16.3",
+    "pyjwt>=2.15.1",
+    "sei-ml",
+    "sqlalchemy>=2.1.9",
+    "structlog>=26.1.0",
+    "uvicorn>=0.54.0",
+]
 
 [tool.setuptools]
 packages = ["app", "app.api", "app.core", "app.models", "app.schemas", "app.services", "app.repositories", "app.events", "app.jobs", "app.clients"]
+
+[tool.setuptools.package-data]
+"app.core" = ["common_passwords.txt"]
+
+[tool.uv.sources]
+sei-ml = { workspace = true }

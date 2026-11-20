@@ -29,6 +29,7 @@ dev = [
     "pandas-stubs",
     "pre-commit",
     "matplotlib>=3.11.2",
+    "testcontainers[postgres]>=4.15.0",
 ]
 
 [tool.pytest.ini_options]
@@ -39,10 +40,14 @@ markers = ["integration: needs real PostgreSQL / services (testcontainers)"]
 [tool.ruff]
 line-length = 100
 target-version = "py312"
-extend-exclude = ["graphify-out", "data", "models"]
+extend-exclude = ["graphify-out", "/data", "/models"]
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.ruff.lint.per-file-ignores]
+"services/backend/migrations/versions/*" = ["E501"]  # generated DDL
+"services/backend/tests/integration/*" = ["E501"]  # long request literals
 
 [tool.mypy]
 python_version = "3.12"
@@ -51,6 +56,9 @@ files = ["ml", "services/backend/app"]
 exclude = ["/tests/"]
 explicit_package_bases = true
 mypy_path = [".", "services/backend", "services/ml_service"]
+
+[tool.coverage.run]
+omit = ["*/tests/*", "ml/eda/*"]
 
 [[tool.mypy.overrides]]
 module = ["pyarrow.*", "sklearn.*", "lightgbm.*", "mlflow.*", "joblib.*", "scipy.*", "matplotlib.*"]

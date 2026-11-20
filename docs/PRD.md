@@ -1603,7 +1603,7 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 
 #### 13.1.1 Auth
 - `Authorization: Bearer <access_token>` on all endpoints except register, login, refresh, health.
-- JWT: HS256 with `JWT_SECRET` (≥ 32 random bytes) **or** RS256 if keys are provided; claims `sub` (user_id), `iat`, `exp` (15 min), `jti`, `typ=access`. Clock skew tolerance 30 s.
+- JWT: HS256 with `JWT_SECRET` (≥ 32 random bytes) **or** RS256 if keys are provided; claims `sub` (user_id), `iat`, `exp` (15 min), `jti`, `typ=access`, and `sid` (refresh-token family of the login; lets "change password" keep the caller's own session, since the refresh cookie is not sent to `/users/*`). Clock skew tolerance 30 s. Password field error codes: `PASSWORD_TOO_SHORT`, `PASSWORD_TOO_LONG`, `PASSWORD_TOO_COMMON` (422 `VALIDATION_ERROR`).
 
 #### 13.1.2 Errors — RFC 9457 `application/problem+json`
 
@@ -1637,10 +1637,10 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 - Accept `X-Request-ID` if it matches `^[A-Za-z0-9-]{8,64}$`, otherwise generate a ULID. Return it in `X-Request-ID` and in every error body. Propagate to the ML service and into events and logs. Use W3C `traceparent` when OpenTelemetry is enabled.
 
 #### 13.1.4 Pagination
-- Cursor-based: `?limit=50&cursor=<opaque>`. Cursor = base64url of `(sort_key, id)` signed with HMAC to prevent tampering. Response: `{ "items": [...], "next_cursor": "…" | null }`. No total counts on large lists (a separate `GET /transactions/count` with the same filters exists).
+- Cursor-based: `?limit=50&cursor=<opaque>`. Cursor = base64url of `(sort mode, sort_key, id, user_id)` signed with HMAC-SHA256 to prevent tampering; a cursor from another user or another sort mode is `INVALID_CURSOR`. Response: `{ "items": [...], "next_cursor": "…" | null }`. No total counts on large lists (a separate `GET /transactions/count` with the same filters exists).
 
 #### 13.1.5 Idempotency
-- `Idempotency-Key` header is **required** on `POST /transactions`, `POST /transactions/imports/{id}/commit`, and bulk endpoints; optional elsewhere. Same key + same request hash within 24 h → replay stored response. Same key + different body → 409 `IDEMPOTENCY_KEY_REUSED`. In-flight duplicate → 409 `CONFLICT` with `Retry-After: 1`.
+- `Idempotency-Key` header is **required** on `POST /transactions`, `POST /transactions/imports/{id}/commit`, and bulk endpoints; optional elsewhere. A missing required key → 400 `IDEMPOTENCY_KEY_REQUIRED`; keys are 8–128 characters and scoped per user. Same key + same request hash within 24 h → replay stored response (header `Idempotent-Replayed: true`). Same key + different body → 409 `IDEMPOTENCY_KEY_REUSED`. In-flight duplicate: the second request waits for the first to finish and then replays its response (the key is claimed inside the request's DB transaction); 409 `CONFLICT` with `Retry-After: 1` remains only for a claimed key with no stored response. Failed requests roll back and do not consume the key.
 
 #### 13.1.6 Rate limits (per user unless stated; Redis token bucket, in-memory fallback)
 
@@ -1696,17 +1696,18 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 | GET | `/transactions/{id}` | Includes latest prediction and anomaly summary |
 | PATCH | `/transactions/{id}` | Partial update; optional `If-Match: "<version>"` → 409 `VERSION_CONFLICT`. Body may include `apply_to_past_merchant_transactions: true` when changing category |
 | DELETE | `/transactions/{id}` | 204 |
-| POST | `/transactions/bulk-delete` | `{ids: [...] }` ≤ 200 |
-| POST | `/transactions/bulk-categorize` | `{ids: [...], category: "<slug>"}` ≤ 200 |
+| POST | `/transactions/{id}/dismiss-duplicate` | "Not a duplicate" (FR-02.15): clears `possible_duplicate_of`, sets `duplicate_dismissed`; 200 transaction |
+| POST | `/transactions/bulk-delete` | `{ids: [...] }` ≤ 200; atomic (any unknown id → 404, nothing deleted); 200 `{deleted: n}` |
+| POST | `/transactions/bulk-categorize` | `{ids: [...], category: "<slug>"}` ≤ 200; atomic; 200 `{updated: n}` |
 | POST | `/transactions/{id}/confirm-category` | Confirms suggestion → `user_confirmed` |
 | POST | `/transactions/{id}/recategorize` | `{force?: bool}` (FR-03.09) |
 | POST | `/transactions/{id}/not-duplicate` | FR-02.15 |
 | POST | `/transactions/categorize-preview` | `{description, merchant?, amount?, payment_method?, transaction_type, transaction_date?}` → prediction, nothing stored |
-| GET | `/transactions/imports/template.csv` | Template |
-| POST | `/transactions/imports` | multipart `file` → 201 preview `{import_id, summary, rows[], warnings[], expires_at}`; rows paginated via `GET /transactions/imports/{id}?cursor=` when > 500 |
-| GET | `/transactions/imports/{id}` | Preview/status |
-| POST | `/transactions/imports/{id}/commit` | `{mode, skip_duplicates, category_overrides}`; `Idempotency-Key` required → `{committed_count, skipped_invalid, skipped_duplicates}` |
-| DELETE | `/transactions/imports/{id}` | Discard a previewed import |
+| GET | `/transactions/imports/template.csv` | Template with header and 3 example rows dated in the last days, so it imports as is |
+| POST | `/transactions/imports` | multipart `file` → 201 preview `{import_id, status, filename, summary{row_count, valid, invalid, duplicate}, rows[], next_cursor, warnings[{code, message, columns?}], expires_at}`. A row is `{row_number, status, values, prediction, errors[], duplicate_of, duplicate_of_row}` (`values` null when invalid; `duplicate_of` an existing transaction, `duplicate_of_row` an earlier row of the file). The first 500 rows are inline; the rest via `GET /transactions/imports/{id}?cursor=`. Warnings: `UNKNOWN_COLUMNS`, `FILE_ALREADY_IMPORTED`. File errors: 413 `FILE_TOO_LARGE`; 422 `INVALID_ENCODING`, `EMPTY_FILE`, `MISSING_COLUMNS`, `TOO_MANY_ROWS`, `INVALID_CSV` |
+| GET | `/transactions/imports/{id}?cursor=&limit=` | Preview/status; rows paginated by row number (max 500). After commit `rows` is empty and the counts remain |
+| POST | `/transactions/imports/{id}/commit` | `{mode (default strict), skip_duplicates (default true), category_overrides}`; `Idempotency-Key` required → `{committed_count, skipped_invalid, skipped_duplicates}`. Errors: 409 `IMPORT_NOT_COMMITTABLE` (committed, discarded, expired), 422 `IMPORT_HAS_INVALID_ROWS` (strict mode), 422 `VALIDATION_ERROR` with field `category_overrides.<row>` (`UNKNOWN_ROW`, `UNKNOWN_CATEGORY`, `CATEGORY_TYPE_MISMATCH`). Emits one `transaction.created` per row plus `import.committed` |
+| DELETE | `/transactions/imports/{id}` | Discard a previewed import (204); a committed import cannot be discarded (409) |
 
 **Analytics**
 

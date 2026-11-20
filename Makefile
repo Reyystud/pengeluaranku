@@ -8,7 +8,7 @@ define NOT_YET
 	@echo "make $@ is not implemented yet (planned in task $(1); see docs/PROGRESS.md)"; exit 1
 endef
 
-.PHONY: thresholds eda splits verify-splits help setup lint format typecheck test test-integration check \
+.PHONY: thresholds coverage-backend api eda splits verify-splits help setup lint format typecheck test test-integration check \
         data train-local up down seed-demo demo openapi train promote rollback loadtest jobs-run
 
 help: ## List targets
@@ -34,15 +34,21 @@ typecheck: ## mypy --strict on ml/ and backend app/
 test: ## Unit tests (no external services)
 	uv run pytest -m "not integration"
 
-test-integration: ## Integration tests (testcontainers)
+test-integration: ## Integration tests (testcontainers, or TEST_DATABASE_URL=postgresql+psycopg://...)
 	uv run pytest -m integration || [ $$? -eq 5 ]
 
-check: lint typecheck test ## Lint + types + tests (must pass before finishing a task)
+coverage-backend: ## Backend unit + integration tests with the 80% line-coverage gate (needs PostgreSQL)
+	uv run pytest services/backend -q --cov=app --cov-fail-under=80
+
+check: lint typecheck test coverage-backend ## Lint + types + tests + coverage gate (must pass before finishing a task)
 	@echo "make check: OK (frontend checks are added in T-19)"
 
 WORKERS ?= 4
 data: ## Generate synthetic dataset v1 into data/synthetic/v1 (make data WORKERS=8)
 	uv run python -m data_generator generate --config config/generator/default.yaml --seed 42 --out data/synthetic/v1 --workers $(WORKERS)
+
+api: ## Run the backend dev server on http://127.0.0.1:8000 (docs at /docs)
+	RELOAD=true uv run python -m app
 
 thresholds: ## Recompute decision thresholds for the latest classifier run (PRD 7.3.4)
 	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m ml.classification.thresholds

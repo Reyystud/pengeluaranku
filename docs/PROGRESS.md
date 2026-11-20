@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** week 2 ML core done (T-07..T-10). Next: T-11 backend scaffold (cut line A needs backend + frontend); see the T-09/T-10 notes on unseen merchants before the ML service (T-17)
+**Current focus:** next T-17 (ML inference service); read the T-09/T-10 notes on unseen merchants and the absent `suggest` band first
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,45 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-16 BOLA/IDOR suite
+- Done: `tests/security/test_bola.py` (8 tests). Routes are auto-discovered from OpenAPI; all 7 operations with an id return 404 for another user, with the same response as a nonexistent id, and leave the victim's data unchanged. Also bulk ids in bodies (atomic), list/count/search/filter leakage, cursors of another user, 401 without or with a garbage token on every non-public route, and tokens of a deleted account.
+- Gotcha: a new endpoint with a path id fails the coverage test until it gets a factory in `RESOURCES` (and a body in `BODIES` if it needs one). Public routes are listed in `PUBLIC_PREFIXES`.
+- Next: T-17 (ML inference service).
+
+### 2026-11-20 — T-15 CSV import
+- Done: `GET /transactions/imports/template.csv`, `POST /transactions/imports` (preview), `GET /transactions/imports/{id}` (paginated rows), `POST .../commit` (strict / skip_invalid, skip_duplicates, category_overrides, idempotent), `DELETE .../{id}`. All 10 row error codes plus file-level errors (413/422), delimiter detection, BOM, Indonesian amounts (`Rp 1.500.000`), five date formats in the user's timezone, duplicates against existing rows and within the file, `FILE_ALREADY_IMPORTED`, atomic commit, outbox events.
+- Verified: see the T-15 test files `tests/unit/test_csv_parse.py` and `tests/integration/test_imports_api.py` (31 integration tests, including a 5,000-row commit, a forced DB failure that persists nothing, and concurrent commits); `make check` green with PostgreSQL: 277 backend tests, coverage 98.9%.
+- Hooks for later: T-18 should replace the per-row `Categorizer` call in preview with a batch call and write `category_predictions`; T-37 cleanup job marks expired imports; T-16 BOLA suite can add the import endpoints (`test_fr_02_01_other_users_imports_are_404_everywhere`).
+- Not done: per-user cap on open previews, upload rate limit, `csv_imports_total` metric, duplicate re-check at commit.
+- Next: T-16 (BOLA/IDOR suite).
+
+### 2026-11-20 — T-14 transactions
+- Done: `GET/POST /transactions`, `GET /transactions/count`, `GET/PATCH/DELETE /transactions/{id}`, `POST /transactions/{id}/dismiss-duplicate`, `POST /transactions/bulk-delete`, `bulk-categorize`, `GET /categories` (ETag). Filters, signed cursor pagination (date or amount sort), `Idempotency-Key`, `If-Match` versions, duplicate flags, outbox events.
+- Verified: `make check` green with PostgreSQL, backend coverage 98.7%; 200 backend tests (116 before).
+- CI: new `backend-integration` job. `make check` now needs PostgreSQL (TEST_DATABASE_URL or Docker); without it the integration tests skip and the coverage gate fails.
+- Hooks for later: `Categorizer` seam in `app/services/transactions.py` (T-18); CSV import (T-15) should reuse `TransactionService` validation helpers and `find_duplicate`; the BOLA suite (T-16) can build on `test_fr_02_01_other_users_transactions_are_404_everywhere`.
+- Not done: prediction/anomaly summary on `GET /transactions/{id}`, feedback and merchant rules (T-18), idempotency cleanup job, event publisher and JSON Schemas for events.
+- Next: T-15 (CSV preview/commit).
+
+### 2026-11-20 — T-13 auth and account lifecycle
+- Done: register, login, refresh (rotation + family revocation on reuse), logout, `GET/PATCH /users/me`, change password, delete account (hard delete + `deletion_requests` tombstone with pseudo id), `get_current_user` / `get_claims` dependencies, login 5 per email / 20 per IP per 15 min and register 5 per hour per IP, all with problem+json errors.
+- Verified: `make check` green; 116 backend tests pass with PostgreSQL (29 auth integration tests). Sentinel test confirms emails, passwords and tokens never appear in logs.
+- Other endpoints must use `CurrentUser` from `app/api/deps.py` and repositories from T-12; the user id always comes from the token.
+- Not done: `GET /users/me/export` (FR-16, Could), Argon2 timing tuning on the real host, write/read rate limits (they come with their endpoints), security response headers (HSTS/CSP, belongs with infra/frontend tasks).
+- Next: T-14 (transactions CRUD, idempotency, cursor pagination, duplicates).
+
+### 2026-11-20 — T-12 DB schema, migrations, repositories
+- Done: 25 tables from PRD 12.2 as SQLAlchemy 2 models, reversible migration `0001` with category seed (taxonomy-1, 20 rows), `ScopedRepository`, `UserRepository`, `CategoryRepository`, `get_session` dependency, `database` and `migrations` readiness checks (registered when `DATABASE_URL` is set), `new_uuid7()`.
+- Verified: `make check` green (backend coverage 91%); 15 integration tests pass on PostgreSQL 16 (no model/DB drift, up/down/up, seed equals taxonomy, two-user SQL echo scoping, cascade delete).
+- Run integration: `TEST_DATABASE_URL=postgresql+psycopg://... make test-integration`, or just Docker with testcontainers. Migrate locally: `cd services/backend && DATABASE_URL=... uv run alembic upgrade head`.
+- Gotchas: ruff `extend-exclude` was `models`, which hid `app/models`; now anchored. Migration files ignore E501.
+- Next: T-13 (auth). Keyed repositories listed in `KEYED_PENDING` are added by their tasks. Add Alembic upgrade to the compose/startup path in the infra task (T-29).
+
+### 2026-11-20 — T-11 backend scaffold
+- Done: `app/main.py` (factory), `app/core/{config,ids,logging,errors,middleware,metrics}.py`, `app/api/{health,router}.py`, `python -m app` / `make api` (http://127.0.0.1:8000, Swagger at `/docs`), 46 tests in `services/backend/tests/unit/test_scaffold.py` (health, request ids, problem+json, sentinel log test, redaction, metrics, settings). Backend coverage 96%, gate 80% enabled in `make test`.
+- Try it: `make api`, then `curl localhost:8000/healthz`, open `/docs`, `curl localhost:8000/metrics`.
+- Next: T-12 (DB schema, Alembic, category seed, repository layer with user scoping). It should register DB and migration-head readiness checks in `app.state.readiness_checks`, and add a UUIDv7 helper next to `new_ulid` in `app/core/ids.py`.
 
 ### 2026-11-20 — T-10 decision thresholds
 - Done: `ml/classification/thresholds.py` (band-walk procedure), config section `thresholds`, `make thresholds`, hook in `train.py`, `ml/tests/test_thresholds.py` (9 tests), docs (MODEL_EVALUATION, model card). Run 20261120-024213 now has `decision_thresholds` `t_high 0.90`, `t_low 0.90` in `metadata.json` (also logged to its MLflow run).
@@ -94,12 +133,12 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 3 — Backend core
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-11 | Backend scaffold: settings, logging, problem+json, request IDs, health | T-01 | todo | |
-| T-12 | DB schema + Alembic + category seed + repository layer with scoping test | T-11 | todo | |
-| T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | todo | |
-| T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | todo | |
-| T-15 | CSV preview/commit with all error codes | T-14 | todo | |
-| T-16 | BOLA/IDOR test suite | T-13, T-14 | todo | |
+| T-11 | Backend scaffold: settings, logging, problem+json, request IDs, health | T-01 | done | `services/backend/app/` scaffold, 46 tests, `make api` |
+| T-12 | DB schema + Alembic + category seed + repository layer with scoping test | T-11 | done | `app/models/`, `migrations/versions/0001_initial_schema.py`, `app/repositories/`, 15 integration + 12 unit tests |
+| T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | done | `app/api/{auth,users}.py`, `app/services/auth.py`, `app/core/{security,passwords,ratelimit,periods}.py`, 29 integration + 10 unit tests |
+| T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | done | `app/api/transactions.py`, `app/services/{transactions,idempotency}.py`, `app/repositories/{transactions,idempotency}.py`, 67 integration + 12 unit tests |
+| T-15 | CSV preview/commit with all error codes | T-14 | done | `app/api/imports.py`, `app/services/imports.py`, `app/core/csvparse.py`, `app/repositories/imports.py`, 31 integration + 46 unit tests |
+| T-16 | BOLA/IDOR test suite | T-13, T-14 | done | `services/backend/tests/security/test_bola.py` (8 tests, auto-discovers routes) |
 
 ### Week 4 — ML service + frontend core
 | ID | Task | Deps | Status | Notes |
