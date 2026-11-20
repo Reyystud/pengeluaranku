@@ -42,13 +42,15 @@ def test_fr_12_database_check_runs_select_1() -> None:
 
 def test_fr_12_no_readiness_checks_without_database_url() -> None:
     checks: dict[str, object] = {}
-    assert register_readiness(checks, Settings(jwt_secret="x" * 40)) is None  # type: ignore[arg-type]
+    assert register_readiness(checks, Settings(_env_file=None, jwt_secret="x" * 40)) is None  # type: ignore[arg-type]
     assert checks == {}
 
 
 def test_fr_12_database_url_registers_database_and_migration_checks() -> None:
     checks: dict[str, object] = {}
-    settings = Settings(jwt_secret="x" * 40, database_url="postgresql+psycopg://u:p@127.0.0.1:1/x")  # type: ignore[arg-type]
+    settings = Settings(
+        _env_file=None, jwt_secret="x" * 40, database_url="postgresql+psycopg://u:p@127.0.0.1:1/x"
+    )  # type: ignore[arg-type]
     engine = register_readiness(checks, settings)  # type: ignore[arg-type]
     assert engine is not None and set(checks) == {"database", "migrations"}
 

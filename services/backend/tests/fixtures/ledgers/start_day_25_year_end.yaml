@@ -1,0 +1,42 @@
+# Start day 25 across the year end, with a transaction 30 minutes after a period boundary
+# (it is Dec 24 in UTC but Dec 25 in Jakarta). Today is Sat 2026-01-10, Jakarta.
+name: start_day_25_year_end
+user: { timezone: Asia/Jakarta, budget_period_start_day: 25, opening_balance: "0.00" }
+today: "2026-01-10T12:00:00+07:00"
+transactions:
+  - { at: "2025-11-25T08:00:00+07:00", type: income,  amount: "1000000.00", category: freelance,      merchant: "Klien",   key: klien,   method: bank_transfer }
+  - { at: "2025-12-10T12:00:00+07:00", type: expense, amount: "300000.00",  category: housing,        merchant: "Kos",     key: kos,     method: bank_transfer }
+  - { at: "2025-12-24T23:00:00+07:00", type: expense, amount: "100000.00",  category: food_beverage,  merchant: "Warung",  key: warung,  method: cash }
+  - { at: "2025-12-25T00:30:00+07:00", type: expense, amount: "200000.00",  category: groceries,      merchant: "Pasar",   key: pasar,   method: cash }
+  - { at: "2026-01-02T12:00:00+07:00", type: income,  amount: "3000000.00", category: salary,         merchant: "Kantor",  key: kantor,  method: bank_transfer }
+  - { at: "2026-01-05T12:00:00+07:00", type: expense, amount: "50000.00",   category: transportation, merchant: "Grab",    key: grab,    method: e_wallet }
+
+cases:
+  - name: the current period spans the year end
+    request: summary
+    expect:
+      period: { start: "2025-12-25", end: "2026-01-24", period_id: "2025-12-25", days_in_period: 31, days_elapsed: 17, in_progress: true }
+      balance: "3350000.00"
+      income: "3000000.00"
+      expenses: "250000.00"
+      net: "2750000.00"
+      savings_rate: "91.7"
+      comparison:
+        label: "vs. same point last period"
+        current:  { start: "2025-12-25", end: "2026-01-10", income: "3000000.00", expenses: "250000.00" }
+        previous: { start: "2025-11-25", end: "2025-12-11", income: "1000000.00", expenses: "300000.00", net: "700000.00" }
+        change: { income: "200.0", expenses: "-16.7", net: "292.9" }
+  - name: the previous period includes its last evening
+    request: summary?range=previous_period
+    expect:
+      period: { start: "2025-11-25", end: "2025-12-24", period_id: "2025-11-25", days_in_period: 30 }
+      income: "1000000.00"
+      expenses: "400000.00"
+      savings_rate: "60.0"
+  - name: a custom range over two periods can be bucketed by budget period
+    request: trends?range=custom&date_from=2025-11-25&date_to=2026-01-24&granularity=month
+    expect:
+      granularity: month
+      series:
+        - { start: "2025-11-25", end: "2025-12-24", expenses: "400000.00", cumulative: "400000.00" }
+        - { start: "2025-12-25", end: "2026-01-24", expenses: "250000.00", cumulative: "650000.00" }

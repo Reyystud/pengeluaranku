@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-20 (see task list); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-21 (budgets, status, thresholds, notifications); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -13,12 +13,20 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
 
+### 2026-11-20 — T-20 Analytics endpoints
+- Done: `GET /analytics/summary|categories|trends|merchants|payment-methods` (FR-04.01-10): `app/api/analytics.py`, `app/services/analytics.py` (ranges, comparison, buckets), `app/repositories/analytics.py` (all sums in SQL: `SUM ... FILTER`, `GROUP BY`, window sum, `unnest ... WITH ORDINALITY` buckets), `app/schemas/analytics.py`, `PeriodBounds`/`period_bounds` in `app/core/periods.py` (start-day change applies from the next period). Committed `openapi.json` and `frontend/src/api/schema.d.ts` regenerated.
+- Verified: 20 hypothesis-generated ledgers (5 time zones incl. DST, start days 1..28, transfers, blank merchants, rows around day boundaries) compared with plain SQL (local-date cast) for balance, flows, savings rate, comparison, categories, merchants, payment methods, and day/week/month trends; two hand-computed golden ledgers (`tests/fixtures/ledgers/*.yaml`, 14 cases); 15 unit tests (periods tile the calendar with no gap/overlap, buckets, percent rules); validation, auth, cross-user isolation and repository scoping tests. Two mutation checks (change one expected number; count transfers as expenses) made the suites fail as they should. Measured on this dev machine with 50,000 rows for one user (p50 over 15 calls, single process, not an SLO result): summary 58 ms, categories 21 ms, trends 38 ms (custom 366-day range 161 ms), merchants 19 ms, payment methods 18 ms.
+- Decisions: see `docs/DECISIONS.md` (T-20). No Redis cache (FR-04.12 says compute directly without Redis; Redis is not in the stack yet).
+- Hooks for later: T-21 budgets reuse `period_bounds` and `AnalyticsRepository` (the trend already reads the overall budget for the pace line); T-22 builds the dashboard on these endpoints; T-24 forecast reuses `expense_buckets`.
+- Not done: Redis cache and invalidation (FR-04.12), onboarding/sample-data cards (FR-04.11, frontend), a promotion job for `pending_period_start_day` (the service already computes periods correctly from the pending fields).
+- Next: T-21.
+
 ### 2026-11-20 — T-19 Frontend scaffold
 - Done: `frontend/` Next.js 16 (App Router, TS strict, Tailwind v4). Pages: landing, `/login`, `/register`, `/transactions` (filters, table that becomes cards on phones, add/edit drawer with live categorization chip and quick picks, bulk delete, review-queue tab with badge, confirm suggestion, dismiss duplicate), `/transactions/import` (upload, preview with per-row status/errors and editable categories, commit options, result), `/dashboard` and `/settings` as empty states. In-memory access token, one shared refresh then retry, redirect to `/login`. Loading, empty and error states (error shows `request_id` with Copy). `t()` strings in `src/messages/en.json`. `services/backend/openapi.json` + generated `src/api/schema.d.ts`, `make openapi`, `make openapi-check`, `make web`, CI job `frontend`.
 - Verified: 41 Vitest tests (money/time helpers, API client refresh/error mapping, chip states, drawer preview/validation/idempotency, auth forms, hook headers) + 1 live contract test run against the real backend through the Next proxy (register, categories, preview, create with replay, list, bulk delete); `next build` ok; lint, tsc and prettier clean. The smoke run found the missing `Idempotency-Key` and the `deleted` response field, both fixed. Not verified: real browser rendering, mobile layout by eye, Lighthouse/axe (no browser tooling here), Playwright flows.
-- Hooks for later: T-20 dashboard (add Recharts there), T-42 settings (merchant rules API exists), `frontend/AGENTS.md` is ignored (Next writes it unless `agentRules: false`, now set).
+- Hooks for later: the dashboard page is T-22 (add Recharts there; T-20 is backend analytics), T-42 settings (merchant rules API exists), `frontend/AGENTS.md` is ignored (Next writes it unless `agentRules: false`, now set).
 - Not done: demo login button (T-29), notifications and budgets pages, E2E.
-- Next: T-20.
+- Next: T-20 (backend analytics endpoints).
 
 ### 2026-11-20 — T-18 Backend ML client and categorization flow
 - Done: `app/clients/ml.py` (`MlClient`, `CircuitBreaker`), `app/services/categorization.py` (rule -> ML -> fallback, FR-03.10), `app/repositories/categorization.py`, `app/api/merchant_rules.py`. New endpoints: `POST /transactions/categorize-preview` (60/min), `/{id}/confirm-category`, `/{id}/recategorize`, `GET/PATCH/DELETE /merchant-rules`; `PATCH /transactions/{id}` gained `apply_to_past_merchant_transactions`. Create and CSV preview/commit write `category_predictions`; category changes write `category_feedback` and upsert merchant rules. CSV preview classifies in one batch call. Saving never fails because of the ML service (tested for timeout, 5xx, connect error, garbage body, open circuit).
@@ -170,7 +178,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 5 — Budgets, analytics, intelligence baselines
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-20 | Analytics endpoints (SQL aggregations) + property tests vs raw SQL | T-14 | todo | |
+| T-20 | Analytics endpoints (SQL aggregations) + property tests vs raw SQL | T-14 | done | 2026-11-20 |
 | T-21 | Budgets + status + thresholds + notifications (FR-05, FR-14) | T-20 | todo | |
 | T-22 | Dashboard + budgets pages | T-20, T-21 | todo | |
 | T-23 | Anomaly baseline + rules + in-memory event path + anomalies API/UI + feedback | T-18 | todo | |

@@ -4,6 +4,91 @@
  */
 
 export interface paths {
+    "/api/v1/analytics/categories": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Categories */
+        get: operations["categories_api_v1_analytics_categories_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/merchants": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Merchants */
+        get: operations["merchants_api_v1_analytics_merchants_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/payment-methods": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Payment Methods */
+        get: operations["payment_methods_api_v1_analytics_payment_methods_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/summary": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Summary */
+        get: operations["summary_api_v1_analytics_summary_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/analytics/trends": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Trends */
+        get: operations["trends_api_v1_analytics_trends_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/auth/login": {
         parameters: {
             query?: never;
@@ -454,6 +539,14 @@ export interface components {
             /** Ids */
             ids: string[];
         };
+        /** CategoriesOut */
+        CategoriesOut: {
+            /** Items */
+            items: components["schemas"]["CategoryItem"][];
+            period: components["schemas"]["PeriodInfo"];
+            /** Total Expenses */
+            total_expenses: string;
+        };
         /** Categorization */
         Categorization: {
             /** Alternatives */
@@ -501,6 +594,19 @@ export interface components {
             /** Category Status */
             category_status: string;
         };
+        /** CategoryItem */
+        CategoryItem: {
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
+            /** Name */
+            name: string;
+            /** Share */
+            share: string;
+            /** Slug */
+            slug: string;
+        };
         /** CategoryOut */
         CategoryOut: {
             /**
@@ -534,6 +640,18 @@ export interface components {
             /** New Password */
             new_password: string;
         };
+        /**
+         * Changes
+         * @description Percent change (cur - prev) / prev, 1 decimal; null when the previous value is 0.
+         */
+        Changes: {
+            /** Expenses */
+            expenses: string | null;
+            /** Income */
+            income: string | null;
+            /** Net */
+            net: string | null;
+        };
         /** CommitRequest */
         CommitRequest: {
             /**
@@ -555,6 +673,14 @@ export interface components {
              */
             skip_duplicates: boolean;
         };
+        /** Comparison */
+        Comparison: {
+            change: components["schemas"]["Changes"];
+            current: components["schemas"]["Figures"];
+            /** Label */
+            label: string;
+            previous: components["schemas"]["Figures"];
+        };
         /** CountOut */
         CountOut: {
             /** Count */
@@ -569,6 +695,27 @@ export interface components {
             confirm: "DELETE";
             /** Password */
             password: string;
+        };
+        /** Figures */
+        Figures: {
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Expenses */
+            expenses: string;
+            /** Income */
+            income: string;
+            /** Net */
+            net: string;
+            /** Savings Rate */
+            savings_rate: string | null;
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -626,6 +773,17 @@ export interface components {
             /** Password */
             password: string;
         };
+        /** MerchantItem */
+        MerchantItem: {
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
+            /** Merchant Key */
+            merchant_key: string;
+            /** Name */
+            name: string;
+        };
         /** MerchantRuleList */
         MerchantRuleList: {
             /** Items */
@@ -662,6 +820,59 @@ export interface components {
         MerchantRuleUpdate: {
             /** Category */
             category: string;
+        };
+        /** MerchantsOut */
+        MerchantsOut: {
+            /** Items */
+            items: components["schemas"]["MerchantItem"][];
+            period: components["schemas"]["PeriodInfo"];
+        };
+        /** MethodItem */
+        MethodItem: {
+            /** Amount */
+            amount: string;
+            /** Count */
+            count: number;
+            /** Payment Method */
+            payment_method: string;
+            /** Share */
+            share: string;
+        };
+        /** MethodsOut */
+        MethodsOut: {
+            /** Items */
+            items: components["schemas"]["MethodItem"][];
+            period: components["schemas"]["PeriodInfo"];
+            /** Total Expenses */
+            total_expenses: string;
+        };
+        /** PeriodInfo */
+        PeriodInfo: {
+            /** Days Elapsed */
+            days_elapsed: number;
+            /** Days In Period */
+            days_in_period: number;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** In Progress */
+            in_progress: boolean;
+            /** Period Id */
+            period_id: string | null;
+            /**
+             * Range
+             * @enum {string}
+             */
+            range: "current_period" | "previous_period" | "last_3_periods" | "custom";
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+            /** Timezone */
+            timezone: string;
         };
         /** RecategorizeRequest */
         RecategorizeRequest: {
@@ -768,6 +979,27 @@ export interface components {
              */
             status: "valid" | "invalid" | "duplicate";
             values?: components["schemas"]["RowValues"] | null;
+        };
+        /** SummaryOut */
+        SummaryOut: {
+            /** Balance */
+            balance: string;
+            comparison: components["schemas"]["Comparison"];
+            /** Expense Count */
+            expense_count: number;
+            /** Expenses */
+            expenses: string;
+            /** Income */
+            income: string;
+            /** Income Count */
+            income_count: number;
+            /** Net */
+            net: string;
+            period: components["schemas"]["PeriodInfo"];
+            /** Review Queue Count */
+            review_queue_count: number;
+            /** Savings Rate */
+            savings_rate: string | null;
         };
         /** TokenResponse */
         TokenResponse: {
@@ -987,6 +1219,40 @@ export interface components {
             /** Version */
             version: number;
         };
+        /** TrendPoint */
+        TrendPoint: {
+            /** Budget Pace */
+            budget_pace: string | null;
+            /** Cumulative */
+            cumulative: string | null;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Expenses */
+            expenses: string;
+            /** Future */
+            future: boolean;
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+        };
+        /** TrendsOut */
+        TrendsOut: {
+            /** Budget Limit */
+            budget_limit: string | null;
+            /**
+             * Granularity
+             * @enum {string}
+             */
+            granularity: "day" | "week" | "month";
+            period: components["schemas"]["PeriodInfo"];
+            /** Series */
+            series: components["schemas"]["TrendPoint"][];
+        };
         /** UpdateProfileRequest */
         UpdateProfileRequest: {
             /** Budget Period Start Day */
@@ -1061,6 +1327,173 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
+    categories_api_v1_analytics_categories_get: {
+        parameters: {
+            query?: {
+                range?: "current_period" | "previous_period" | "last_3_periods" | "custom";
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["CategoriesOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    merchants_api_v1_analytics_merchants_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+                range?: "current_period" | "previous_period" | "last_3_periods" | "custom";
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MerchantsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    payment_methods_api_v1_analytics_payment_methods_get: {
+        parameters: {
+            query?: {
+                range?: "current_period" | "previous_period" | "last_3_periods" | "custom";
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["MethodsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    summary_api_v1_analytics_summary_get: {
+        parameters: {
+            query?: {
+                range?: "current_period" | "previous_period" | "last_3_periods" | "custom";
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SummaryOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    trends_api_v1_analytics_trends_get: {
+        parameters: {
+            query?: {
+                granularity?: "auto" | "day" | "week" | "month";
+                range?: "current_period" | "previous_period" | "last_3_periods" | "custom";
+                date_from?: string | null;
+                date_to?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["TrendsOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     login_api_v1_auth_login_post: {
         parameters: {
             query?: never;

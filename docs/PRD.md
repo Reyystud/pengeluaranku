@@ -2794,3 +2794,10 @@ After the project is complete, add real results to this table.
 
 - `services/backend/openapi.json` is committed; `make openapi` regenerates it and `frontend/src/api/schema.d.ts`; `make openapi-check` runs in CI.
 - The mutating endpoints that require `Idempotency-Key` (13.1.4): create transaction, bulk delete, bulk categorize, import commit. The frontend sends a UUID per user action.
+
+### Addendum T-20: analytics response contract
+
+- Every response carries `period {range, start, end, period_id, days_in_period, days_elapsed, in_progress, timezone}` (`end` inclusive; `period_id` only for a single budget period).
+- `summary`: `balance, income, expenses, net, savings_rate, income_count, expense_count, comparison{label, current, previous, change{income, expenses, net}}, review_queue_count`. `categories`: `total_expenses, items[{slug, name, amount, share, count}]` (all categories, sorted by amount). `trends`: `granularity, budget_limit, series[{start, end, expenses, cumulative, future, budget_pace}]`. `merchants`: `items[{merchant_key, name, amount, count}]`, `limit` 1..20 (default 5). `payment-methods`: `total_expenses, items[{payment_method, amount, share, count}]`.
+- `trends` also takes `granularity=auto|day|week|month`; `month` means budget periods. Percentages are strings in percent with one decimal.
+- Ranges, comparison rules and the change formula are fixed in `docs/DECISIONS.md` (T-20).

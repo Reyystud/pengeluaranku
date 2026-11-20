@@ -82,6 +82,31 @@
         "title": "BulkDelete",
         "type": "object"
       },
+      "CategoriesOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          },
+          "total_expenses": {
+            "title": "Total Expenses",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "total_expenses",
+          "items"
+        ],
+        "title": "CategoriesOut",
+        "type": "object"
+      },
       "Categorization": {
         "properties": {
           "alternatives": {
@@ -248,6 +273,39 @@
         "title": "CategorizePreviewOut",
         "type": "object"
       },
+      "CategoryItem": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "share": {
+            "title": "Share",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "amount",
+          "share",
+          "count"
+        ],
+        "title": "CategoryItem",
+        "type": "object"
+      },
       "CategoryOut": {
         "properties": {
           "id": {
@@ -322,6 +380,51 @@
         "title": "ChangePasswordRequest",
         "type": "object"
       },
+      "Changes": {
+        "description": "Percent change (cur - prev) / prev, 1 decimal; null when the previous value is 0.",
+        "properties": {
+          "expenses": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expenses"
+          },
+          "income": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Income"
+          },
+          "net": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net"
+          }
+        },
+        "required": [
+          "income",
+          "expenses",
+          "net"
+        ],
+        "title": "Changes",
+        "type": "object"
+      },
       "CommitRequest": {
         "additionalProperties": false,
         "properties": {
@@ -350,6 +453,31 @@
           }
         },
         "title": "CommitRequest",
+        "type": "object"
+      },
+      "Comparison": {
+        "properties": {
+          "change": {
+            "$ref": "#/components/schemas/Changes"
+          },
+          "current": {
+            "$ref": "#/components/schemas/Figures"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/Figures"
+          }
+        },
+        "required": [
+          "label",
+          "current",
+          "previous",
+          "change"
+        ],
+        "title": "Comparison",
         "type": "object"
       },
       "CountOut": {
@@ -384,6 +512,53 @@
           "confirm"
         ],
         "title": "DeleteAccountRequest",
+        "type": "object"
+      },
+      "Figures": {
+        "properties": {
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "expenses": {
+            "title": "Expenses",
+            "type": "string"
+          },
+          "income": {
+            "title": "Income",
+            "type": "string"
+          },
+          "net": {
+            "title": "Net",
+            "type": "string"
+          },
+          "savings_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings Rate"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "income",
+          "expenses",
+          "net",
+          "savings_rate"
+        ],
+        "title": "Figures",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -542,6 +717,34 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "MerchantItem": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "merchant_key": {
+            "title": "Merchant Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "merchant_key",
+          "name",
+          "amount",
+          "count"
+        ],
+        "title": "MerchantItem",
+        "type": "object"
+      },
       "MerchantRuleList": {
         "properties": {
           "items": {
@@ -628,6 +831,142 @@
           "category"
         ],
         "title": "MerchantRuleUpdate",
+        "type": "object"
+      },
+      "MerchantsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MerchantItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          }
+        },
+        "required": [
+          "period",
+          "items"
+        ],
+        "title": "MerchantsOut",
+        "type": "object"
+      },
+      "MethodItem": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "payment_method": {
+            "title": "Payment Method",
+            "type": "string"
+          },
+          "share": {
+            "title": "Share",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment_method",
+          "amount",
+          "share",
+          "count"
+        ],
+        "title": "MethodItem",
+        "type": "object"
+      },
+      "MethodsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MethodItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          },
+          "total_expenses": {
+            "title": "Total Expenses",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "total_expenses",
+          "items"
+        ],
+        "title": "MethodsOut",
+        "type": "object"
+      },
+      "PeriodInfo": {
+        "properties": {
+          "days_elapsed": {
+            "title": "Days Elapsed",
+            "type": "integer"
+          },
+          "days_in_period": {
+            "title": "Days In Period",
+            "type": "integer"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "in_progress": {
+            "title": "In Progress",
+            "type": "boolean"
+          },
+          "period_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Id"
+          },
+          "range": {
+            "enum": [
+              "current_period",
+              "previous_period",
+              "last_3_periods",
+              "custom"
+            ],
+            "title": "Range",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "range",
+          "start",
+          "end",
+          "period_id",
+          "days_in_period",
+          "days_elapsed",
+          "in_progress",
+          "timezone"
+        ],
+        "title": "PeriodInfo",
         "type": "object"
       },
       "RecategorizeRequest": {
@@ -960,6 +1299,69 @@
           "status"
         ],
         "title": "StagedRow",
+        "type": "object"
+      },
+      "SummaryOut": {
+        "properties": {
+          "balance": {
+            "title": "Balance",
+            "type": "string"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/Comparison"
+          },
+          "expense_count": {
+            "title": "Expense Count",
+            "type": "integer"
+          },
+          "expenses": {
+            "title": "Expenses",
+            "type": "string"
+          },
+          "income": {
+            "title": "Income",
+            "type": "string"
+          },
+          "income_count": {
+            "title": "Income Count",
+            "type": "integer"
+          },
+          "net": {
+            "title": "Net",
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          },
+          "review_queue_count": {
+            "title": "Review Queue Count",
+            "type": "integer"
+          },
+          "savings_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings Rate"
+          }
+        },
+        "required": [
+          "period",
+          "balance",
+          "income",
+          "expenses",
+          "net",
+          "savings_rate",
+          "income_count",
+          "expense_count",
+          "comparison",
+          "review_queue_count"
+        ],
+        "title": "SummaryOut",
         "type": "object"
       },
       "TokenResponse": {
@@ -1637,6 +2039,102 @@
         "title": "TransactionUpdated",
         "type": "object"
       },
+      "TrendPoint": {
+        "properties": {
+          "budget_pace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Pace"
+          },
+          "cumulative": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cumulative"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "expenses": {
+            "title": "Expenses",
+            "type": "string"
+          },
+          "future": {
+            "title": "Future",
+            "type": "boolean"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "expenses",
+          "cumulative",
+          "future",
+          "budget_pace"
+        ],
+        "title": "TrendPoint",
+        "type": "object"
+      },
+      "TrendsOut": {
+        "properties": {
+          "budget_limit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Limit"
+          },
+          "granularity": {
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ],
+            "title": "Granularity",
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/TrendPoint"
+            },
+            "title": "Series",
+            "type": "array"
+          }
+        },
+        "required": [
+          "period",
+          "granularity",
+          "budget_limit",
+          "series"
+        ],
+        "title": "TrendsOut",
+        "type": "object"
+      },
       "UpdateProfileRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1872,6 +2370,449 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/analytics/categories": {
+      "get": {
+        "operationId": "categories_api_v1_analytics_categories_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Categories",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/merchants": {
+      "get": {
+        "operationId": "merchants_api_v1_analytics_merchants_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "maximum": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MerchantsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Merchants",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/payment-methods": {
+      "get": {
+        "operationId": "payment_methods_api_v1_analytics_payment_methods_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MethodsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Payment Methods",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/summary": {
+      "get": {
+        "operationId": "summary_api_v1_analytics_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Summary",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/trends": {
+      "get": {
+        "operationId": "trends_api_v1_analytics_trends_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "granularity",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "day",
+                "week",
+                "month"
+              ],
+              "title": "Granularity",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trends",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "operationId": "login_api_v1_auth_login_post",
