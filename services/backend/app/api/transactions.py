@@ -12,17 +12,31 @@ from fastapi import APIRouter, Depends, Header, Query, Request, Response
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 
-from app.api.deps import CurrentUser, SessionDep, SettingsDep
+from app.api.deps import (
+    CurrentUser,
+    SessionDep,
+    SettingsDep,
+    enforce_rate_limit,
+    get_limiter,
+    get_ml_client,
+)
+from app.clients.ml import MlClient
+from app.core.ratelimit import RateLimiter
 from app.schemas.transactions import (
     BulkCategorize,
     BulkDelete,
+    CategorizePreview,
+    CategorizePreviewOut,
     CountOut,
+    RecategorizeRequest,
     TransactionCreate,
     TransactionCreated,
     TransactionOut,
     TransactionPage,
     TransactionUpdate,
+    TransactionUpdated,
 )
+from app.services.categorization import MlCategorizer
 from app.services.idempotency import IdempotencyService, validate_key
 from app.services.transactions import DEFAULT_LIMIT, MAX_LIMIT, ListQuery, TransactionService
 
@@ -32,10 +46,16 @@ IdempotencyHeader = Annotated[str | None, Header(alias="Idempotency-Key")]
 
 
 def _service(
-    request: Request, session: SessionDep, settings: SettingsDep, user: CurrentUser
+    request: Request,
+    session: SessionDep,
+    settings: SettingsDep,
+    user: CurrentUser,
+    ml: Annotated[MlClient, Depends(get_ml_client)],
 ) -> TransactionService:
     request_id = getattr(request.state, "request_id", None)
-    return TransactionService(session, settings, user, request_id=request_id)
+    service = TransactionService(session, settings, user, request_id=request_id)
+    service.categorizer = MlCategorizer(session, ml, service.by_slug, service.by_id)
+    return service
 
 
 ServiceDep = Annotated[TransactionService, Depends(_service)]
@@ -135,6 +155,17 @@ def create_transaction(
     )
 
 
+@router.post("/categorize-preview", response_model=CategorizePreviewOut)
+def categorize_preview(
+    body: CategorizePreview,
+    user: CurrentUser,
+    service: ServiceDep,
+    limiter: Annotated[RateLimiter, Depends(get_limiter)],
+) -> CategorizePreviewOut:
+    enforce_rate_limit(limiter, "categorize-preview", user.id, 60, 60.0)  # 60 / min (13.1.6)
+    return service.preview_category(body)
+
+
 @router.post("/bulk-delete")
 def bulk_delete(
     body: BulkDelete,
@@ -190,14 +221,26 @@ def get_transaction(transaction_id: uuid.UUID, service: ServiceDep) -> Transacti
     return service.get(transaction_id)
 
 
-@router.patch("/{transaction_id}", response_model=TransactionOut)
+@router.patch("/{transaction_id}", response_model=TransactionUpdated)
 def update_transaction(
     transaction_id: uuid.UUID,
     body: TransactionUpdate,
     service: ServiceDep,
     if_match: Annotated[str | None, Header(alias="If-Match")] = None,
-) -> TransactionOut:
+) -> TransactionUpdated:
     return service.update(transaction_id, body, if_match)
+
+
+@router.post("/{transaction_id}/confirm-category", response_model=TransactionOut)
+def confirm_category(transaction_id: uuid.UUID, service: ServiceDep) -> TransactionOut:
+    return service.confirm_category(transaction_id)
+
+
+@router.post("/{transaction_id}/recategorize", response_model=TransactionCreated)
+def recategorize(
+    transaction_id: uuid.UUID, service: ServiceDep, body: RecategorizeRequest | None = None
+) -> TransactionCreated:
+    return service.recategorize(transaction_id, force=body.force if body else False)
 
 
 @router.post("/{transaction_id}/dismiss-duplicate", response_model=TransactionOut)

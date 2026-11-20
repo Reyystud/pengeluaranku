@@ -10,9 +10,11 @@ from zoneinfo import ZoneInfo
 from fastapi import APIRouter, Depends, File, Header, Query, Request, Response, UploadFile
 from fastapi.responses import JSONResponse
 
-from app.api.deps import CurrentUser, SessionDep, SettingsDep
+from app.api.deps import CurrentUser, SessionDep, SettingsDep, get_ml_client
 from app.api.transactions import IdempotencyHeader, run_idempotent
+from app.clients.ml import MlClient
 from app.schemas.imports import CommitRequest, ImportPreview
+from app.services.categorization import MlCategorizer
 from app.services.idempotency import validate_key
 from app.services.imports import (
     MAX_FILE_BYTES,
@@ -26,11 +28,17 @@ router = APIRouter(prefix="/transactions/imports", tags=["imports"])
 
 
 def _service(
-    request: Request, session: SessionDep, settings: SettingsDep, user: CurrentUser
+    request: Request,
+    session: SessionDep,
+    settings: SettingsDep,
+    user: CurrentUser,
+    ml: Annotated[MlClient, Depends(get_ml_client)],
 ) -> ImportService:
-    return ImportService(
+    service = ImportService(
         session, settings, user, request_id=getattr(request.state, "request_id", None)
     )
+    service.tx.categorizer = MlCategorizer(session, ml, service.tx.by_slug, service.tx.by_id)
+    return service
 
 
 ServiceDep = Annotated[ImportService, Depends(_service)]

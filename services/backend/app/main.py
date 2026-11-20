@@ -9,6 +9,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api import health
 from app.api.router import api_router
+from app.clients.ml import MlClient
 from app.core.config import Settings, get_settings
 from app.core.db import create_session_factory, register_readiness
 from app.core.errors import install_error_handlers
@@ -31,6 +32,7 @@ def create_app(settings: Settings | None = None, log_stream: TextIO | None = Non
     app.state.settings = settings
     app.state.readiness_checks = {}
     app.state.rate_limiter = RateLimiter()
+    app.state.ml_client = MlClient(settings)
     engine = register_readiness(app.state.readiness_checks, settings)
     app.state.engine = engine
     app.state.session_factory = create_session_factory(engine) if engine is not None else None

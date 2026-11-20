@@ -37,16 +37,30 @@ def _victim_import(client: TestClient, headers: dict[str, str]) -> str:
     )
 
 
+def _victim_rule(client: TestClient, headers: dict[str, str]) -> str:
+    """Changing a category on a merchant with a key creates a rule (FR-03.08)."""
+    tx = make(client, headers, description="Victim private purchase")
+    r = client.patch(
+        f"{API}/transactions/{tx['id']}", json={"category": "groceries"}, headers=headers
+    )
+    assert r.status_code == 200, r.text
+    rules = client.get(f"{API}/merchant-rules", headers=headers).json()["items"]
+    assert len(rules) == 1
+    return str(rules[0]["id"])
+
+
 # Path parameter name -> how to create a resource of the victim that it can point to.
 RESOURCES: dict[str, Callable[[TestClient, dict[str, str]], str]] = {
     "transaction_id": _victim_transaction,
     "import_id": _victim_import,
+    "rule_id": _victim_rule,
 }
 
 # Minimal valid bodies, so a 404 can only come from ownership and never from validation.
 BODIES: dict[tuple[str, str], dict[str, Any]] = {
     ("PATCH", "/api/v1/transactions/{transaction_id}"): {"notes": "attacker was here"},
     ("POST", "/api/v1/transactions/imports/{import_id}/commit"): {"mode": "skip_invalid"},
+    ("PATCH", "/api/v1/merchant-rules/{rule_id}"): {"category": "transportation"},
 }
 
 
@@ -98,7 +112,7 @@ def test_17_1_every_route_with_an_id_is_covered_by_this_suite(client: TestClient
     )
     # Anything with an {id}-like parameter must be a known resource, never a free-form string.
     seen = {x for _, _, params in ops for x in params}
-    assert {"transaction_id", "import_id"} <= seen
+    assert {"transaction_id", "import_id", "rule_id"} <= seen
 
 
 def test_every_endpoint_with_id_returns_404_for_other_user(
@@ -116,11 +130,13 @@ def test_every_endpoint_with_id_returns_404_for_other_user(
         assert shape(foreign) == shape(absent), f"{method} {template} leaks existence"
         assert ids[params[0]] not in foreign.text
         checked += 1
-    assert checked >= 7
+    assert checked >= 11
 
     # Nothing the intruder tried changed the victim's data.
     tx = client.get(f"{API}/transactions/{ids['transaction_id']}", headers=victim)
     assert tx.status_code == 200 and tx.json()["version"] == 1 and tx.json()["notes"] is None
+    rules = client.get(f"{API}/merchant-rules", headers=victim).json()["items"]
+    assert [(r["id"], r["category"]["slug"]) for r in rules] == [(ids["rule_id"], "groceries")]
     imp = client.get(f"{API}/transactions/imports/{ids['import_id']}", headers=victim).json()
     assert imp["status"] == "previewed" and imp["summary"]["row_count"] == 1
     with engine.connect() as conn:

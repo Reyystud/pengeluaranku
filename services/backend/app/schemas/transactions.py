@@ -91,6 +91,7 @@ class TransactionCreate(StrictModel):
 
 
 class TransactionUpdate(StrictModel):
+    apply_to_past_merchant_transactions: bool = False  # only with a category change (FR-03.08)
     transaction_type: TransactionType | None = None
     amount: Amount | None = None
     description: Text | None = None
@@ -175,15 +176,59 @@ class TransactionOut(BaseModel):
 
 class Categorization(BaseModel):
     decision: str
-    source: str
+    source: str  # user | rule | model | fallback
     confidence: float | None
-    alternatives: list[dict[str, Any]]
+    alternatives: list[dict[str, Any]]  # [{category: slug, confidence}], quick picks for review
     model_version: str | None
+    predicted_category: str | None = None  # the top pick, even when the row stays uncategorized
+    ml_error: str | None = None  # timeout | unavailable | circuit_open | bad_response | ...
 
 
 class TransactionCreated(TransactionOut):
     categorization: Categorization
     warnings: list[str]
+
+
+class TransactionUpdated(TransactionOut):
+    applied_to_past: int = 0  # past transactions of the merchant changed by the checkbox
+
+
+class CategorizePreview(StrictModel):
+    description: Text
+    merchant: Text | None = None
+    amount: Amount | None = None
+    payment_method: PaymentMethod = "other"
+    transaction_type: TransactionType
+    transaction_date: When | None = None
+
+
+class CategorizePreviewOut(BaseModel):
+    category: CategoryRef
+    category_status: str
+    categorization: Categorization
+
+
+class RecategorizeRequest(StrictModel):
+    force: bool = False
+
+
+class MerchantRuleOut(BaseModel):
+    id: uuid.UUID
+    merchant_key: str
+    merchant_display: str
+    category: CategoryRef
+    times_applied: int
+    last_applied_at: dt.datetime | None
+    created_at: dt.datetime
+    updated_at: dt.datetime
+
+
+class MerchantRuleUpdate(StrictModel):
+    category: str
+
+
+class MerchantRuleList(BaseModel):
+    items: list[MerchantRuleOut]
 
 
 class TransactionPage(BaseModel):

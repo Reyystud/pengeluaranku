@@ -7,33 +7,23 @@ from typing import Any
 from app.models import (
     Anomaly,
     Budget,
-    CategoryFeedback,
-    CategoryPrediction,
     Forecast,
     ForecastOutcome,
     Insight,
-    MerchantRule,
     Notification,
     RecurringSeries,
 )
 from app.repositories.auth import RefreshTokenStore
 from app.repositories.base import ScopedRepository
+from app.repositories.categorization import (
+    CategoryFeedbackRepository,
+    CategoryPredictionRepository,
+    MerchantRuleRepository,
+)
 from app.repositories.idempotency import IdempotencyRepository
 from app.repositories.imports import TransactionImportRepository
 from app.repositories.transactions import TransactionFilters, TransactionRepository
 from app.repositories.users import CategoryRepository, UserRepository
-
-
-class CategoryPredictionRepository(ScopedRepository[CategoryPrediction]):
-    model = CategoryPrediction
-
-
-class MerchantRuleRepository(ScopedRepository[MerchantRule]):
-    model = MerchantRule
-
-
-class CategoryFeedbackRepository(ScopedRepository[CategoryFeedback]):
-    model = CategoryFeedback
 
 
 class BudgetRepository(ScopedRepository[Budget]):
@@ -99,6 +89,9 @@ UNSCOPED_BY_DESIGN: dict[str, str] = {
 __all__ = [
     "KEYED_REPOSITORIES",
     "IdempotencyRepository",
+    "CategoryFeedbackRepository",
+    "CategoryPredictionRepository",
+    "MerchantRuleRepository",
     "TransactionFilters",
     "TransactionImportRepository",
     "TransactionRepository",

@@ -218,6 +218,36 @@ class TransactionRepository(ScopedRepository[Transaction]):
         self.session.flush()
         return removed
 
+    def apply_category_to_merchant(
+        self,
+        user_id: uuid.UUID,
+        merchant_key: str,
+        category_id: uuid.UUID,
+        transaction_types: Sequence[str],
+        *,
+        exclude_id: uuid.UUID,
+    ) -> int:
+        """Past rows of one merchant that the user has not locked (FR-03.08), as ``rule`` rows."""
+        t = Transaction
+        stmt = (
+            update(t)
+            .where(
+                t.user_id == user_id,
+                t.merchant_key == merchant_key,
+                t.id != exclude_id,
+                t.transaction_type.in_(list(transaction_types)),
+                t.category_status.not_in(("user_set", "user_confirmed")),
+                t.category_id != category_id,
+            )
+            .values(
+                category_id=category_id,
+                category_status="rule",
+                version=t.version + 1,
+                updated_at=func.now(),
+            )
+        )
+        return int(self.session.execute(stmt).rowcount)  # type: ignore[attr-defined]
+
     def set_category_many(
         self, user_id: uuid.UUID, ids: Sequence[uuid.UUID], category_id: uuid.UUID, status: str
     ) -> int:
