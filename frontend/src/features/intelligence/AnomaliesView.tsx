@@ -60,10 +60,7 @@ export function AnomaliesView() {
 
   return (
     <div className="space-y-4">
-      <div>
-        <h1 className="text-2xl font-bold">{t("intel.title")}</h1>
-        <p className="text-sm text-muted-foreground">{t("intel.alertsIntro")}</p>
-      </div>
+      <p className="text-sm text-muted-foreground">{t("intel.alertsIntro")}</p>
 
       <div className="grid gap-3 sm:grid-cols-3">
         <FilterSelect

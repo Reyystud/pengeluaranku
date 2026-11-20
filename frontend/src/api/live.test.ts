@@ -10,6 +10,7 @@ import type {
   Budget,
   BudgetList,
   CategorySplit,
+  ForecastResponse,
   Summary,
   Trends,
   NotificationPage,
@@ -162,5 +163,21 @@ describe.skipIf(!base)("live API contract", { timeout: LIVE_TIMEOUT_MS }, () => 
     });
     expect(done.status).toBe("dismissed");
     expect(done.feedback_reason).toBe("expected_purchase");
+  });
+
+  it("the forecast is unavailable for a new account, with the days needed", async () => {
+    const auth = await api.post<AuthResponse>(
+      "/auth/register",
+      {
+        email: `live-${crypto.randomUUID().slice(0, 8)}@example.com`,
+        password: `Pw-${crypto.randomUUID()}`,
+        display_name: "Live",
+      },
+      { anonymous: true },
+    );
+    setToken(auth.access_token);
+    const f = await api.get<ForecastResponse>("/intelligence/forecast");
+    expect(f.available).toBe(false);
+    if (!f.available) expect(f.days_needed).toBe(14);
   });
 });

@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-24 (forecasting); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-25 (Prefect training flow, MLflow registry); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,14 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-21 — T-24 Forecast run-rate + decomposition + API/UI
+- Done: `ml/forecasting` (run-rate, seasonal naive, interval heuristic, exceed band, daily P10/P50/P90 curve), `config/forecast.yaml`; backend `ForecastRepository`/`ForecastService` (compute, store in `forecasts`, lazy 6 h cache rule, prune to 30, `refresh_all()` for the daily batch), `GET /intelligence/forecast` (overall or `category`), `BudgetOut.projected` (FR-05.07), estimated period-end balance; frontend Forecast tab on `/intelligence` (estimate label, range, band in words, chart + table, "How is this calculated?") and a dashboard estimate card.
+- Verified: `make check` (see below), 90 Vitest tests, new unit/property tests for the formulas and 19 integration tests (minimum history, run-rate vs seasonal, category minimums, bands at the P50/P90 boundaries, cache rules, pruning, isolation).
+- No accuracy numbers yet: a forecast evaluation on the locked forecast periods is not part of this task; do not quote any MAPE until it comes from a real run.
+- Decisions: `docs/DECISIONS.md` (T-24), PRD addendum T-24.
+- Not done / for later: recurring decomposition (T-30), ETS/LightGBM quantile models and the promotion gate (T-38), the daily job that calls `refresh_all()` (T-37), forecast outcomes (`forecast_outcomes`) at period close, browser check of the Forecast tab at 360 px and dark mode.
+- Next: T-25.
 
 ### 2026-11-21 — T-23 Anomaly baseline, rules, event path, API/UI, feedback
 - Done: `ml/anomaly_detection` (robust z-score spike + low amount, Poisson burst, new merchant, category surge, computed reasons, cold-start prior, batch history helper, evaluation script, priors script); `config/anomaly.yaml` + `config/anomaly_priors.yaml` (from the anomaly train split of synthetic v1); backend repository/service, in-process outbox drain with `processed_events` dedupe, alert cap, suppressions, historical rows, re-score on edit, cascade on delete, `anomaly_alert` notification, `GET /intelligence/anomalies`, `GET .../{id}`, `POST .../{id}/feedback`; frontend `/intelligence` (filters, reasons, confirm/dismiss with reason) and a dashboard "Unusual spending" card.
@@ -205,7 +213,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-21 | Budgets + status + thresholds + notifications (FR-05, FR-14) | T-20 | done | 2026-11-20 |
 | T-22 | Dashboard + budgets pages | T-20, T-21 | done | 2026-11-21 |
 | T-23 | Anomaly baseline + rules + in-memory event path + anomalies API/UI + feedback | T-18 | done | 2026-11-21 |
-| T-24 | Forecast run-rate + decomposition + API/UI | T-20 | todo | |
+| T-24 | Forecast run-rate + decomposition + API/UI | T-20 | done | 2026-11-21 |
 
 ### Week 6 — MLOps core (= Cut line A)
 | ID | Task | Deps | Status | Notes |

@@ -1019,6 +1019,35 @@
         "title": "CountOut",
         "type": "object"
       },
+      "CurvePointOut": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "p10": {
+            "title": "P10",
+            "type": "string"
+          },
+          "p50": {
+            "title": "P50",
+            "type": "string"
+          },
+          "p90": {
+            "title": "P90",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "p10",
+          "p50",
+          "p90"
+        ],
+        "title": "CurvePointOut",
+        "type": "object"
+      },
       "DeleteAccountRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1085,6 +1114,196 @@
           "savings_rate"
         ],
         "title": "Figures",
+        "type": "object"
+      },
+      "ForecastBudget": {
+        "properties": {
+          "exceed_band": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Exceed Band",
+            "type": "string"
+          },
+          "limit_amount": {
+            "title": "Limit Amount",
+            "type": "string"
+          },
+          "predicted_over_budget": {
+            "title": "Predicted Over Budget",
+            "type": "string"
+          }
+        },
+        "required": [
+          "limit_amount",
+          "predicted_over_budget",
+          "exceed_band"
+        ],
+        "title": "ForecastBudget",
+        "type": "object"
+      },
+      "ForecastOut": {
+        "properties": {
+          "available": {
+            "const": true,
+            "default": true,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "baseline_prediction": {
+            "title": "Baseline Prediction",
+            "type": "string"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForecastBudget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CategoryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "daily_curve": {
+            "items": {
+              "$ref": "#/components/schemas/CurvePointOut"
+            },
+            "title": "Daily Curve",
+            "type": "array"
+          },
+          "estimated_period_end_balance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Period End Balance"
+          },
+          "expected_recurring_remaining": {
+            "title": "Expected Recurring Remaining",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "history_level": {
+            "enum": [
+              "personal",
+              "limited"
+            ],
+            "title": "History Level",
+            "type": "string"
+          },
+          "interval_high": {
+            "title": "Interval High",
+            "type": "string"
+          },
+          "interval_low": {
+            "title": "Interval Low",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "run_rate",
+              "seasonal_naive",
+              "model"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "period": {
+            "$ref": "#/components/schemas/BudgetPeriod"
+          },
+          "predicted_remaining": {
+            "title": "Predicted Remaining",
+            "type": "string"
+          },
+          "predicted_total": {
+            "title": "Predicted Total",
+            "type": "string"
+          },
+          "spent_to_date": {
+            "title": "Spent To Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "category",
+          "spent_to_date",
+          "predicted_total",
+          "interval_low",
+          "interval_high",
+          "predicted_remaining",
+          "expected_recurring_remaining",
+          "baseline_prediction",
+          "method",
+          "history_level",
+          "model_version",
+          "generated_at",
+          "budget",
+          "estimated_period_end_balance",
+          "daily_curve"
+        ],
+        "title": "ForecastOut",
+        "type": "object"
+      },
+      "ForecastUnavailable": {
+        "properties": {
+          "available": {
+            "const": false,
+            "default": false,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "days_needed": {
+            "title": "Days Needed",
+            "type": "integer"
+          },
+          "reason": {
+            "const": "INSUFFICIENT_HISTORY",
+            "default": "INSUFFICIENT_HISTORY",
+            "title": "Reason",
+            "type": "string"
+          },
+          "transactions_needed": {
+            "title": "Transactions Needed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days_needed",
+          "transactions_needed"
+        ],
+        "title": "ForecastUnavailable",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -4211,6 +4430,64 @@
           }
         },
         "summary": "Anomaly Feedback",
+        "tags": [
+          "intelligence"
+        ]
+      }
+    },
+    "/api/v1/intelligence/forecast": {
+      "get": {
+        "operationId": "get_forecast_api_v1_intelligence_forecast_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ForecastOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ForecastUnavailable"
+                    }
+                  ],
+                  "title": "Response Get Forecast Api V1 Intelligence Forecast Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Forecast",
         "tags": [
           "intelligence"
         ]

@@ -2813,3 +2813,9 @@ After the project is complete, add real results to this table.
 - `GET /intelligence/anomalies`: filters `status` (repeatable; default open, confirmed, dismissed, historical), `severity`, `type`, `period_id`, `alerts_only`, `limit` 1..100, `cursor`; returns `{items, next_cursor}`, newest first. `GET /intelligence/anomalies/{id}`; `POST /intelligence/anomalies/{id}/feedback` `{action: confirm|dismiss, reason?}` (reason only with dismiss; 409 `ANOMALY_SUPERSEDED` on a replaced row).
 - `AnomalyOut`: `id, anomaly_type, severity, status, is_alert, score (0..1), history_level, category|null, period_id, reasons[{code, message, feature, value, reference}], transaction{id, transaction_date, amount, merchant, description}|null, model_version, feedback_reason, feedback_at, created_at`.
 - Thresholds: `config/anomaly.yaml`; cold-start priors: `config/anomaly_priors.yaml`. Event handling and alert rules: `docs/DECISIONS.md` (T-23).
+
+### Addendum T-24: forecast API contract
+
+- `GET /intelligence/forecast?category=<expense slug>` always returns 200 with `ForecastOut` (`available: true`) or `{available: false, reason: "INSUFFICIENT_HISTORY", days_needed, transactions_needed}`. Unknown category 422 `UNKNOWN_CATEGORY`; non-expense 422 `CATEGORY_TYPE_MISMATCH`.
+- `ForecastOut`: `period{start,end,period_id,days_in_period,days_elapsed}`, `category|null`, `spent_to_date, predicted_total, interval_low, interval_high, predicted_remaining, expected_recurring_remaining, baseline_prediction` (strings), `method, history_level, model_version` (config version until a model exists), `generated_at`, `budget{limit_amount, predicted_over_budget, exceed_band}|null`, `estimated_period_end_balance|null` (overall only), `daily_curve[{date,p10,p50,p90}]` (cumulative period total per remaining day).
+- `BudgetOut.projected` is `on_track` | `may_exceed` | `null` (FR-05.07). Thresholds and the interval heuristic: `config/forecast.yaml`, `docs/DECISIONS.md` (T-24).

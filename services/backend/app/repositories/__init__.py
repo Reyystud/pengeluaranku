@@ -5,7 +5,6 @@ from __future__ import annotations
 from typing import Any
 
 from app.models import (
-    Forecast,
     ForecastOutcome,
     Insight,
     RecurringSeries,
@@ -19,15 +18,12 @@ from app.repositories.categorization import (
     CategoryPredictionRepository,
     MerchantRuleRepository,
 )
+from app.repositories.forecasts import ForecastRepository
 from app.repositories.idempotency import IdempotencyRepository
 from app.repositories.imports import TransactionImportRepository
 from app.repositories.notifications import NotificationRepository
 from app.repositories.transactions import TransactionFilters, TransactionRepository
 from app.repositories.users import CategoryRepository, UserRepository
-
-
-class ForecastRepository(ScopedRepository[Forecast]):
-    model = Forecast
 
 
 class ForecastOutcomeRepository(ScopedRepository[ForecastOutcome]):
@@ -78,6 +74,7 @@ UNSCOPED_BY_DESIGN: dict[str, str] = {
 
 __all__ = [
     "AnomalyRepository",
+    "ForecastRepository",
     "AnomalySuppressionRepository",
     "BudgetRepository",
     "NotificationRepository",

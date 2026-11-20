@@ -140,6 +140,39 @@ describe("slices", () => {
   });
 });
 
+const FORECAST = {
+  available: true,
+  period: {
+    start: "2026-11-01",
+    end: "2026-11-30",
+    period_id: "2026-11-01",
+    days_in_period: 30,
+    days_elapsed: 20,
+  },
+  category: null,
+  spent_to_date: "2000000.00",
+  predicted_total: "3000000.00",
+  interval_low: "2800000.00",
+  interval_high: "3300000.00",
+  predicted_remaining: "1000000.00",
+  expected_recurring_remaining: "0.00",
+  baseline_prediction: "3000000.00",
+  method: "run_rate",
+  history_level: "limited",
+  model_version: "run-rate-1",
+  generated_at: "2026-11-20T05:00:00Z",
+  budget: {
+    limit_amount: "3100000.00",
+    predicted_over_budget: "-100000.00",
+    exceed_band: "medium",
+  },
+  estimated_period_end_balance: "1500000.00",
+  daily_curve: [
+    { date: "2026-11-21", p10: "2050000.00", p50: "2100000.00", p90: "2150000.00" },
+    { date: "2026-11-22", p10: "2150000.00", p50: "2200000.00", p90: "2260000.00" },
+  ],
+};
+
 const ALERTS = {
   items: [
     {
@@ -191,6 +224,7 @@ describe("DashboardView", () => {
       if (url.includes("/analytics/trends")) return jsonResponse(TREND);
       if (url.includes("/analytics/merchants")) return jsonResponse(MERCHANTS);
       if (url.includes("/intelligence/anomalies")) return jsonResponse(ALERTS);
+      if (url.includes("/intelligence/forecast")) return jsonResponse(FORECAST);
       if (url.includes("/budgets")) return jsonResponse(BUDGETS);
       return jsonResponse({});
     });
@@ -306,7 +340,9 @@ describe("DashboardView", () => {
               ? jsonResponse(MERCHANTS)
               : url.includes("/intelligence/anomalies")
                 ? jsonResponse(ALERTS)
-                : jsonResponse(BUDGETS),
+                : url.includes("/intelligence/forecast")
+                  ? jsonResponse(FORECAST)
+                  : jsonResponse(BUDGETS),
     );
     renderWithQuery(<DashboardView />);
     expect(await screen.findByText("req-9")).toBeInTheDocument();
@@ -339,5 +375,13 @@ describe("DashboardView", () => {
     );
     renderWithQuery(<DashboardView />);
     expect(await screen.findByText("No active alerts.")).toBeInTheDocument();
+  });
+
+  it("shows the period-end estimate with its range, the band in words and a link", async () => {
+    renderWithQuery(<DashboardView />);
+    expect(await screen.findByText("Rp3.000.000")).toBeInTheDocument();
+    expect(screen.getByText("Likely between Rp2.800.000 and Rp3.300.000")).toBeInTheDocument();
+    expect(screen.getByText("May exceed")).toBeInTheDocument();
+    expect(screen.getAllByText("Estimate").length).toBeGreaterThan(0);
   });
 });

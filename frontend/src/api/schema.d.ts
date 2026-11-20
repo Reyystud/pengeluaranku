@@ -279,6 +279,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/intelligence/forecast": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Forecast */
+        get: operations["get_forecast_api_v1_intelligence_forecast_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/merchant-rules": {
         parameters: {
             query?: never;
@@ -1045,6 +1062,20 @@ export interface components {
             /** Count */
             count: number;
         };
+        /** CurvePointOut */
+        CurvePointOut: {
+            /**
+             * Date
+             * Format: date
+             */
+            date: string;
+            /** P10 */
+            p10: string;
+            /** P50 */
+            p50: string;
+            /** P90 */
+            p90: string;
+        };
         /** DeleteAccountRequest */
         DeleteAccountRequest: {
             /**
@@ -1075,6 +1106,84 @@ export interface components {
              * Format: date
              */
             start: string;
+        };
+        /** ForecastBudget */
+        ForecastBudget: {
+            /**
+             * Exceed Band
+             * @enum {string}
+             */
+            exceed_band: "low" | "medium" | "high";
+            /** Limit Amount */
+            limit_amount: string;
+            /** Predicted Over Budget */
+            predicted_over_budget: string;
+        };
+        /** ForecastOut */
+        ForecastOut: {
+            /**
+             * Available
+             * @default true
+             * @constant
+             */
+            available: true;
+            /** Baseline Prediction */
+            baseline_prediction: string;
+            budget: components["schemas"]["ForecastBudget"] | null;
+            category: components["schemas"]["CategoryRef"] | null;
+            /** Daily Curve */
+            daily_curve: components["schemas"]["CurvePointOut"][];
+            /** Estimated Period End Balance */
+            estimated_period_end_balance: string | null;
+            /** Expected Recurring Remaining */
+            expected_recurring_remaining: string;
+            /**
+             * Generated At
+             * Format: date-time
+             */
+            generated_at: string;
+            /**
+             * History Level
+             * @enum {string}
+             */
+            history_level: "personal" | "limited";
+            /** Interval High */
+            interval_high: string;
+            /** Interval Low */
+            interval_low: string;
+            /**
+             * Method
+             * @enum {string}
+             */
+            method: "run_rate" | "seasonal_naive" | "model";
+            /** Model Version */
+            model_version: string | null;
+            period: components["schemas"]["BudgetPeriod"];
+            /** Predicted Remaining */
+            predicted_remaining: string;
+            /** Predicted Total */
+            predicted_total: string;
+            /** Spent To Date */
+            spent_to_date: string;
+        };
+        /** ForecastUnavailable */
+        ForecastUnavailable: {
+            /**
+             * Available
+             * @default false
+             * @constant
+             */
+            available: false;
+            /** Days Needed */
+            days_needed: number;
+            /**
+             * Reason
+             * @default INSUFFICIENT_HISTORY
+             * @constant
+             */
+            reason: "INSUFFICIENT_HISTORY";
+            /** Transactions Needed */
+            transactions_needed: number;
         };
         /** HTTPValidationError */
         HTTPValidationError: {
@@ -2338,6 +2447,37 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["AnomalyOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_forecast_api_v1_intelligence_forecast_get: {
+        parameters: {
+            query?: {
+                category?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ForecastOut"] | components["schemas"]["ForecastUnavailable"];
                 };
             };
             /** @description Validation Error */

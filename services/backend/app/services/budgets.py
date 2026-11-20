@@ -33,6 +33,7 @@ from app.schemas.budgets import (
 )
 from app.schemas.transactions import CategoryRef
 from app.services.analytics import AnalyticsService
+from app.services.forecasts import ForecastService
 
 CENT = Decimal("0.01")
 TENTH = Decimal("0.1")
@@ -68,6 +69,7 @@ class BudgetService:
         self.repo = BudgetRepository(session)
         self.notifications = NotificationRepository(session)
         self.analytics = AnalyticsService(session, user, now)
+        self.forecasts = ForecastService(session, user, now)
         self.tz = ZoneInfo(user.timezone)
         cats = CategoryRepository(session).list()
         self.by_id = {c.id: c for c in cats}
@@ -110,7 +112,7 @@ class BudgetService:
             remaining=(budget.limit_amount - spent).quantize(CENT, rounding=ROUND_HALF_UP),
             utilization=one_decimal(percent),
             status=status_of(percent),
-            projected=None,
+            projected=self.forecasts.projected(budget.category_id, budget.limit_amount),  # type: ignore[arg-type]
             period=BudgetPeriod(
                 start=period.start,
                 end=period.end,

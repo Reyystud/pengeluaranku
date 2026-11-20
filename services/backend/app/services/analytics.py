@@ -174,12 +174,16 @@ class AnalyticsService:
         )
         return figures, flow
 
+    def current_balance(self) -> Decimal:
+        """Opening balance plus all income minus all expenses up to now (FR-04.01)."""
+        flow = self.repo.flows_until(self.user.id, self.now)
+        return Decimal(self.user.opening_balance) + flow.income - flow.expenses
+
     # -- FR-04.01..04, FR-04.07 ----------------------------------------------------------------
     def summary(self, w: Window) -> SummaryOut:
         user_id = self.user.id
         whole, flow = self._figures(w.start, w.end)
-        balance_flow = self.repo.flows_until(user_id, self.now)
-        balance = Decimal(self.user.opening_balance) + balance_flow.income - balance_flow.expenses
+        balance = self.current_balance()
 
         # An in-progress range is compared to the same number of days of the previous one.
         elapsed = self._elapsed(w)

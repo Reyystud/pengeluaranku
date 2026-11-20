@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { AnomaliesView } from "@/features/intelligence/AnomaliesView";
+import { IntelligenceView } from "@/features/intelligence/IntelligenceView";
 
 export const metadata: Metadata = { title: "Intelligence" };
 export default function Page() {
-  return <AnomaliesView />;
+  return <IntelligenceView />;
 }

@@ -13,6 +13,8 @@ import { formatIdr } from "@/lib/money";
 import { cn } from "@/lib/utils";
 import { useBudgets } from "@/features/budgets/hooks";
 import { SeverityBadge } from "@/features/intelligence/AnomaliesView";
+import { useForecast } from "@/features/intelligence/forecast-hooks";
+import { BandBadge } from "@/features/intelligence/ForecastView";
 import { useActiveAlerts } from "@/features/intelligence/hooks";
 import { CategoryDonut, TrendChart } from "./charts";
 import { useCategorySplit, useMerchants, useSummary, useTrend } from "./hooks";
@@ -31,6 +33,7 @@ export function DashboardView() {
   const merchants = useMerchants(range);
   const budgets = useBudgets();
   const alerts = useActiveAlerts();
+  const forecast = useForecast("");
 
   return (
     <div className="space-y-5">
@@ -74,6 +77,7 @@ export function DashboardView() {
         </>
       )}
 
+      <ForecastCard query={forecast} />
       <BudgetProgress query={budgets} />
       <AlertsCard query={alerts} />
 
@@ -358,6 +362,41 @@ function AlertsCard({ query }: { query: ReturnType<typeof useActiveAlerts> }) {
             </li>
           ))}
         </ul>
+      )}
+    </section>
+  );
+}
+
+function ForecastCard({ query }: { query: ReturnType<typeof useForecast> }) {
+  if (query.isError) return <ErrorState error={query.error} onRetry={() => void query.refetch()} />;
+  if (query.isPending) return <Skeleton className="h-24" />;
+  const f = query.data;
+  return (
+    <section className="space-y-2 rounded-lg border border-border bg-card p-4">
+      <div className="flex items-center justify-between gap-2">
+        <h2 className="font-semibold">
+          {t("forecast.dashTitle")}{" "}
+          <span className="rounded-full bg-muted px-2 py-0.5 text-xs font-medium">
+            {t("forecast.estimate")}
+          </span>
+        </h2>
+        <Link href="/intelligence" className="text-sm font-medium text-primary underline">
+          {t("forecast.dashMore")}
+        </Link>
+      </div>
+      {f.available ? (
+        <>
+          <p className="text-2xl font-bold tabular-nums">{formatIdr(f.predicted_total)}</p>
+          <p className="text-sm text-muted-foreground">
+            {t("forecast.range", {
+              low: formatIdr(f.interval_low),
+              high: formatIdr(f.interval_high),
+            })}
+          </p>
+          {f.budget ? <BandBadge band={f.budget.exceed_band} /> : null}
+        </>
+      ) : (
+        <p className="text-sm text-muted-foreground">{t("forecast.dashEmpty")}</p>
       )}
     </section>
   );

@@ -51,3 +51,8 @@ export type AnomalyStatus = Anomaly["status"];
 export type AnomalySeverity = Anomaly["severity"];
 export type AnomalyType = Anomaly["anomaly_type"];
 export type DismissReason = NonNullable<Anomaly["feedback_reason"]>;
+
+export type ForecastOut = S["ForecastOut"];
+export type ForecastUnavailable = S["ForecastUnavailable"];
+export type ForecastResponse = ForecastOut | ForecastUnavailable;
+export type ExceedBand = NonNullable<ForecastOut["budget"]>["exceed_band"];

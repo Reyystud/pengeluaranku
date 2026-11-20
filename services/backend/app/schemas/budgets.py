@@ -73,9 +73,7 @@ class BudgetOut(BaseModel):
     remaining: Decimal  # may be negative when exceeded
     utilization: Decimal  # percent, 1 decimal
     status: BudgetStatus
-    projected: (
-        Literal["on_track", "may_exceed"] | None
-    )  # needs the forecast (T-24): null until then
+    projected: Literal["on_track", "may_exceed"] | None  # null without a forecast (7.7.2)
     period: BudgetPeriod
     created_at: dt.datetime
     updated_at: dt.datetime
