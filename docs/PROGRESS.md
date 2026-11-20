@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-16 (BOLA/IDOR test suite)
+**Current focus:** next T-17 (ML inference service)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,11 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-16 BOLA/IDOR suite
+- Done: `tests/security/test_bola.py` (8 tests). Routes are auto-discovered from OpenAPI; all 7 operations with an id return 404 for another user, with the same response as a nonexistent id, and leave the victim's data unchanged. Also bulk ids in bodies (atomic), list/count/search/filter leakage, cursors of another user, 401 without or with a garbage token on every non-public route, and tokens of a deleted account.
+- Gotcha: a new endpoint with a path id fails the coverage test until it gets a factory in `RESOURCES` (and a body in `BODIES` if it needs one). Public routes are listed in `PUBLIC_PREFIXES`.
+- Next: T-17 (ML inference service).
 
 ### 2026-11-20 — T-15 CSV import
 - Done: `GET /transactions/imports/template.csv`, `POST /transactions/imports` (preview), `GET /transactions/imports/{id}` (paginated rows), `POST .../commit` (strict / skip_invalid, skip_duplicates, category_overrides, idempotent), `DELETE .../{id}`. All 10 row error codes plus file-level errors (413/422), delimiter detection, BOM, Indonesian amounts (`Rp 1.500.000`), five date formats in the user's timezone, duplicates against existing rows and within the file, `FILE_ALREADY_IMPORTED`, atomic commit, outbox events.
@@ -116,7 +121,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | done | `app/api/{auth,users}.py`, `app/services/auth.py`, `app/core/{security,passwords,ratelimit,periods}.py`, 29 integration + 10 unit tests |
 | T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | done | `app/api/transactions.py`, `app/services/{transactions,idempotency}.py`, `app/repositories/{transactions,idempotency}.py`, 67 integration + 12 unit tests |
 | T-15 | CSV preview/commit with all error codes | T-14 | done | `app/api/imports.py`, `app/services/imports.py`, `app/core/csvparse.py`, `app/repositories/imports.py`, 31 integration + 46 unit tests |
-| T-16 | BOLA/IDOR test suite | T-13, T-14 | todo | |
+| T-16 | BOLA/IDOR test suite | T-13, T-14 | done | `services/backend/tests/security/test_bola.py` (8 tests, auto-discovers routes) |
 
 ### Week 4 — ML service + frontend core
 | ID | Task | Deps | Status | Notes |
