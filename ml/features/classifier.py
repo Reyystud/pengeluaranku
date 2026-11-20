@@ -65,20 +65,46 @@ def hour_bucket(hour: int | None) -> str:
     return "evening"
 
 
+def features_from_parts(
+    *,
+    description: str,
+    merchant_key: str,
+    amount: Decimal,
+    payment_method: str,
+    transaction_type: str,
+    local_hour: int | None,
+    weekday: int,
+) -> dict[str, Any]:
+    """Features from already-derived parts (what the ML service receives, PRD 14.2).
+
+    ``local_hour`` is ``None`` when the transaction has no time; ``weekday`` is Monday = 0 in the
+    user's timezone. ``online_features`` delegates here so both serving paths share one rule.
+    """
+    if amount <= 0:
+        raise ValueError("amount must be > 0")
+    return {
+        "text": preprocess_description(description),
+        "merchant_key": merchant_key,
+        "log_amount": math.log1p(float(amount)),
+        "payment_method": payment_method,
+        "transaction_type": transaction_type,
+        "hour_bucket": hour_bucket(local_hour),
+        "is_weekend": int(weekday >= 5),
+    }
+
+
 def online_features(tx: TransactionInput) -> dict[str, Any]:
     """Features for one transaction (serving path)."""
-    if tx.amount <= 0:
-        raise ValueError("amount must be > 0")
     _, merchant_key = resolve_merchant(tx.merchant, tx.description)
-    return {
-        "text": preprocess_description(tx.description),
-        "merchant_key": merchant_key,
-        "log_amount": math.log1p(float(tx.amount)),
-        "payment_method": tx.payment_method,
-        "transaction_type": tx.transaction_type,
-        "hour_bucket": hour_bucket(tx.occurred.hour if tx.has_time else None),
-        "is_weekend": int(tx.occurred.weekday() >= 5),
-    }
+    return features_from_parts(
+        description=tx.description,
+        merchant_key=merchant_key,
+        amount=tx.amount,
+        payment_method=tx.payment_method,
+        transaction_type=tx.transaction_type,
+        local_hour=tx.occurred.hour if tx.has_time else None,
+        weekday=tx.occurred.weekday(),
+    )
 
 
 def parse_local_datetime(value: str) -> tuple[datetime, bool]:
@@ -132,6 +158,7 @@ def build_feature_frame(df: pd.DataFrame) -> pd.DataFrame:
 
 
 __all__ = [
+    "features_from_parts",
     "FEATURE_COLUMNS",
     "HOUR_BUCKETS",
     "TransactionInput",

@@ -7,7 +7,16 @@ name = "sei-ml-service"
 version = "0.0.0"
 description = "Stateless ML inference service"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "fastapi>=0.165.0",
+    "prometheus-client>=0.26.0",
+    "pydantic-settings>=2.16.3",
+    "sei-ml",
+    "uvicorn>=0.54.0",
+]
 
 [tool.setuptools]
 packages = ["ml_service", "ml_service.api", "ml_service.loading", "ml_service.shadow", "ml_service.metrics"]
+
+[tool.uv.sources]
+sei-ml = { workspace = true }

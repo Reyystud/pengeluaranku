@@ -1856,6 +1856,8 @@ Response 201:
 
 Note: `user_id` is **not** sent (not needed for classification; reduces data exposure). `local_hour` is `null` when `has_time = false`.
 
+Contract details (T-17): `local_hour` and `weekday` are required (`weekday` is Monday = 0 in the user's timezone; `local_hour` is an explicit `null` when the time is unknown); `amount` is a decimal string > 0; `merchant_key` is the backend's `resolve_merchant` key (may be empty); `description` is 1–500 chars and is normalized by the service with the shared `ml.features` code. `feature_version` must equal the loaded model's, else 422 `FEATURE_VERSION_MISMATCH`. A batch over `BATCH_MAX_ITEMS` (500) is 422 `BATCH_TOO_LARGE`. With no loaded classifier every `/v1/*` classify call is 503 `MODEL_NOT_AVAILABLE`. In a batch response each item's `latency_ms` is the time of the whole batch. `decision` is `auto_apply` when confidence ≥ `t_high`, `suggest` when ≥ `t_low`, else `needs_review`; `t_low == t_high` means there is no suggest band.
+
 `ClassifyResponse`:
 
 ```json
