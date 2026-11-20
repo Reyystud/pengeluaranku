@@ -51,6 +51,30 @@ jobs:
       - run: uv sync --all-packages --frozen
       - run: uv run pytest services/backend -q --cov=app --cov-fail-under=80
 
+  frontend:
+    name: frontend (lint, types, tests, build, API client up to date)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - uses: pnpm/action-setup@v4
+        with:
+          package_json_file: frontend/package.json
+      - uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+      - run: uv sync --all-packages --frozen
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --dir frontend lint
+      - run: pnpm --dir frontend typecheck
+      - run: pnpm --dir frontend test
+      - run: pnpm --dir frontend build
+      # PRD 8.3: the committed OpenAPI file and the generated client must match the backend.
+      - run: make openapi-check
+
   gitleaks:
     name: secret scan
     runs-on: ubuntu-latest

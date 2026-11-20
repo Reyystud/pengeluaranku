@@ -8,7 +8,7 @@ define NOT_YET
 	@echo "make $@ is not implemented yet (planned in task $(1); see docs/PROGRESS.md)"; exit 1
 endef
 
-.PHONY: thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
+.PHONY: openapi-check web thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
         data train-local up down seed-demo demo openapi train promote rollback loadtest jobs-run
 
 help: ## List targets
@@ -20,19 +20,22 @@ setup: ## Install toolchains, pre-commit hooks, create .env
 	uv run pre-commit install
 	@if [ ! -f .env ]; then cp .env.example .env && echo "created .env from .env.example"; fi
 
-lint: ## ruff lint + format check
+lint: ## ruff lint + format check (+ eslint/prettier when the frontend is installed)
 	uv run ruff check .
 	uv run ruff format --check .
+	@if [ -d frontend/node_modules ]; then pnpm --dir frontend lint; fi
 
 format: ## Auto-format and fix
 	uv run ruff check --fix .
 	uv run ruff format .
 
-typecheck: ## mypy --strict on ml/ and backend app/
+typecheck: ## mypy --strict on ml/ and backend app/, tsc --noEmit on the frontend
 	uv run mypy
+	@if [ -d frontend/node_modules ]; then pnpm --dir frontend typecheck; fi
 
-test: ## Unit tests (no external services)
+test: ## Unit tests (no external services), including frontend Vitest
 	uv run pytest -m "not integration"
+	@if [ -d frontend/node_modules ]; then pnpm --dir frontend test; fi
 
 test-integration: ## Integration tests (testcontainers, or TEST_DATABASE_URL=postgresql+psycopg://...)
 	uv run pytest -m integration || [ $$? -eq 5 ]
@@ -41,7 +44,7 @@ coverage-backend: ## Backend unit + integration tests with the 80% line-coverage
 	uv run pytest services/backend -q --cov=app --cov-fail-under=80
 
 check: lint typecheck test coverage-backend ## Lint + types + tests + coverage gate (must pass before finishing a task)
-	@echo "make check: OK (frontend checks are added in T-19)"
+	@echo "make check: OK"
 
 WORKERS ?= 4
 data: ## Generate synthetic dataset v1 into data/synthetic/v1 (make data WORKERS=8)
@@ -80,8 +83,17 @@ seed-demo: ## Create demo user with synthetic data (stub: T-29)
 demo: ## data + train-local + up + seed-demo (stub: T-29)
 	$(call NOT_YET,T-29)
 
-openapi: ## Regenerate OpenAPI specs + frontend client (stub: T-11/T-19)
-	$(call NOT_YET,T-11/T-19)
+openapi: ## Regenerate services/backend/openapi.json and the frontend API types
+	uv run python -m app.openapi_export services/backend/openapi.json
+	pnpm --dir frontend gen:api
+
+openapi-check: ## Fail when the committed OpenAPI file or the generated frontend types are stale
+	uv run pytest services/backend/tests/unit/test_openapi_export.py -q
+	pnpm --dir frontend gen:api
+	git diff --exit-code -- frontend/src/api/schema.d.ts
+
+web: ## Run the frontend dev server on http://localhost:3000 (proxies /api/v1 to the backend)
+	pnpm --dir frontend dev
 
 train: ## make train MODEL=... DATASET=... (stub: T-25)
 	$(call NOT_YET,T-25)
