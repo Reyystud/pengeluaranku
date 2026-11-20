@@ -2789,3 +2789,8 @@ After the project is complete, add real results to this table.
 - `categorization` block (create, recategorize, preview): `{decision, source (user|rule|model|fallback), confidence, alternatives[{category, confidence}], model_version, predicted_category, ml_error}`. `predicted_category` is the model's pick even when the row stays `uncategorized`; `ml_error` is one of `timeout|unavailable|circuit_open|bad_response|rejected|disabled`.
 - `PATCH /transactions/{id}` accepts `apply_to_past_merchant_transactions` (only together with `category`) and returns `applied_to_past`. Only rows of the same merchant and compatible type with status `auto|suggested|needs_review|rule` change (status `rule`); user-chosen rows are never touched.
 - CSV preview rows carry a `prediction` object (`predicted_category`, `alternatives`, `model_version`, `ml_error`, `rule_id`...); commit writes the `category_predictions` rows and counts rule use.
+
+### Addendum T-19: frontend notes
+
+- `services/backend/openapi.json` is committed; `make openapi` regenerates it and `frontend/src/api/schema.d.ts`; `make openapi-check` runs in CI.
+- The mutating endpoints that require `Idempotency-Key` (13.1.4): create transaction, bulk delete, bulk categorize, import commit. The frontend sends a UUID per user action.

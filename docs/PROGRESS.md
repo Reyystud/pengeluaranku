@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-19 (frontend scaffold); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-20 (see task list); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-19 Frontend scaffold
+- Done: `frontend/` Next.js 16 (App Router, TS strict, Tailwind v4). Pages: landing, `/login`, `/register`, `/transactions` (filters, table that becomes cards on phones, add/edit drawer with live categorization chip and quick picks, bulk delete, review-queue tab with badge, confirm suggestion, dismiss duplicate), `/transactions/import` (upload, preview with per-row status/errors and editable categories, commit options, result), `/dashboard` and `/settings` as empty states. In-memory access token, one shared refresh then retry, redirect to `/login`. Loading, empty and error states (error shows `request_id` with Copy). `t()` strings in `src/messages/en.json`. `services/backend/openapi.json` + generated `src/api/schema.d.ts`, `make openapi`, `make openapi-check`, `make web`, CI job `frontend`.
+- Verified: 41 Vitest tests (money/time helpers, API client refresh/error mapping, chip states, drawer preview/validation/idempotency, auth forms, hook headers) + 1 live contract test run against the real backend through the Next proxy (register, categories, preview, create with replay, list, bulk delete); `next build` ok; lint, tsc and prettier clean. The smoke run found the missing `Idempotency-Key` and the `deleted` response field, both fixed. Not verified: real browser rendering, mobile layout by eye, Lighthouse/axe (no browser tooling here), Playwright flows.
+- Hooks for later: T-20 dashboard (add Recharts there), T-42 settings (merchant rules API exists), `frontend/AGENTS.md` is ignored (Next writes it unless `agentRules: false`, now set).
+- Not done: demo login button (T-29), notifications and budgets pages, E2E.
+- Next: T-20.
 
 ### 2026-11-20 — T-18 Backend ML client and categorization flow
 - Done: `app/clients/ml.py` (`MlClient`, `CircuitBreaker`), `app/services/categorization.py` (rule -> ML -> fallback, FR-03.10), `app/repositories/categorization.py`, `app/api/merchant_rules.py`. New endpoints: `POST /transactions/categorize-preview` (60/min), `/{id}/confirm-category`, `/{id}/recategorize`, `GET/PATCH/DELETE /merchant-rules`; `PATCH /transactions/{id}` gained `apply_to_past_merchant_transactions`. Create and CSV preview/commit write `category_predictions`; category changes write `category_feedback` and upsert merchant rules. CSV preview classifies in one batch call. Saving never fails because of the ML service (tested for timeout, 5xx, connect error, garbage body, open circuit).
@@ -158,7 +165,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 |---|---|---|---|---|
 | T-17 | ML service: model loading, `/v1/classify`, batch, probes, metrics, hash verification | T-09 | done | `services/ml_service/ml_service/`, 66 tests, `make ml-api` |
 | T-18 | Backend ML client (timeout, circuit breaker, fallback), categorization flow, merchant rules, feedback, categorize-preview | T-14, T-17 | done | 2026-11-20 |
-| T-19 | Frontend scaffold: auth, layout, API client, transactions page, review queue, CSV import UI | T-13, T-18 | todo | |
+| T-19 | Frontend scaffold: auth, layout, API client, transactions page, review queue, CSV import UI | T-13, T-18 | done | 2026-11-20 |
 
 ### Week 5 — Budgets, analytics, intelligence baselines
 | ID | Task | Deps | Status | Notes |
