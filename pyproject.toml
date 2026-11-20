@@ -59,3 +59,8 @@ mypy_path = [".", "services/backend", "services/ml_service"]
 
 [tool.coverage.run]
 omit = ["*/tests/*", "ml/eda/*"]
+
+[[tool.mypy.overrides]]
+module = ["pyarrow.*", "sklearn.*", "lightgbm.*", "mlflow.*", "joblib.*", "scipy.*", "matplotlib.*"]
+ignore_missing_imports = true
+follow_imports = "skip"
