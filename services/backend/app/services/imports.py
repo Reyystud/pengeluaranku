@@ -425,6 +425,7 @@ class ImportService:
         imp.committed_at = utcnow()
         imp.staged_rows = {}  # PRD 12: cleared after commit, counts are kept
         self.session.flush()
+        self.tx.check_budgets()
         enqueue(
             self.session,
             "import.committed",

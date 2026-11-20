@@ -88,6 +88,10 @@ class AnalyticsService:
         self.now = now or dt.datetime.now(dt.UTC)
         self.today = self.now.astimezone(self.tz).date()
 
+    def period_of(self, day: dt.date) -> PeriodBounds:
+        """The budget period containing ``day`` (honours a pending start-day change)."""
+        return self._bounds(day)
+
     # -- ranges (FR-04.10) ---------------------------------------------------------------------
     def _bounds(self, day: dt.date) -> PeriodBounds:
         u = self.user

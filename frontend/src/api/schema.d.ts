@@ -157,6 +157,60 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/budgets": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Budgets */
+        get: operations["list_budgets_api_v1_budgets_get"];
+        put?: never;
+        /** Create Budget */
+        post: operations["create_budget_api_v1_budgets_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/budgets/{budget_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Budget */
+        get: operations["get_budget_api_v1_budgets__budget_id__get"];
+        put?: never;
+        post?: never;
+        /** Delete Budget */
+        delete: operations["delete_budget_api_v1_budgets__budget_id__delete"];
+        options?: never;
+        head?: never;
+        /** Update Budget */
+        patch: operations["update_budget_api_v1_budgets__budget_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/budgets/{budget_id}/history": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Budget History */
+        get: operations["budget_history_api_v1_budgets__budget_id__history_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/categories": {
         parameters: {
             query?: never;
@@ -207,6 +261,74 @@ export interface paths {
         head?: never;
         /** Update Rule */
         patch: operations["update_rule_api_v1_merchant_rules__rule_id__patch"];
+        trace?: never;
+    };
+    "/api/v1/notifications": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Notifications */
+        get: operations["list_notifications_api_v1_notifications_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/read-all": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Read All */
+        post: operations["read_all_api_v1_notifications_read_all_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/unread-count": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Unread Count */
+        get: operations["unread_count_api_v1_notifications_unread_count_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/notifications/{notification_id}/read": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Mark Read */
+        post: operations["mark_read_api_v1_notifications__notification_id__read_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/api/v1/transactions": {
@@ -527,6 +649,104 @@ export interface components {
             /** File */
             file: string;
         };
+        /** BudgetCreate */
+        BudgetCreate: {
+            /** Alert Thresholds */
+            alert_thresholds?: number[] | null;
+            /** Category */
+            category?: string | null;
+            /** Limit Amount */
+            limit_amount: number | string;
+        };
+        /** BudgetHistory */
+        BudgetHistory: {
+            /** Items */
+            items: components["schemas"]["BudgetHistoryItem"][];
+        };
+        /** BudgetHistoryItem */
+        BudgetHistoryItem: {
+            /** Limit Amount */
+            limit_amount: string;
+            /**
+             * Period Id
+             * Format: date
+             */
+            period_id: string;
+            /** Spent */
+            spent: string;
+            /** Utilization */
+            utilization: string;
+        };
+        /** BudgetList */
+        BudgetList: {
+            /** Category Limits Exceed Overall */
+            category_limits_exceed_overall: boolean;
+            /** Items */
+            items: components["schemas"]["BudgetOut"][];
+        };
+        /** BudgetOut */
+        BudgetOut: {
+            /** Alert Thresholds */
+            alert_thresholds: number[];
+            category: components["schemas"]["CategoryRef"] | null;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Limit Amount */
+            limit_amount: string;
+            period: components["schemas"]["BudgetPeriod"];
+            /** Projected */
+            projected: ("on_track" | "may_exceed") | null;
+            /** Remaining */
+            remaining: string;
+            /** Spent */
+            spent: string;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "healthy" | "normal" | "warning" | "exceeded";
+            /**
+             * Updated At
+             * Format: date-time
+             */
+            updated_at: string;
+            /** Utilization */
+            utilization: string;
+        };
+        /** BudgetPeriod */
+        BudgetPeriod: {
+            /** Days Elapsed */
+            days_elapsed: number;
+            /** Days In Period */
+            days_in_period: number;
+            /**
+             * End
+             * Format: date
+             */
+            end: string;
+            /** Period Id */
+            period_id: string;
+            /**
+             * Start
+             * Format: date
+             */
+            start: string;
+        };
+        /** BudgetUpdate */
+        BudgetUpdate: {
+            /** Alert Thresholds */
+            alert_thresholds?: number[] | null;
+            /** Limit Amount */
+            limit_amount?: number | string | null;
+        };
         /** BulkCategorize */
         BulkCategorize: {
             /** Category */
@@ -846,6 +1066,40 @@ export interface components {
             /** Total Expenses */
             total_expenses: string;
         };
+        /** NotificationOut */
+        NotificationOut: {
+            /** Body */
+            body: string;
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Link */
+            link: string | null;
+            /** Payload */
+            payload: {
+                [key: string]: unknown;
+            };
+            /** Read At */
+            read_at: string | null;
+            /** Title */
+            title: string;
+            /** Type */
+            type: string;
+        };
+        /** NotificationPage */
+        NotificationPage: {
+            /** Items */
+            items: components["schemas"]["NotificationOut"][];
+            /** Next Cursor */
+            next_cursor: string | null;
+        };
         /** PeriodInfo */
         PeriodInfo: {
             /** Days Elapsed */
@@ -873,6 +1127,11 @@ export interface components {
             start: string;
             /** Timezone */
             timezone: string;
+        };
+        /** ReadAllOut */
+        ReadAllOut: {
+            /** Updated */
+            updated: number;
         };
         /** RecategorizeRequest */
         RecategorizeRequest: {
@@ -1253,6 +1512,11 @@ export interface components {
             /** Series */
             series: components["schemas"]["TrendPoint"][];
         };
+        /** UnreadCount */
+        UnreadCount: {
+            /** Count */
+            count: number;
+        };
         /** UpdateProfileRequest */
         UpdateProfileRequest: {
             /** Budget Period Start Day */
@@ -1620,6 +1884,187 @@ export interface operations {
             };
         };
     };
+    list_budgets_api_v1_budgets_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetList"];
+                };
+            };
+        };
+    };
+    create_budget_api_v1_budgets_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BudgetCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_budget_api_v1_budgets__budget_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                budget_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_budget_api_v1_budgets__budget_id__delete: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                budget_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            204: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content?: never;
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_budget_api_v1_budgets__budget_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                budget_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BudgetUpdate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    budget_history_api_v1_budgets__budget_id__history_get: {
+        parameters: {
+            query?: {
+                limit?: number;
+            };
+            header?: never;
+            path: {
+                budget_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["BudgetHistory"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     list_categories_api_v1_categories_get: {
         parameters: {
             query?: never;
@@ -1722,6 +2167,110 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["MerchantRuleOut"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_notifications_api_v1_notifications_get: {
+        parameters: {
+            query?: {
+                unread_only?: boolean;
+                limit?: number;
+                cursor?: string | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationPage"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    read_all_api_v1_notifications_read_all_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ReadAllOut"];
+                };
+            };
+        };
+    };
+    unread_count_api_v1_notifications_unread_count_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UnreadCount"];
+                };
+            };
+        };
+    };
+    mark_read_api_v1_notifications__notification_id__read_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                notification_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["NotificationOut"];
                 };
             };
             /** @description Validation Error */

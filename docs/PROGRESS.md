@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-21 (budgets, status, thresholds, notifications); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-22 (dashboard + budgets pages; the notification bell goes there too); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-21 Budgets and notifications
+- Done: `GET/POST /budgets`, `GET/PATCH/DELETE /budgets/{id}`, `GET /budgets/{id}/history`; `GET /notifications` (cursor, `unread_only`), `GET /notifications/unread-count`, `POST /notifications/{id}/read`, `POST /notifications/read-all`. Code: `app/api/{budgets,notifications}.py`, `app/services/budgets.py`, `app/repositories/{budgets,notifications}.py`, `app/schemas/budgets.py`; `TransactionService.check_budgets()` runs after create, update, delete, bulk delete/categorize, recategorize and CSV commit (FR-05.06). OpenAPI file and frontend types regenerated.
+- Verified: 56 integration tests (CRUD, 409 `BUDGET_EXISTS`, 422 `CATEGORY_TYPE_MISMATCH`, status boundaries, every write path notifying, no duplicate notifications, deletes keep past ones, pagination, per-user isolation, snapshots incl. limit change not rewriting history), 5 unit tests, BOLA suite extended with `budget_id` and `notification_id`. A mutation check (random dedupe key, `<=` instead of `<`) made 4 tests fail as expected.
+- Decisions: see `docs/DECISIONS.md` (T-21).
+- Not done / for later: `projected` (FR-05.07) is `null` until the forecast exists (T-24); the daily job that calls `BudgetService.snapshot_closed_period()` and `evaluate()` and the 90-day notification cleanup are T-37; other notification types (anomaly, import, recurring, review queue) come with their features; bell icon, notifications page and budgets page are T-22.
+- Next: T-22.
 
 ### 2026-11-20 — T-20 Analytics endpoints
 - Done: `GET /analytics/summary|categories|trends|merchants|payment-methods` (FR-04.01-10): `app/api/analytics.py`, `app/services/analytics.py` (ranges, comparison, buckets), `app/repositories/analytics.py` (all sums in SQL: `SUM ... FILTER`, `GROUP BY`, window sum, `unnest ... WITH ORDINALITY` buckets), `app/schemas/analytics.py`, `PeriodBounds`/`period_bounds` in `app/core/periods.py` (start-day change applies from the next period). Committed `openapi.json` and `frontend/src/api/schema.d.ts` regenerated.
@@ -179,7 +186,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
 | T-20 | Analytics endpoints (SQL aggregations) + property tests vs raw SQL | T-14 | done | 2026-11-20 |
-| T-21 | Budgets + status + thresholds + notifications (FR-05, FR-14) | T-20 | todo | |
+| T-21 | Budgets + status + thresholds + notifications (FR-05, FR-14) | T-20 | done | 2026-11-20 |
 | T-22 | Dashboard + budgets pages | T-20, T-21 | todo | |
 | T-23 | Anomaly baseline + rules + in-memory event path + anomalies API/UI + feedback | T-18 | todo | |
 | T-24 | Forecast run-rate + decomposition + API/UI | T-20 | todo | |

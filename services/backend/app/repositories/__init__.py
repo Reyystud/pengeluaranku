@@ -6,15 +6,14 @@ from typing import Any
 
 from app.models import (
     Anomaly,
-    Budget,
     Forecast,
     ForecastOutcome,
     Insight,
-    Notification,
     RecurringSeries,
 )
 from app.repositories.auth import RefreshTokenStore
 from app.repositories.base import ScopedRepository
+from app.repositories.budgets import BudgetRepository
 from app.repositories.categorization import (
     CategoryFeedbackRepository,
     CategoryPredictionRepository,
@@ -22,12 +21,9 @@ from app.repositories.categorization import (
 )
 from app.repositories.idempotency import IdempotencyRepository
 from app.repositories.imports import TransactionImportRepository
+from app.repositories.notifications import NotificationRepository
 from app.repositories.transactions import TransactionFilters, TransactionRepository
 from app.repositories.users import CategoryRepository, UserRepository
-
-
-class BudgetRepository(ScopedRepository[Budget]):
-    model = Budget
 
 
 class AnomalyRepository(ScopedRepository[Anomaly]):
@@ -50,10 +46,6 @@ class InsightRepository(ScopedRepository[Insight]):
     model = Insight
 
 
-class NotificationRepository(ScopedRepository[Notification]):
-    model = Notification
-
-
 SCOPED_REPOSITORIES: tuple[type[ScopedRepository[Any]], ...] = (
     TransactionRepository,
     TransactionImportRepository,
@@ -70,12 +62,14 @@ SCOPED_REPOSITORIES: tuple[type[ScopedRepository[Any]], ...] = (
 )
 
 # Keyed (non-`id`) repositories; the scoping tests introspect them too.
-KEYED_REPOSITORIES: dict[str, type] = {"idempotency_keys": IdempotencyRepository}
+KEYED_REPOSITORIES: dict[str, type] = {
+    "idempotency_keys": IdempotencyRepository,
+    "budget_period_snapshots": BudgetRepository,  # keyed by (budget_id, period_id)
+}
 
 # Tables with a ``user_id`` column but no single ``id`` key, so the generic repository does not
 # fit. The owning task adds a keyed repository with the same user_id-first rule (PRD 12.4).
 KEYED_PENDING: dict[str, str] = {
-    "budget_period_snapshots": "T-21 (budgets): keyed by (budget_id, period_id)",
     "anomaly_suppressions": "T-23 (anomaly feedback): keyed by (user_id, merchant_key)",
     "user_segments": "T-27 (clustering): one row per user",
 }
@@ -87,6 +81,8 @@ UNSCOPED_BY_DESIGN: dict[str, str] = {
 }
 
 __all__ = [
+    "BudgetRepository",
+    "NotificationRepository",
     "KEYED_REPOSITORIES",
     "IdempotencyRepository",
     "CategoryFeedbackRepository",

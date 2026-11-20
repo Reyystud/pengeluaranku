@@ -47,6 +47,7 @@ from app.schemas.transactions import (
     TransactionUpdated,
     normalize_payment_method,
 )
+from app.services.budgets import BudgetService
 from app.services.categorization import (
     CategorizationResult,
     CategorizeInput,
@@ -102,6 +103,10 @@ class TransactionService:
         self.by_slug = {c.slug: c for c in cats}
         self.by_id = {c.id: c for c in cats}
         self.categorizer: Categorizer = categorizer or FallbackCategorizer(self.by_slug)
+
+    def check_budgets(self) -> None:
+        """Threshold notifications after any write that can change spending (FR-05.06)."""
+        BudgetService(self.session, self.user).evaluate()
 
     # -- validation helpers -------------------------------------------------------------------
     def clean_field(
@@ -247,6 +252,7 @@ class TransactionService:
         self.session.flush()
         self.record_prediction(tx, result)
         self.emit("transaction.created", tx)
+        self.check_budgets()
         base = self._out(tx)
         return TransactionCreated(
             **base.model_dump(), categorization=self.categorization_out(result), warnings=warnings
@@ -426,6 +432,7 @@ class TransactionService:
         self.session.flush()
         if changed:
             self.emit("transaction.updated", tx)
+        self.check_budgets()
         return TransactionUpdated(**self._out(tx).model_dump(), applied_to_past=applied_to_past)
 
     # -- category changes: feedback, merchant memory (FR-03.04, FR-03.08, FR-10.01) ----------------
@@ -546,6 +553,7 @@ class TransactionService:
         tx.updated_at = utcnow()
         self.session.flush()
         self.record_prediction(tx, result)
+        self.check_budgets()
         return TransactionCreated(
             **self._out(tx).model_dump(),
             categorization=self.categorization_out(result),
@@ -621,6 +629,7 @@ class TransactionService:
         self.emit("transaction.deleted", tx)
         self.session.delete(tx)
         self.session.flush()
+        self.check_budgets()
 
     def _bulk_rows(self, ids: list[uuid.UUID]) -> list[Transaction]:
         unique = list(dict.fromkeys(ids))
@@ -635,6 +644,7 @@ class TransactionService:
             self.emit("transaction.deleted", tx)
             self.session.delete(tx)
         self.session.flush()
+        self.check_budgets()
         return len(rows)
 
     def bulk_categorize(self, ids: list[uuid.UUID], category_ref: str) -> int:
@@ -643,9 +653,11 @@ class TransactionService:
         for tx in rows:
             category = self.resolve_category(category_ref, tx.transaction_type)
         assert category is not None
-        return self.repo.set_category_many(
+        updated = self.repo.set_category_many(
             self.user.id, [t.id for t in rows], category.id, "user_set"
         )
+        self.check_budgets()
+        return updated
 
 
 def normalize_payment_method_or_422(value: str) -> str:
