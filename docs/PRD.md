@@ -1703,11 +1703,11 @@ Consumers of events whose user no longer exists MUST ack and drop the event.
 | POST | `/transactions/{id}/recategorize` | `{force?: bool}` (FR-03.09) |
 | POST | `/transactions/{id}/not-duplicate` | FR-02.15 |
 | POST | `/transactions/categorize-preview` | `{description, merchant?, amount?, payment_method?, transaction_type, transaction_date?}` → prediction, nothing stored |
-| GET | `/transactions/imports/template.csv` | Template |
-| POST | `/transactions/imports` | multipart `file` → 201 preview `{import_id, summary, rows[], warnings[], expires_at}`; rows paginated via `GET /transactions/imports/{id}?cursor=` when > 500 |
-| GET | `/transactions/imports/{id}` | Preview/status |
-| POST | `/transactions/imports/{id}/commit` | `{mode, skip_duplicates, category_overrides}`; `Idempotency-Key` required → `{committed_count, skipped_invalid, skipped_duplicates}` |
-| DELETE | `/transactions/imports/{id}` | Discard a previewed import |
+| GET | `/transactions/imports/template.csv` | Template with header and 3 example rows dated in the last days, so it imports as is |
+| POST | `/transactions/imports` | multipart `file` → 201 preview `{import_id, status, filename, summary{row_count, valid, invalid, duplicate}, rows[], next_cursor, warnings[{code, message, columns?}], expires_at}`. A row is `{row_number, status, values, prediction, errors[], duplicate_of, duplicate_of_row}` (`values` null when invalid; `duplicate_of` an existing transaction, `duplicate_of_row` an earlier row of the file). The first 500 rows are inline; the rest via `GET /transactions/imports/{id}?cursor=`. Warnings: `UNKNOWN_COLUMNS`, `FILE_ALREADY_IMPORTED`. File errors: 413 `FILE_TOO_LARGE`; 422 `INVALID_ENCODING`, `EMPTY_FILE`, `MISSING_COLUMNS`, `TOO_MANY_ROWS`, `INVALID_CSV` |
+| GET | `/transactions/imports/{id}?cursor=&limit=` | Preview/status; rows paginated by row number (max 500). After commit `rows` is empty and the counts remain |
+| POST | `/transactions/imports/{id}/commit` | `{mode (default strict), skip_duplicates (default true), category_overrides}`; `Idempotency-Key` required → `{committed_count, skipped_invalid, skipped_duplicates}`. Errors: 409 `IMPORT_NOT_COMMITTABLE` (committed, discarded, expired), 422 `IMPORT_HAS_INVALID_ROWS` (strict mode), 422 `VALIDATION_ERROR` with field `category_overrides.<row>` (`UNKNOWN_ROW`, `UNKNOWN_CATEGORY`, `CATEGORY_TYPE_MISMATCH`). Emits one `transaction.created` per row plus `import.committed` |
+| DELETE | `/transactions/imports/{id}` | Discard a previewed import (204); a committed import cannot be discarded (409) |
 
 **Analytics**
 

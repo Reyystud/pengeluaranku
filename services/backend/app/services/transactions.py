@@ -112,7 +112,9 @@ class TransactionService:
         self.categorizer: Categorizer = categorizer or FallbackCategorizer(self.by_slug)
 
     # -- validation helpers -------------------------------------------------------------------
-    def _text(self, name: str, value: str | None, *, maximum: int, required: bool) -> str | None:
+    def clean_field(
+        self, name: str, value: str | None, *, maximum: int, required: bool
+    ) -> str | None:
         if value is None:
             if required:
                 raise validation_problem(name, "MISSING_FIELD", f"{name} is required.")
@@ -128,13 +130,13 @@ class TransactionService:
             )
         return cleaned
 
-    def _check_amount(self, amount: Decimal) -> None:
+    def check_amount(self, amount: Decimal) -> None:
         if amount > self.settings.max_transaction_amount:
             raise validation_problem(
                 "amount", "AMOUNT_OUT_OF_RANGE", "Amount is above the allowed maximum."
             )
 
-    def _when(self, value: dt.date | dt.datetime) -> tuple[dt.datetime, bool]:
+    def resolve_when(self, value: dt.date | dt.datetime) -> tuple[dt.datetime, bool]:
         """Return ``(UTC instant, has_time)``; naive values are in the user's timezone."""
         if isinstance(value, dt.datetime):
             local = value if value.tzinfo else value.replace(tzinfo=self.tz)
@@ -173,7 +175,7 @@ class TransactionService:
     def _out(self, tx: Transaction) -> TransactionOut:
         return TransactionOut.build(tx, self.by_id[tx.category_id], self.user.timezone)
 
-    def _find_duplicate(self, tx: Transaction) -> Transaction | None:
+    def find_duplicate_of(self, tx: Transaction) -> Transaction | None:
         return self.repo.find_duplicate(
             self.user.id,
             transaction_type=tx.transaction_type,
@@ -185,7 +187,7 @@ class TransactionService:
             exclude_id=tx.id,
         )
 
-    def _emit(self, event_type: str, tx: Transaction) -> None:
+    def emit(self, event_type: str, tx: Transaction) -> None:
         enqueue(
             self.session,
             event_type,
@@ -203,12 +205,12 @@ class TransactionService:
 
     # -- create -------------------------------------------------------------------------------
     def create(self, data: TransactionCreate) -> TransactionCreated:
-        self._check_amount(data.amount)
-        description = self._text("description", data.description, maximum=200, required=True)
+        self.check_amount(data.amount)
+        description = self.clean_field("description", data.description, maximum=200, required=True)
         assert description is not None
-        merchant_in = self._text("merchant", data.merchant, maximum=100, required=False)
-        notes = self._text("notes", data.notes, maximum=500, required=False)
-        occurred_at, has_time = self._when(data.transaction_date)
+        merchant_in = self.clean_field("merchant", data.merchant, maximum=100, required=False)
+        notes = self.clean_field("notes", data.notes, maximum=500, required=False)
+        occurred_at, has_time = self.resolve_when(data.transaction_date)
         merchant, merchant_key = resolve_merchant(merchant_in, description)
 
         if data.category:
@@ -241,12 +243,12 @@ class TransactionService:
         )
         warnings: list[str] = []
         self.repo.add(self.user.id, tx)
-        duplicate = self._find_duplicate(tx)
+        duplicate = self.find_duplicate_of(tx)
         if duplicate is not None:
             tx.possible_duplicate_of = duplicate.id
             warnings.append("POSSIBLE_DUPLICATE")
         self.session.flush()
-        self._emit("transaction.created", tx)
+        self.emit("transaction.created", tx)
         base = self._out(tx)
         return TransactionCreated(
             **base.model_dump(),
@@ -343,22 +345,22 @@ class TransactionService:
         if "amount" in sent:
             if data.amount is None:
                 raise validation_problem("amount", "INVALID_AMOUNT", "Amount must be a number.")
-            self._check_amount(data.amount)
+            self.check_amount(data.amount)
             tx.amount = data.amount
         if "description" in sent:
-            desc = self._text("description", data.description, maximum=200, required=True)
+            desc = self.clean_field("description", data.description, maximum=200, required=True)
             assert desc is not None
             tx.description = desc
         if "notes" in sent:
-            tx.notes = self._text("notes", data.notes, maximum=500, required=False)
+            tx.notes = self.clean_field("notes", data.notes, maximum=500, required=False)
         if "payment_method" in sent and data.payment_method:
             tx.payment_method = data.payment_method
         if "transaction_date" in sent:
             if data.transaction_date is None:
                 raise validation_problem("transaction_date", "INVALID_DATE", "Date is required.")
-            tx.transaction_date, tx.has_time = self._when(data.transaction_date)
+            tx.transaction_date, tx.has_time = self.resolve_when(data.transaction_date)
         if "merchant" in sent:
-            merchant_in = self._text("merchant", data.merchant, maximum=100, required=False)
+            merchant_in = self.clean_field("merchant", data.merchant, maximum=100, required=False)
             tx.merchant, tx.merchant_key = resolve_merchant(merchant_in, tx.description)
         tx.transaction_type = new_type
 
@@ -381,13 +383,13 @@ class TransactionService:
         }
         changed = [k for k in RE_SCORE_FIELDS if before[k] != after[k]]
         if changed and not tx.duplicate_dismissed:
-            duplicate = self._find_duplicate(tx)
+            duplicate = self.find_duplicate_of(tx)
             tx.possible_duplicate_of = duplicate.id if duplicate else None
         tx.version += 1
         tx.updated_at = utcnow()
         self.session.flush()
         if changed:
-            self._emit("transaction.updated", tx)
+            self.emit("transaction.updated", tx)
         return self._out(tx)
 
     @staticmethod
@@ -424,7 +426,7 @@ class TransactionService:
         tx = self.repo.get_for_update(self.user.id, tx_id)
         if tx is None:
             raise not_found()
-        self._emit("transaction.deleted", tx)
+        self.emit("transaction.deleted", tx)
         self.session.delete(tx)
         self.session.flush()
 
@@ -438,7 +440,7 @@ class TransactionService:
     def bulk_delete(self, ids: list[uuid.UUID]) -> int:
         rows = self._bulk_rows(ids)
         for tx in rows:
-            self._emit("transaction.deleted", tx)
+            self.emit("transaction.deleted", tx)
             self.session.delete(tx)
         self.session.flush()
         return len(rows)

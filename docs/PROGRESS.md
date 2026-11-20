@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-08 (classifier feature module with point-in-time and parity harness)
+**Current focus:** next T-16 (BOLA/IDOR test suite)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-20 — T-15 CSV import
+- Done: `GET /transactions/imports/template.csv`, `POST /transactions/imports` (preview), `GET /transactions/imports/{id}` (paginated rows), `POST .../commit` (strict / skip_invalid, skip_duplicates, category_overrides, idempotent), `DELETE .../{id}`. All 10 row error codes plus file-level errors (413/422), delimiter detection, BOM, Indonesian amounts (`Rp 1.500.000`), five date formats in the user's timezone, duplicates against existing rows and within the file, `FILE_ALREADY_IMPORTED`, atomic commit, outbox events.
+- Verified: see the T-15 test files `tests/unit/test_csv_parse.py` and `tests/integration/test_imports_api.py` (31 integration tests, including a 5,000-row commit, a forced DB failure that persists nothing, and concurrent commits); `make check` green with PostgreSQL: 277 backend tests, coverage 98.9%.
+- Hooks for later: T-18 should replace the per-row `Categorizer` call in preview with a batch call and write `category_predictions`; T-37 cleanup job marks expired imports; T-16 BOLA suite can add the import endpoints (`test_fr_02_01_other_users_imports_are_404_everywhere`).
+- Not done: per-user cap on open previews, upload rate limit, `csv_imports_total` metric, duplicate re-check at commit.
+- Next: T-16 (BOLA/IDOR suite).
 
 ### 2026-11-20 — T-14 transactions
 - Done: `GET/POST /transactions`, `GET /transactions/count`, `GET/PATCH/DELETE /transactions/{id}`, `POST /transactions/{id}/dismiss-duplicate`, `POST /transactions/bulk-delete`, `bulk-categorize`, `GET /categories` (ETag). Filters, signed cursor pagination (date or amount sort), `Idempotency-Key`, `If-Match` versions, duplicate flags, outbox events.
@@ -108,7 +115,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-12 | DB schema + Alembic + category seed + repository layer with scoping test | T-11 | done | `app/models/`, `migrations/versions/0001_initial_schema.py`, `app/repositories/`, 15 integration + 12 unit tests |
 | T-13 | Auth (register/login/refresh rotation/logout/password/delete) + rate limits | T-12 | done | `app/api/{auth,users}.py`, `app/services/auth.py`, `app/core/{security,passwords,ratelimit,periods}.py`, 29 integration + 10 unit tests |
 | T-14 | Transactions CRUD + filters + cursor pagination + idempotency + duplicates | T-12 | done | `app/api/transactions.py`, `app/services/{transactions,idempotency}.py`, `app/repositories/{transactions,idempotency}.py`, 67 integration + 12 unit tests |
-| T-15 | CSV preview/commit with all error codes | T-14 | todo | |
+| T-15 | CSV preview/commit with all error codes | T-14 | done | `app/api/imports.py`, `app/services/imports.py`, `app/core/csvparse.py`, `app/repositories/imports.py`, 31 integration + 46 unit tests |
 | T-16 | BOLA/IDOR test suite | T-13, T-14 | todo | |
 
 ### Week 4 — ML service + frontend core

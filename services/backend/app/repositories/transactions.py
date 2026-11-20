@@ -4,12 +4,12 @@ from __future__ import annotations
 
 import datetime as dt
 import uuid
-from collections.abc import Sequence
+from collections.abc import Collection, Sequence
 from dataclasses import dataclass, field
 from decimal import Decimal
 from typing import Any
 
-from sqlalchemy import ColumnElement, and_, func, or_, select, update
+from sqlalchemy import ColumnElement, and_, func, or_, select, tuple_, update
 
 from app.core.cursor import Cursor
 from app.models import Transaction
@@ -172,6 +172,43 @@ class TransactionRepository(ScopedRepository[Transaction]):
         if exclude_id is not None:
             stmt = stmt.where(t.id != exclude_id)
         return self.session.execute(stmt).scalar_one_or_none()
+
+    def duplicate_candidates(
+        self,
+        user_id: uuid.UUID,
+        keys: Collection[tuple[str, Decimal, str]],
+        start: dt.datetime,
+        end: dt.datetime,
+    ) -> list[Any]:
+        """Existing rows sharing ``(type, amount, merchant_key)`` with any key, oldest first.
+
+        One query for a whole CSV (the caller applies the time rule of FR-02.12 in memory).
+        """
+        if not keys:
+            return []
+        t = Transaction
+        stmt = (
+            select(
+                t.id, t.transaction_type, t.amount, t.merchant_key, t.transaction_date, t.has_time
+            )
+            .where(
+                t.user_id == user_id,
+                tuple_(t.transaction_type, t.amount, t.merchant_key).in_(list(keys)),
+                t.transaction_date >= start,
+                t.transaction_date < end,
+            )
+            .order_by(t.created_at, t.id)
+        )
+        return list(self.session.execute(stmt).all())
+
+    def add_many(self, user_id: uuid.UUID, rows: Sequence[Transaction]) -> None:
+        """Attach many new transactions to ``user_id`` with one flush (CSV commit)."""
+        for row in rows:
+            if row.user_id is not None and row.user_id != user_id:
+                raise ValueError("entity already belongs to another user")
+            row.user_id = user_id
+        self.session.add_all(list(rows))
+        self.session.flush()
 
     def delete_many(self, user_id: uuid.UUID, ids: Sequence[uuid.UUID]) -> int:
         removed = 0

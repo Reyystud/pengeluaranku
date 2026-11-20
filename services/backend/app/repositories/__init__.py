@@ -15,17 +15,13 @@ from app.models import (
     MerchantRule,
     Notification,
     RecurringSeries,
-    TransactionImport,
 )
 from app.repositories.auth import RefreshTokenStore
 from app.repositories.base import ScopedRepository
 from app.repositories.idempotency import IdempotencyRepository
+from app.repositories.imports import TransactionImportRepository
 from app.repositories.transactions import TransactionFilters, TransactionRepository
 from app.repositories.users import CategoryRepository, UserRepository
-
-
-class TransactionImportRepository(ScopedRepository[TransactionImport]):
-    model = TransactionImport
 
 
 class CategoryPredictionRepository(ScopedRepository[CategoryPrediction]):
@@ -104,6 +100,7 @@ __all__ = [
     "KEYED_REPOSITORIES",
     "IdempotencyRepository",
     "TransactionFilters",
+    "TransactionImportRepository",
     "TransactionRepository",
     "KEYED_PENDING",
     "SCOPED_REPOSITORIES",
