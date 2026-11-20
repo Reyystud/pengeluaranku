@@ -1,0 +1,7 @@
+import type { Metadata } from "next";
+import { BudgetsView } from "@/features/budgets/BudgetsView";
+
+export const metadata: Metadata = { title: "Budgets" };
+export default function Page() {
+  return <BudgetsView />;
+}

@@ -49,11 +49,44 @@ def _victim_rule(client: TestClient, headers: dict[str, str]) -> str:
     return str(rules[0]["id"])
 
 
+def _victim_budget(client: TestClient, headers: dict[str, str]) -> str:
+    r = client.post(
+        f"{API}/budgets", json={"category": "groceries", "limit_amount": "100"}, headers=headers
+    )
+    assert r.status_code == 201, r.text
+    return str(r.json()["id"])
+
+
+def _victim_notification(client: TestClient, headers: dict[str, str]) -> str:
+    """Spending past the victim's budget creates a notification (FR-05.05)."""
+    make(client, headers, amount="500", category="groceries")
+    items = client.get(f"{API}/notifications", headers=headers).json()["items"]
+    assert items
+    return str(items[0]["id"])
+
+
+def _victim_anomaly(client: TestClient, headers: dict[str, str]) -> str:
+    """A first, very large Food & Beverage expense is scored against the category prior (7.6.4)."""
+    make(
+        client,
+        headers,
+        amount="5000000",
+        category="food_beverage",
+        description="Victim private purchase",
+    )
+    items = client.get(f"{API}/intelligence/anomalies", headers=headers).json()["items"]
+    assert items
+    return str(items[0]["id"])
+
+
 # Path parameter name -> how to create a resource of the victim that it can point to.
 RESOURCES: dict[str, Callable[[TestClient, dict[str, str]], str]] = {
     "transaction_id": _victim_transaction,
     "import_id": _victim_import,
     "rule_id": _victim_rule,
+    "budget_id": _victim_budget,
+    "notification_id": _victim_notification,
+    "anomaly_id": _victim_anomaly,
 }
 
 # Minimal valid bodies, so a 404 can only come from ownership and never from validation.
@@ -61,6 +94,8 @@ BODIES: dict[tuple[str, str], dict[str, Any]] = {
     ("PATCH", "/api/v1/transactions/{transaction_id}"): {"notes": "attacker was here"},
     ("POST", "/api/v1/transactions/imports/{import_id}/commit"): {"mode": "skip_invalid"},
     ("PATCH", "/api/v1/merchant-rules/{rule_id}"): {"category": "transportation"},
+    ("PATCH", "/api/v1/budgets/{budget_id}"): {"limit_amount": "1.00"},
+    ("POST", "/api/v1/intelligence/anomalies/{anomaly_id}/feedback"): {"action": "confirm"},
 }
 
 
@@ -112,7 +147,14 @@ def test_17_1_every_route_with_an_id_is_covered_by_this_suite(client: TestClient
     )
     # Anything with an {id}-like parameter must be a known resource, never a free-form string.
     seen = {x for _, _, params in ops for x in params}
-    assert {"transaction_id", "import_id", "rule_id"} <= seen
+    assert {
+        "transaction_id",
+        "import_id",
+        "rule_id",
+        "budget_id",
+        "notification_id",
+        "anomaly_id",
+    } <= seen
 
 
 def test_every_endpoint_with_id_returns_404_for_other_user(
@@ -130,7 +172,7 @@ def test_every_endpoint_with_id_returns_404_for_other_user(
         assert shape(foreign) == shape(absent), f"{method} {template} leaks existence"
         assert ids[params[0]] not in foreign.text
         checked += 1
-    assert checked >= 11
+    assert checked >= 13
 
     # Nothing the intruder tried changed the victim's data.
     tx = client.get(f"{API}/transactions/{ids['transaction_id']}", headers=victim)
@@ -139,6 +181,12 @@ def test_every_endpoint_with_id_returns_404_for_other_user(
     assert [(r["id"], r["category"]["slug"]) for r in rules] == [(ids["rule_id"], "groceries")]
     imp = client.get(f"{API}/transactions/imports/{ids['import_id']}", headers=victim).json()
     assert imp["status"] == "previewed" and imp["summary"]["row_count"] == 1
+    budget = client.get(f"{API}/budgets/{ids['budget_id']}", headers=victim).json()
+    assert budget["limit_amount"] == "100.00"  # the intruder's PATCH to 1.00 did not apply
+    anomaly = client.get(f"{API}/intelligence/anomalies/{ids['anomaly_id']}", headers=victim)
+    assert anomaly.json()["status"] == "open"  # the intruder's confirm did not apply
+    unread = client.get(f"{API}/notifications?unread_only=true", headers=victim).json()["items"]
+    assert ids["notification_id"] in {n["id"] for n in unread}  # still unread
     with engine.connect() as conn:
         assert (
             conn.execute(

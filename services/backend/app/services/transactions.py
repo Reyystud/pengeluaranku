@@ -15,6 +15,7 @@ from app.core.cursor import Cursor, decode_cursor, encode_cursor
 from app.core.errors import ProblemError, not_found, validation_problem
 from app.core.metrics import CATEGORIZE_PREVIEW
 from app.core.text import clean_text, mask_long_numbers
+from app.events.dispatcher import drain_safely
 from app.events.outbox import enqueue
 from app.models import (
     Category,
@@ -47,12 +48,14 @@ from app.schemas.transactions import (
     TransactionUpdated,
     normalize_payment_method,
 )
+from app.services.budgets import BudgetService
 from app.services.categorization import (
     CategorizationResult,
     CategorizeInput,
     Categorizer,
     FallbackCategorizer,
 )
+from ml.anomaly_detection import load_anomaly_config
 from ml.preprocessing import resolve_merchant
 from ml.taxonomy import UNCATEGORIZED
 
@@ -102,6 +105,15 @@ class TransactionService:
         self.by_slug = {c.slug: c for c in cats}
         self.by_id = {c.id: c for c in cats}
         self.categorizer: Categorizer = categorizer or FallbackCategorizer(self.by_slug)
+
+    def check_budgets(self) -> None:
+        """Threshold notifications after any write that can change spending (FR-05.06)."""
+        BudgetService(self.session, self.user).evaluate()
+
+    def after_write(self) -> None:
+        """Everything that follows a ledger write: budget thresholds, then anomaly scoring."""
+        self.check_budgets()
+        drain_safely(self.session, self.user, load_anomaly_config().max_events_per_drain)
 
     # -- validation helpers -------------------------------------------------------------------
     def clean_field(
@@ -247,6 +259,7 @@ class TransactionService:
         self.session.flush()
         self.record_prediction(tx, result)
         self.emit("transaction.created", tx)
+        self.after_write()
         base = self._out(tx)
         return TransactionCreated(
             **base.model_dump(), categorization=self.categorization_out(result), warnings=warnings
@@ -426,6 +439,7 @@ class TransactionService:
         self.session.flush()
         if changed:
             self.emit("transaction.updated", tx)
+        self.after_write()
         return TransactionUpdated(**self._out(tx).model_dump(), applied_to_past=applied_to_past)
 
     # -- category changes: feedback, merchant memory (FR-03.04, FR-03.08, FR-10.01) ----------------
@@ -546,6 +560,7 @@ class TransactionService:
         tx.updated_at = utcnow()
         self.session.flush()
         self.record_prediction(tx, result)
+        self.after_write()
         return TransactionCreated(
             **self._out(tx).model_dump(),
             categorization=self.categorization_out(result),
@@ -621,6 +636,7 @@ class TransactionService:
         self.emit("transaction.deleted", tx)
         self.session.delete(tx)
         self.session.flush()
+        self.after_write()
 
     def _bulk_rows(self, ids: list[uuid.UUID]) -> list[Transaction]:
         unique = list(dict.fromkeys(ids))
@@ -635,6 +651,7 @@ class TransactionService:
             self.emit("transaction.deleted", tx)
             self.session.delete(tx)
         self.session.flush()
+        self.after_write()
         return len(rows)
 
     def bulk_categorize(self, ids: list[uuid.UUID], category_ref: str) -> int:
@@ -643,9 +660,11 @@ class TransactionService:
         for tx in rows:
             category = self.resolve_category(category_ref, tx.transaction_type)
         assert category is not None
-        return self.repo.set_category_many(
+        updated = self.repo.set_category_many(
             self.user.id, [t.id for t in rows], category.id, "user_set"
         )
+        self.after_write()
+        return updated
 
 
 def normalize_payment_method_or_422(value: str) -> str:

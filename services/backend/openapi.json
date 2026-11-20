@@ -1,6 +1,255 @@
 {
   "components": {
     "schemas": {
+      "AnomalyFeedback": {
+        "properties": {
+          "action": {
+            "enum": [
+              "confirm",
+              "dismiss"
+            ],
+            "title": "Action",
+            "type": "string"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "expected_purchase",
+                  "wrong_amount",
+                  "not_mine",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          }
+        },
+        "required": [
+          "action"
+        ],
+        "title": "AnomalyFeedback",
+        "type": "object"
+      },
+      "AnomalyOut": {
+        "properties": {
+          "anomaly_type": {
+            "enum": [
+              "amount_spike",
+              "frequency_burst",
+              "new_merchant_high_value",
+              "category_surge",
+              "amount_low"
+            ],
+            "title": "Anomaly Type",
+            "type": "string"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CategoryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "feedback_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback At"
+          },
+          "feedback_reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "expected_purchase",
+                  "wrong_amount",
+                  "not_mine",
+                  "other"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Feedback Reason"
+          },
+          "history_level": {
+            "enum": [
+              "personal",
+              "limited"
+            ],
+            "title": "History Level",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "is_alert": {
+            "title": "Is Alert",
+            "type": "boolean"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "period_id": {
+            "format": "date",
+            "title": "Period Id",
+            "type": "string"
+          },
+          "reasons": {
+            "items": {
+              "$ref": "#/components/schemas/ReasonOut"
+            },
+            "title": "Reasons",
+            "type": "array"
+          },
+          "score": {
+            "title": "Score",
+            "type": "number"
+          },
+          "severity": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Severity",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "open",
+              "confirmed",
+              "dismissed",
+              "historical",
+              "superseded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "transaction": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AnomalyTransaction"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "id",
+          "anomaly_type",
+          "severity",
+          "status",
+          "is_alert",
+          "score",
+          "history_level",
+          "category",
+          "period_id",
+          "reasons",
+          "transaction",
+          "model_version",
+          "feedback_reason",
+          "feedback_at",
+          "created_at"
+        ],
+        "title": "AnomalyOut",
+        "type": "object"
+      },
+      "AnomalyPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/AnomalyOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "AnomalyPage",
+        "type": "object"
+      },
+      "AnomalyTransaction": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "merchant": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Merchant"
+          },
+          "transaction_date": {
+            "format": "date-time",
+            "title": "Transaction Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "transaction_date",
+          "amount",
+          "merchant",
+          "description"
+        ],
+        "title": "AnomalyTransaction",
+        "type": "object"
+      },
       "AuthResponse": {
         "properties": {
           "access_token": {
@@ -35,6 +284,283 @@
           "file"
         ],
         "title": "Body_create_import_api_v1_transactions_imports_post",
+        "type": "object"
+      },
+      "BudgetCreate": {
+        "properties": {
+          "alert_thresholds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Thresholds"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "maxLength": 64,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Category"
+          },
+          "limit_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              }
+            ],
+            "title": "Limit Amount"
+          }
+        },
+        "required": [
+          "limit_amount"
+        ],
+        "title": "BudgetCreate",
+        "type": "object"
+      },
+      "BudgetHistory": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BudgetHistoryItem"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items"
+        ],
+        "title": "BudgetHistory",
+        "type": "object"
+      },
+      "BudgetHistoryItem": {
+        "properties": {
+          "limit_amount": {
+            "title": "Limit Amount",
+            "type": "string"
+          },
+          "period_id": {
+            "format": "date",
+            "title": "Period Id",
+            "type": "string"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "string"
+          },
+          "utilization": {
+            "title": "Utilization",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period_id",
+          "limit_amount",
+          "spent",
+          "utilization"
+        ],
+        "title": "BudgetHistoryItem",
+        "type": "object"
+      },
+      "BudgetList": {
+        "properties": {
+          "category_limits_exceed_overall": {
+            "title": "Category Limits Exceed Overall",
+            "type": "boolean"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/BudgetOut"
+            },
+            "title": "Items",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "category_limits_exceed_overall"
+        ],
+        "title": "BudgetList",
+        "type": "object"
+      },
+      "BudgetOut": {
+        "properties": {
+          "alert_thresholds": {
+            "items": {
+              "type": "integer"
+            },
+            "title": "Alert Thresholds",
+            "type": "array"
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CategoryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "limit_amount": {
+            "title": "Limit Amount",
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/BudgetPeriod"
+          },
+          "projected": {
+            "anyOf": [
+              {
+                "enum": [
+                  "on_track",
+                  "may_exceed"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Projected"
+          },
+          "remaining": {
+            "title": "Remaining",
+            "type": "string"
+          },
+          "spent": {
+            "title": "Spent",
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "healthy",
+              "normal",
+              "warning",
+              "exceeded"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "updated_at": {
+            "format": "date-time",
+            "title": "Updated At",
+            "type": "string"
+          },
+          "utilization": {
+            "title": "Utilization",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "category",
+          "limit_amount",
+          "alert_thresholds",
+          "spent",
+          "remaining",
+          "utilization",
+          "status",
+          "projected",
+          "period",
+          "created_at",
+          "updated_at"
+        ],
+        "title": "BudgetOut",
+        "type": "object"
+      },
+      "BudgetPeriod": {
+        "properties": {
+          "days_elapsed": {
+            "title": "Days Elapsed",
+            "type": "integer"
+          },
+          "days_in_period": {
+            "title": "Days In Period",
+            "type": "integer"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "period_id": {
+            "title": "Period Id",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "period_id",
+          "days_in_period",
+          "days_elapsed"
+        ],
+        "title": "BudgetPeriod",
+        "type": "object"
+      },
+      "BudgetUpdate": {
+        "properties": {
+          "alert_thresholds": {
+            "anyOf": [
+              {
+                "items": {
+                  "type": "integer"
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Alert Thresholds"
+          },
+          "limit_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Limit Amount"
+          }
+        },
+        "title": "BudgetUpdate",
         "type": "object"
       },
       "BulkCategorize": {
@@ -80,6 +606,31 @@
           "ids"
         ],
         "title": "BulkDelete",
+        "type": "object"
+      },
+      "CategoriesOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/CategoryItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          },
+          "total_expenses": {
+            "title": "Total Expenses",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "total_expenses",
+          "items"
+        ],
+        "title": "CategoriesOut",
         "type": "object"
       },
       "Categorization": {
@@ -248,6 +799,39 @@
         "title": "CategorizePreviewOut",
         "type": "object"
       },
+      "CategoryItem": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "share": {
+            "title": "Share",
+            "type": "string"
+          },
+          "slug": {
+            "title": "Slug",
+            "type": "string"
+          }
+        },
+        "required": [
+          "slug",
+          "name",
+          "amount",
+          "share",
+          "count"
+        ],
+        "title": "CategoryItem",
+        "type": "object"
+      },
       "CategoryOut": {
         "properties": {
           "id": {
@@ -322,6 +906,51 @@
         "title": "ChangePasswordRequest",
         "type": "object"
       },
+      "Changes": {
+        "description": "Percent change (cur - prev) / prev, 1 decimal; null when the previous value is 0.",
+        "properties": {
+          "expenses": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Expenses"
+          },
+          "income": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Income"
+          },
+          "net": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Net"
+          }
+        },
+        "required": [
+          "income",
+          "expenses",
+          "net"
+        ],
+        "title": "Changes",
+        "type": "object"
+      },
       "CommitRequest": {
         "additionalProperties": false,
         "properties": {
@@ -352,6 +981,31 @@
         "title": "CommitRequest",
         "type": "object"
       },
+      "Comparison": {
+        "properties": {
+          "change": {
+            "$ref": "#/components/schemas/Changes"
+          },
+          "current": {
+            "$ref": "#/components/schemas/Figures"
+          },
+          "label": {
+            "title": "Label",
+            "type": "string"
+          },
+          "previous": {
+            "$ref": "#/components/schemas/Figures"
+          }
+        },
+        "required": [
+          "label",
+          "current",
+          "previous",
+          "change"
+        ],
+        "title": "Comparison",
+        "type": "object"
+      },
       "CountOut": {
         "properties": {
           "count": {
@@ -363,6 +1017,35 @@
           "count"
         ],
         "title": "CountOut",
+        "type": "object"
+      },
+      "CurvePointOut": {
+        "properties": {
+          "date": {
+            "format": "date",
+            "title": "Date",
+            "type": "string"
+          },
+          "p10": {
+            "title": "P10",
+            "type": "string"
+          },
+          "p50": {
+            "title": "P50",
+            "type": "string"
+          },
+          "p90": {
+            "title": "P90",
+            "type": "string"
+          }
+        },
+        "required": [
+          "date",
+          "p10",
+          "p50",
+          "p90"
+        ],
+        "title": "CurvePointOut",
         "type": "object"
       },
       "DeleteAccountRequest": {
@@ -384,6 +1067,243 @@
           "confirm"
         ],
         "title": "DeleteAccountRequest",
+        "type": "object"
+      },
+      "Figures": {
+        "properties": {
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "expenses": {
+            "title": "Expenses",
+            "type": "string"
+          },
+          "income": {
+            "title": "Income",
+            "type": "string"
+          },
+          "net": {
+            "title": "Net",
+            "type": "string"
+          },
+          "savings_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings Rate"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "income",
+          "expenses",
+          "net",
+          "savings_rate"
+        ],
+        "title": "Figures",
+        "type": "object"
+      },
+      "ForecastBudget": {
+        "properties": {
+          "exceed_band": {
+            "enum": [
+              "low",
+              "medium",
+              "high"
+            ],
+            "title": "Exceed Band",
+            "type": "string"
+          },
+          "limit_amount": {
+            "title": "Limit Amount",
+            "type": "string"
+          },
+          "predicted_over_budget": {
+            "title": "Predicted Over Budget",
+            "type": "string"
+          }
+        },
+        "required": [
+          "limit_amount",
+          "predicted_over_budget",
+          "exceed_band"
+        ],
+        "title": "ForecastBudget",
+        "type": "object"
+      },
+      "ForecastOut": {
+        "properties": {
+          "available": {
+            "const": true,
+            "default": true,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "baseline_prediction": {
+            "title": "Baseline Prediction",
+            "type": "string"
+          },
+          "budget": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/ForecastBudget"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "category": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/CategoryRef"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "daily_curve": {
+            "items": {
+              "$ref": "#/components/schemas/CurvePointOut"
+            },
+            "title": "Daily Curve",
+            "type": "array"
+          },
+          "estimated_period_end_balance": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Estimated Period End Balance"
+          },
+          "expected_recurring_remaining": {
+            "title": "Expected Recurring Remaining",
+            "type": "string"
+          },
+          "generated_at": {
+            "format": "date-time",
+            "title": "Generated At",
+            "type": "string"
+          },
+          "history_level": {
+            "enum": [
+              "personal",
+              "limited"
+            ],
+            "title": "History Level",
+            "type": "string"
+          },
+          "interval_high": {
+            "title": "Interval High",
+            "type": "string"
+          },
+          "interval_low": {
+            "title": "Interval Low",
+            "type": "string"
+          },
+          "method": {
+            "enum": [
+              "run_rate",
+              "seasonal_naive",
+              "model"
+            ],
+            "title": "Method",
+            "type": "string"
+          },
+          "model_version": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Model Version"
+          },
+          "period": {
+            "$ref": "#/components/schemas/BudgetPeriod"
+          },
+          "predicted_remaining": {
+            "title": "Predicted Remaining",
+            "type": "string"
+          },
+          "predicted_total": {
+            "title": "Predicted Total",
+            "type": "string"
+          },
+          "spent_to_date": {
+            "title": "Spent To Date",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "category",
+          "spent_to_date",
+          "predicted_total",
+          "interval_low",
+          "interval_high",
+          "predicted_remaining",
+          "expected_recurring_remaining",
+          "baseline_prediction",
+          "method",
+          "history_level",
+          "model_version",
+          "generated_at",
+          "budget",
+          "estimated_period_end_balance",
+          "daily_curve"
+        ],
+        "title": "ForecastOut",
+        "type": "object"
+      },
+      "ForecastUnavailable": {
+        "properties": {
+          "available": {
+            "const": false,
+            "default": false,
+            "title": "Available",
+            "type": "boolean"
+          },
+          "days_needed": {
+            "title": "Days Needed",
+            "type": "integer"
+          },
+          "reason": {
+            "const": "INSUFFICIENT_HISTORY",
+            "default": "INSUFFICIENT_HISTORY",
+            "title": "Reason",
+            "type": "string"
+          },
+          "transactions_needed": {
+            "title": "Transactions Needed",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "days_needed",
+          "transactions_needed"
+        ],
+        "title": "ForecastUnavailable",
         "type": "object"
       },
       "HTTPValidationError": {
@@ -542,6 +1462,34 @@
         "title": "LoginRequest",
         "type": "object"
       },
+      "MerchantItem": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "merchant_key": {
+            "title": "Merchant Key",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          }
+        },
+        "required": [
+          "merchant_key",
+          "name",
+          "amount",
+          "count"
+        ],
+        "title": "MerchantItem",
+        "type": "object"
+      },
       "MerchantRuleList": {
         "properties": {
           "items": {
@@ -628,6 +1576,282 @@
           "category"
         ],
         "title": "MerchantRuleUpdate",
+        "type": "object"
+      },
+      "MerchantsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MerchantItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          }
+        },
+        "required": [
+          "period",
+          "items"
+        ],
+        "title": "MerchantsOut",
+        "type": "object"
+      },
+      "MethodItem": {
+        "properties": {
+          "amount": {
+            "title": "Amount",
+            "type": "string"
+          },
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          },
+          "payment_method": {
+            "title": "Payment Method",
+            "type": "string"
+          },
+          "share": {
+            "title": "Share",
+            "type": "string"
+          }
+        },
+        "required": [
+          "payment_method",
+          "amount",
+          "share",
+          "count"
+        ],
+        "title": "MethodItem",
+        "type": "object"
+      },
+      "MethodsOut": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/MethodItem"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          },
+          "total_expenses": {
+            "title": "Total Expenses",
+            "type": "string"
+          }
+        },
+        "required": [
+          "period",
+          "total_expenses",
+          "items"
+        ],
+        "title": "MethodsOut",
+        "type": "object"
+      },
+      "NotificationOut": {
+        "properties": {
+          "body": {
+            "title": "Body",
+            "type": "string"
+          },
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Link"
+          },
+          "payload": {
+            "additionalProperties": true,
+            "title": "Payload",
+            "type": "object"
+          },
+          "read_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Read At"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "title": "Type",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "type",
+          "title",
+          "body",
+          "link",
+          "payload",
+          "read_at",
+          "created_at"
+        ],
+        "title": "NotificationOut",
+        "type": "object"
+      },
+      "NotificationPage": {
+        "properties": {
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/NotificationOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "next_cursor": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Next Cursor"
+          }
+        },
+        "required": [
+          "items",
+          "next_cursor"
+        ],
+        "title": "NotificationPage",
+        "type": "object"
+      },
+      "PeriodInfo": {
+        "properties": {
+          "days_elapsed": {
+            "title": "Days Elapsed",
+            "type": "integer"
+          },
+          "days_in_period": {
+            "title": "Days In Period",
+            "type": "integer"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "in_progress": {
+            "title": "In Progress",
+            "type": "boolean"
+          },
+          "period_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Period Id"
+          },
+          "range": {
+            "enum": [
+              "current_period",
+              "previous_period",
+              "last_3_periods",
+              "custom"
+            ],
+            "title": "Range",
+            "type": "string"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          },
+          "timezone": {
+            "title": "Timezone",
+            "type": "string"
+          }
+        },
+        "required": [
+          "range",
+          "start",
+          "end",
+          "period_id",
+          "days_in_period",
+          "days_elapsed",
+          "in_progress",
+          "timezone"
+        ],
+        "title": "PeriodInfo",
+        "type": "object"
+      },
+      "ReadAllOut": {
+        "properties": {
+          "updated": {
+            "title": "Updated",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "updated"
+        ],
+        "title": "ReadAllOut",
+        "type": "object"
+      },
+      "ReasonOut": {
+        "properties": {
+          "code": {
+            "title": "Code",
+            "type": "string"
+          },
+          "feature": {
+            "title": "Feature",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "reference": {
+            "title": "Reference",
+            "type": "number"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "code",
+          "message",
+          "feature",
+          "value",
+          "reference"
+        ],
+        "title": "ReasonOut",
         "type": "object"
       },
       "RecategorizeRequest": {
@@ -960,6 +2184,69 @@
           "status"
         ],
         "title": "StagedRow",
+        "type": "object"
+      },
+      "SummaryOut": {
+        "properties": {
+          "balance": {
+            "title": "Balance",
+            "type": "string"
+          },
+          "comparison": {
+            "$ref": "#/components/schemas/Comparison"
+          },
+          "expense_count": {
+            "title": "Expense Count",
+            "type": "integer"
+          },
+          "expenses": {
+            "title": "Expenses",
+            "type": "string"
+          },
+          "income": {
+            "title": "Income",
+            "type": "string"
+          },
+          "income_count": {
+            "title": "Income Count",
+            "type": "integer"
+          },
+          "net": {
+            "title": "Net",
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          },
+          "review_queue_count": {
+            "title": "Review Queue Count",
+            "type": "integer"
+          },
+          "savings_rate": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Savings Rate"
+          }
+        },
+        "required": [
+          "period",
+          "balance",
+          "income",
+          "expenses",
+          "net",
+          "savings_rate",
+          "income_count",
+          "expense_count",
+          "comparison",
+          "review_queue_count"
+        ],
+        "title": "SummaryOut",
         "type": "object"
       },
       "TokenResponse": {
@@ -1637,6 +2924,115 @@
         "title": "TransactionUpdated",
         "type": "object"
       },
+      "TrendPoint": {
+        "properties": {
+          "budget_pace": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Pace"
+          },
+          "cumulative": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Cumulative"
+          },
+          "end": {
+            "format": "date",
+            "title": "End",
+            "type": "string"
+          },
+          "expenses": {
+            "title": "Expenses",
+            "type": "string"
+          },
+          "future": {
+            "title": "Future",
+            "type": "boolean"
+          },
+          "start": {
+            "format": "date",
+            "title": "Start",
+            "type": "string"
+          }
+        },
+        "required": [
+          "start",
+          "end",
+          "expenses",
+          "cumulative",
+          "future",
+          "budget_pace"
+        ],
+        "title": "TrendPoint",
+        "type": "object"
+      },
+      "TrendsOut": {
+        "properties": {
+          "budget_limit": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Budget Limit"
+          },
+          "granularity": {
+            "enum": [
+              "day",
+              "week",
+              "month"
+            ],
+            "title": "Granularity",
+            "type": "string"
+          },
+          "period": {
+            "$ref": "#/components/schemas/PeriodInfo"
+          },
+          "series": {
+            "items": {
+              "$ref": "#/components/schemas/TrendPoint"
+            },
+            "title": "Series",
+            "type": "array"
+          }
+        },
+        "required": [
+          "period",
+          "granularity",
+          "budget_limit",
+          "series"
+        ],
+        "title": "TrendsOut",
+        "type": "object"
+      },
+      "UnreadCount": {
+        "properties": {
+          "count": {
+            "title": "Count",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "count"
+        ],
+        "title": "UnreadCount",
+        "type": "object"
+      },
       "UpdateProfileRequest": {
         "additionalProperties": false,
         "properties": {
@@ -1872,6 +3268,449 @@
   },
   "openapi": "3.1.0",
   "paths": {
+    "/api/v1/analytics/categories": {
+      "get": {
+        "operationId": "categories_api_v1_analytics_categories_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/CategoriesOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Categories",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/merchants": {
+      "get": {
+        "operationId": "merchants_api_v1_analytics_merchants_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 5,
+              "maximum": 20,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MerchantsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Merchants",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/payment-methods": {
+      "get": {
+        "operationId": "payment_methods_api_v1_analytics_payment_methods_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MethodsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Payment Methods",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/summary": {
+      "get": {
+        "operationId": "summary_api_v1_analytics_summary_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SummaryOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Summary",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
+    "/api/v1/analytics/trends": {
+      "get": {
+        "operationId": "trends_api_v1_analytics_trends_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "granularity",
+            "required": false,
+            "schema": {
+              "default": "auto",
+              "enum": [
+                "auto",
+                "day",
+                "week",
+                "month"
+              ],
+              "title": "Granularity",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "range",
+            "required": false,
+            "schema": {
+              "default": "current_period",
+              "enum": [
+                "current_period",
+                "previous_period",
+                "last_3_periods",
+                "custom"
+              ],
+              "title": "Range",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_from",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date From"
+            }
+          },
+          {
+            "in": "query",
+            "name": "date_to",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Date To"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/TrendsOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Trends",
+        "tags": [
+          "analytics"
+        ]
+      }
+    },
     "/api/v1/auth/login": {
       "post": {
         "operationId": "login_api_v1_auth_login_post",
@@ -2045,6 +3884,249 @@
         ]
       }
     },
+    "/api/v1/budgets": {
+      "get": {
+        "operationId": "list_budgets_api_v1_budgets_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Budgets",
+        "tags": [
+          "budgets"
+        ]
+      },
+      "post": {
+        "operationId": "create_budget_api_v1_budgets_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BudgetCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Create Budget",
+        "tags": [
+          "budgets"
+        ]
+      }
+    },
+    "/api/v1/budgets/{budget_id}": {
+      "delete": {
+        "operationId": "delete_budget_api_v1_budgets__budget_id__delete",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "budget_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Budget Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Delete Budget",
+        "tags": [
+          "budgets"
+        ]
+      },
+      "get": {
+        "operationId": "get_budget_api_v1_budgets__budget_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "budget_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Budget Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Budget",
+        "tags": [
+          "budgets"
+        ]
+      },
+      "patch": {
+        "operationId": "update_budget_api_v1_budgets__budget_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "budget_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Budget Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/BudgetUpdate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Update Budget",
+        "tags": [
+          "budgets"
+        ]
+      }
+    },
+    "/api/v1/budgets/{budget_id}/history": {
+      "get": {
+        "operationId": "budget_history_api_v1_budgets__budget_id__history_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "budget_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Budget Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 12,
+              "maximum": 60,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/BudgetHistory"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Budget History",
+        "tags": [
+          "budgets"
+        ]
+      }
+    },
     "/api/v1/categories": {
       "get": {
         "operationId": "list_categories_api_v1_categories_get",
@@ -2095,6 +4177,319 @@
         "summary": "List Categories",
         "tags": [
           "categories"
+        ]
+      }
+    },
+    "/api/v1/intelligence/anomalies": {
+      "get": {
+        "operationId": "list_anomalies_api_v1_intelligence_anomalies_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "status",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "enum": [
+                      "open",
+                      "confirmed",
+                      "dismissed",
+                      "historical",
+                      "superseded"
+                    ],
+                    "type": "string"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Status"
+            }
+          },
+          {
+            "in": "query",
+            "name": "severity",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "low",
+                    "medium",
+                    "high"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Severity"
+            }
+          },
+          {
+            "in": "query",
+            "name": "type",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "enum": [
+                    "amount_spike",
+                    "frequency_burst",
+                    "new_merchant_high_value",
+                    "category_surge",
+                    "amount_low"
+                  ],
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Type"
+            }
+          },
+          {
+            "in": "query",
+            "name": "period_id",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "format": "date",
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Period Id"
+            }
+          },
+          {
+            "in": "query",
+            "name": "alerts_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Alerts Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Anomalies",
+        "tags": [
+          "intelligence"
+        ]
+      }
+    },
+    "/api/v1/intelligence/anomalies/{anomaly_id}": {
+      "get": {
+        "operationId": "get_anomaly_api_v1_intelligence_anomalies__anomaly_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anomaly_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Anomaly Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Anomaly",
+        "tags": [
+          "intelligence"
+        ]
+      }
+    },
+    "/api/v1/intelligence/anomalies/{anomaly_id}/feedback": {
+      "post": {
+        "operationId": "anomaly_feedback_api_v1_intelligence_anomalies__anomaly_id__feedback_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "anomaly_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Anomaly Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/AnomalyFeedback"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/AnomalyOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Anomaly Feedback",
+        "tags": [
+          "intelligence"
+        ]
+      }
+    },
+    "/api/v1/intelligence/forecast": {
+      "get": {
+        "operationId": "get_forecast_api_v1_intelligence_forecast_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "category",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 64,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Category"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/ForecastOut"
+                    },
+                    {
+                      "$ref": "#/components/schemas/ForecastUnavailable"
+                    }
+                  ],
+                  "title": "Response Get Forecast Api V1 Intelligence Forecast Get"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Forecast",
+        "tags": [
+          "intelligence"
         ]
       }
     },
@@ -2203,6 +4598,163 @@
         "summary": "Update Rule",
         "tags": [
           "merchant-rules"
+        ]
+      }
+    },
+    "/api/v1/notifications": {
+      "get": {
+        "operationId": "list_notifications_api_v1_notifications_get",
+        "parameters": [
+          {
+            "in": "query",
+            "name": "unread_only",
+            "required": false,
+            "schema": {
+              "default": false,
+              "title": "Unread Only",
+              "type": "boolean"
+            }
+          },
+          {
+            "in": "query",
+            "name": "limit",
+            "required": false,
+            "schema": {
+              "default": 20,
+              "maximum": 100,
+              "minimum": 1,
+              "title": "Limit",
+              "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "cursor",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "maxLength": 1000,
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Cursor"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationPage"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "List Notifications",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/read-all": {
+      "post": {
+        "operationId": "read_all_api_v1_notifications_read_all_post",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ReadAllOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Read All",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/unread-count": {
+      "get": {
+        "operationId": "unread_count_api_v1_notifications_unread_count_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UnreadCount"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Unread Count",
+        "tags": [
+          "notifications"
+        ]
+      }
+    },
+    "/api/v1/notifications/{notification_id}/read": {
+      "post": {
+        "operationId": "mark_read_api_v1_notifications__notification_id__read_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "notification_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Notification Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/NotificationOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Mark Read",
+        "tags": [
+          "notifications"
         ]
       }
     },

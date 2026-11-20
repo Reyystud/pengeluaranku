@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-20 (see task list); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-25 (Prefect training flow, MLflow registry); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -13,12 +13,51 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
 
+### 2026-11-21 — T-24 Forecast run-rate + decomposition + API/UI
+- Done: `ml/forecasting` (run-rate, seasonal naive, interval heuristic, exceed band, daily P10/P50/P90 curve), `config/forecast.yaml`; backend `ForecastRepository`/`ForecastService` (compute, store in `forecasts`, lazy 6 h cache rule, prune to 30, `refresh_all()` for the daily batch), `GET /intelligence/forecast` (overall or `category`), `BudgetOut.projected` (FR-05.07), estimated period-end balance; frontend Forecast tab on `/intelligence` (estimate label, range, band in words, chart + table, "How is this calculated?") and a dashboard estimate card.
+- Verified: `make check` (see below), 90 Vitest tests, new unit/property tests for the formulas and 19 integration tests (minimum history, run-rate vs seasonal, category minimums, bands at the P50/P90 boundaries, cache rules, pruning, isolation).
+- No accuracy numbers yet: a forecast evaluation on the locked forecast periods is not part of this task; do not quote any MAPE until it comes from a real run.
+- Decisions: `docs/DECISIONS.md` (T-24), PRD addendum T-24.
+- Not done / for later: recurring decomposition (T-30), ETS/LightGBM quantile models and the promotion gate (T-38), the daily job that calls `refresh_all()` (T-37), forecast outcomes (`forecast_outcomes`) at period close, browser check of the Forecast tab at 360 px and dark mode.
+- Next: T-25.
+
+### 2026-11-21 — T-23 Anomaly baseline, rules, event path, API/UI, feedback
+- Done: `ml/anomaly_detection` (robust z-score spike + low amount, Poisson burst, new merchant, category surge, computed reasons, cold-start prior, batch history helper, evaluation script, priors script); `config/anomaly.yaml` + `config/anomaly_priors.yaml` (from the anomaly train split of synthetic v1); backend repository/service, in-process outbox drain with `processed_events` dedupe, alert cap, suppressions, historical rows, re-score on edit, cascade on delete, `anomaly_alert` notification, `GET /intelligence/anomalies`, `GET .../{id}`, `POST .../{id}/feedback`; frontend `/intelligence` (filters, reasons, confirm/dismiss with reason) and a dashboard "Unusual spending" card.
+- Verified: `make check` green (484 tests incl. integration, coverage 98.9%); 82 Vitest tests; BOLA suite covers `anomaly_id`; SQL history is pinned to the batch helper by a parity test; point-in-time harness passes.
+- Real run (no MLflow run ID, plain script): `python -m ml.anomaly_detection.evaluate --users 60` on synthetic v1, 60 users (SHA-256 sample), validation + test anomaly splits, 18,635 scored expenses, labels used only for scoring. Any-flag row level: precision 0.214, recall 0.658 (52 of 79 labelled). Per type (flagged / labelled / precision / recall): amount_spike 118 / 19 / 0.110 / 0.684; frequency_burst 119 / 46 / 0.210 / 0.543; new_merchant_high_value 10 / 14 / 0.700 / 0.500. Small sample: indicative only; the full-dataset report with an MLflow run belongs to T-38 (`docs/MODEL_EVALUATION.md`). Precision is low because the PRD thresholds are loose on this data; they were not tuned on it.
+- Decisions: see `docs/DECISIONS.md` (T-23), PRD addendum T-23.
+- Not done / for later: ML service `/v1/anomaly/score` and IsolationForest/LOF (T-38), the daily job that calls `detect_category_surges()` (T-37), re-score on category change, anomaly insights on the dashboard (T-31), `docs/model_cards` entry, browser check of `/intelligence` at 360 px and dark mode (no browser here).
+- Next: T-24.
+
+### 2026-11-21 — T-22 Dashboard, budgets and notifications pages
+- Done: `/dashboard` (balance, income, expenses, net with change vs. the comparison window, savings rate, review-queue banner, budget progress, category donut, daily trend with cumulative line and budget pace, period comparison table, top merchants, period selector for this/last/last 3 periods, onboarding card for an empty ledger), `/budgets` (cards with status badge, utilization bar, remaining/over, thresholds, history of closed periods, add/edit drawer, two-step delete, warning when category limits exceed the overall limit), `/notifications` (list, unread filter, mark one/all as read, load more) and a bell with the unread count in the app shell that polls every 60 s only while the tab is visible (FR-14.04). Files: `frontend/src/features/{dashboard,budgets,notifications}/*`, `components/ui/{budget-status,chart-frame}.tsx`, `messages/en.json`, `AppShell.tsx`. Transaction writes now also refresh analytics, budgets and notifications queries.
+- Accessibility (PRD 8.2): status is icon + words, every chart has a visible text summary and a data-table toggle, the donut has a legend with amounts and shares, progress bars expose `aria-valuetext`, the bell's accessible name carries the unread count.
+- Verified: `pnpm lint`, `typecheck`, `build`; 70 Vitest tests (28 new: status and thresholds parsing, create/edit/delete/409, history, ranges, empty/error states with `request_id`, polling at 60 s with fake timers, mark read/all). A live contract test (`LIVE_API_URL=http://127.0.0.1:8000 pnpm test src/api/live.test.ts`) ran against the real backend: budget -> transaction -> `warning` status -> 80% notification -> read-all. Not checked in a real browser (no browser available in this session): look at the layout at 360 px and in dark mode before merging.
+- Decisions: see `docs/DECISIONS.md` (T-22).
+- Not done / for later: insights and active alerts on the dashboard (T-23, T-31 produce them), custom date range picker and the payment-method split (the API has both), sample-data card (T-29), settings page (T-42), Playwright E2E.
+- Next: T-23.
+
+### 2026-11-20 — T-21 Budgets and notifications
+- Done: `GET/POST /budgets`, `GET/PATCH/DELETE /budgets/{id}`, `GET /budgets/{id}/history`; `GET /notifications` (cursor, `unread_only`), `GET /notifications/unread-count`, `POST /notifications/{id}/read`, `POST /notifications/read-all`. Code: `app/api/{budgets,notifications}.py`, `app/services/budgets.py`, `app/repositories/{budgets,notifications}.py`, `app/schemas/budgets.py`; `TransactionService.check_budgets()` runs after create, update, delete, bulk delete/categorize, recategorize and CSV commit (FR-05.06). OpenAPI file and frontend types regenerated.
+- Verified: 56 integration tests (CRUD, 409 `BUDGET_EXISTS`, 422 `CATEGORY_TYPE_MISMATCH`, status boundaries, every write path notifying, no duplicate notifications, deletes keep past ones, pagination, per-user isolation, snapshots incl. limit change not rewriting history), 5 unit tests, BOLA suite extended with `budget_id` and `notification_id`. A mutation check (random dedupe key, `<=` instead of `<`) made 4 tests fail as expected.
+- Decisions: see `docs/DECISIONS.md` (T-21).
+- Not done / for later: `projected` (FR-05.07) is `null` until the forecast exists (T-24); the daily job that calls `BudgetService.snapshot_closed_period()` and `evaluate()` and the 90-day notification cleanup are T-37; other notification types (anomaly, import, recurring, review queue) come with their features; bell icon, notifications page and budgets page are T-22.
+- Next: T-22.
+
+### 2026-11-20 — T-20 Analytics endpoints
+- Done: `GET /analytics/summary|categories|trends|merchants|payment-methods` (FR-04.01-10): `app/api/analytics.py`, `app/services/analytics.py` (ranges, comparison, buckets), `app/repositories/analytics.py` (all sums in SQL: `SUM ... FILTER`, `GROUP BY`, window sum, `unnest ... WITH ORDINALITY` buckets), `app/schemas/analytics.py`, `PeriodBounds`/`period_bounds` in `app/core/periods.py` (start-day change applies from the next period). Committed `openapi.json` and `frontend/src/api/schema.d.ts` regenerated.
+- Verified: 20 hypothesis-generated ledgers (5 time zones incl. DST, start days 1..28, transfers, blank merchants, rows around day boundaries) compared with plain SQL (local-date cast) for balance, flows, savings rate, comparison, categories, merchants, payment methods, and day/week/month trends; two hand-computed golden ledgers (`tests/fixtures/ledgers/*.yaml`, 14 cases); 15 unit tests (periods tile the calendar with no gap/overlap, buckets, percent rules); validation, auth, cross-user isolation and repository scoping tests. Two mutation checks (change one expected number; count transfers as expenses) made the suites fail as they should. Measured on this dev machine with 50,000 rows for one user (p50 over 15 calls, single process, not an SLO result): summary 58 ms, categories 21 ms, trends 38 ms (custom 366-day range 161 ms), merchants 19 ms, payment methods 18 ms.
+- Decisions: see `docs/DECISIONS.md` (T-20). No Redis cache (FR-04.12 says compute directly without Redis; Redis is not in the stack yet).
+- Hooks for later: T-21 budgets reuse `period_bounds` and `AnalyticsRepository` (the trend already reads the overall budget for the pace line); T-22 builds the dashboard on these endpoints; T-24 forecast reuses `expense_buckets`.
+- Not done: Redis cache and invalidation (FR-04.12), onboarding/sample-data cards (FR-04.11, frontend), a promotion job for `pending_period_start_day` (the service already computes periods correctly from the pending fields).
+- Next: T-21.
+
 ### 2026-11-20 — T-19 Frontend scaffold
 - Done: `frontend/` Next.js 16 (App Router, TS strict, Tailwind v4). Pages: landing, `/login`, `/register`, `/transactions` (filters, table that becomes cards on phones, add/edit drawer with live categorization chip and quick picks, bulk delete, review-queue tab with badge, confirm suggestion, dismiss duplicate), `/transactions/import` (upload, preview with per-row status/errors and editable categories, commit options, result), `/dashboard` and `/settings` as empty states. In-memory access token, one shared refresh then retry, redirect to `/login`. Loading, empty and error states (error shows `request_id` with Copy). `t()` strings in `src/messages/en.json`. `services/backend/openapi.json` + generated `src/api/schema.d.ts`, `make openapi`, `make openapi-check`, `make web`, CI job `frontend`.
 - Verified: 41 Vitest tests (money/time helpers, API client refresh/error mapping, chip states, drawer preview/validation/idempotency, auth forms, hook headers) + 1 live contract test run against the real backend through the Next proxy (register, categories, preview, create with replay, list, bulk delete); `next build` ok; lint, tsc and prettier clean. The smoke run found the missing `Idempotency-Key` and the `deleted` response field, both fixed. Not verified: real browser rendering, mobile layout by eye, Lighthouse/axe (no browser tooling here), Playwright flows.
-- Hooks for later: T-20 dashboard (add Recharts there), T-42 settings (merchant rules API exists), `frontend/AGENTS.md` is ignored (Next writes it unless `agentRules: false`, now set).
+- Hooks for later: the dashboard page is T-22 (add Recharts there; T-20 is backend analytics), T-42 settings (merchant rules API exists), `frontend/AGENTS.md` is ignored (Next writes it unless `agentRules: false`, now set).
 - Not done: demo login button (T-29), notifications and budgets pages, E2E.
-- Next: T-20.
+- Next: T-20 (backend analytics endpoints).
 
 ### 2026-11-20 — T-18 Backend ML client and categorization flow
 - Done: `app/clients/ml.py` (`MlClient`, `CircuitBreaker`), `app/services/categorization.py` (rule -> ML -> fallback, FR-03.10), `app/repositories/categorization.py`, `app/api/merchant_rules.py`. New endpoints: `POST /transactions/categorize-preview` (60/min), `/{id}/confirm-category`, `/{id}/recategorize`, `GET/PATCH/DELETE /merchant-rules`; `PATCH /transactions/{id}` gained `apply_to_past_merchant_transactions`. Create and CSV preview/commit write `category_predictions`; category changes write `category_feedback` and upsert merchant rules. CSV preview classifies in one batch call. Saving never fails because of the ML service (tested for timeout, 5xx, connect error, garbage body, open circuit).
@@ -170,11 +209,11 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 5 — Budgets, analytics, intelligence baselines
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-20 | Analytics endpoints (SQL aggregations) + property tests vs raw SQL | T-14 | todo | |
-| T-21 | Budgets + status + thresholds + notifications (FR-05, FR-14) | T-20 | todo | |
-| T-22 | Dashboard + budgets pages | T-20, T-21 | todo | |
-| T-23 | Anomaly baseline + rules + in-memory event path + anomalies API/UI + feedback | T-18 | todo | |
-| T-24 | Forecast run-rate + decomposition + API/UI | T-20 | todo | |
+| T-20 | Analytics endpoints (SQL aggregations) + property tests vs raw SQL | T-14 | done | 2026-11-20 |
+| T-21 | Budgets + status + thresholds + notifications (FR-05, FR-14) | T-20 | done | 2026-11-20 |
+| T-22 | Dashboard + budgets pages | T-20, T-21 | done | 2026-11-21 |
+| T-23 | Anomaly baseline + rules + in-memory event path + anomalies API/UI + feedback | T-18 | done | 2026-11-21 |
+| T-24 | Forecast run-rate + decomposition + API/UI | T-20 | done | 2026-11-21 |
 
 ### Week 6 — MLOps core (= Cut line A)
 | ID | Task | Deps | Status | Notes |

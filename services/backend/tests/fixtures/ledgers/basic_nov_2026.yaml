@@ -1,0 +1,144 @@
+# Hand-written ledger with hand-computed expectations (PRD 21.3 golden files).
+# Today is Fri 2026-11-20 10:00 Jakarta. Period start day 1. Overall budget 3,000,000.
+# Every `expect` is a subset match; lists must match exactly.
+name: basic_nov_2026
+user: { timezone: Asia/Jakarta, budget_period_start_day: 1, opening_balance: "1000000.00" }
+today: "2026-11-20T10:00:00+07:00"
+budget_limit: "3000000.00"
+transactions:
+  # --- current period 2026-11-01..2026-11-30 -------------------------------------------------
+  - { at: "2026-11-01T09:00:00+07:00", type: expense,  amount: "50000.00",   category: food_beverage,   merchant: "KOPI KENANGAN", key: kopi kenangan, method: e_wallet }
+  - { at: "2026-11-01T23:30:00+07:00", type: expense,  amount: "25000.00",   category: food_beverage,   merchant: "KOPI KENANGAN", key: kopi kenangan, method: cash }
+  - { at: "2026-11-03T12:00:00+07:00", type: expense,  amount: "300000.00",  category: groceries,       merchant: "Indomaret",     key: indomaret,     method: debit_card }
+  - { at: "2026-11-05T08:00:00+07:00", type: income,   amount: "5000000.00", category: salary,          merchant: "Kantor",        key: kantor,        method: bank_transfer }
+  - { at: "2026-11-10T12:00:00+07:00", type: transfer, amount: "200000.00",  category: transfer,        merchant: "GoPay",         key: gopay,         method: e_wallet }
+  - { at: "2026-11-15T19:00:00+07:00", type: expense,  amount: "120000.00",  category: transportation,  merchant: "Grab",          key: grab,          method: e_wallet }
+  - { at: "2026-11-20T09:00:00+07:00", type: expense,  amount: "80000.00",   category: food_beverage,   merchant: "Kopi Kenangan", key: kopi kenangan, method: e_wallet }
+  # 18:00Z on Oct 31 is already Nov 1 in Jakarta: it belongs to November, not October.
+  - { at: "2026-10-31T18:00:00+00:00", type: expense,  amount: "10000.00",   category: shopping,        merchant: "Tokopedia",     key: tokopedia,     method: cash }
+  # --- previous period 2026-10-01..2026-10-31 --------------------------------------------------
+  - { at: "2026-10-02T12:00:00+07:00", type: expense,  amount: "400000.00",  category: groceries,       merchant: "Indomaret",     key: indomaret,     method: debit_card }
+  - { at: "2026-10-10T12:00:00+07:00", type: income,   amount: "5000000.00", category: salary,          merchant: "Kantor",        key: kantor,        method: bank_transfer }
+  - { at: "2026-10-12T12:00:00+07:00", type: expense,  amount: "100000.00",  category: food_beverage,   merchant: "Kopi Kenangan", key: kopi kenangan, method: cash }
+  - { at: "2026-10-25T12:00:00+07:00", type: expense,  amount: "900000.00",  category: housing,         merchant: "Kos",           key: kos,           method: bank_transfer }
+  # --- older -------------------------------------------------------------------------------------
+  - { at: "2026-09-15T12:00:00+07:00", type: expense,  amount: "50000.00",   category: food_beverage,   merchant: "Warung",        key: warung,        method: cash }
+
+cases:
+  - name: summary of the current period (in progress) compares the same point last period
+    request: summary
+    expect:
+      period: { range: current_period, start: "2026-11-01", end: "2026-11-30", period_id: "2026-11-01", days_in_period: 30, days_elapsed: 20, in_progress: true, timezone: Asia/Jakarta }
+      balance: "8965000.00"          # 1,000,000 + 10,000,000 income - 2,035,000 expenses (all time)
+      income: "5000000.00"
+      expenses: "585000.00"          # 50k+25k+300k+120k+80k+10k, the transfer is not an expense
+      net: "4415000.00"
+      savings_rate: "88.3"
+      income_count: 1
+      expense_count: 6
+      comparison:
+        label: "vs. same point last period"
+        current:  { start: "2026-11-01", end: "2026-11-20", income: "5000000.00", expenses: "585000.00", net: "4415000.00", savings_rate: "88.3" }
+        previous: { start: "2026-10-01", end: "2026-10-20", income: "5000000.00", expenses: "500000.00", net: "4500000.00", savings_rate: "90.0" }   # Oct 25 (900k) is after day 20
+        change: { income: "0.0", expenses: "17.0", net: "-1.9" }
+      review_queue_count: 0
+  - name: category breakdown is sorted by amount and returns every category
+    request: categories
+    expect:
+      total_expenses: "585000.00"
+      items:
+        - { slug: groceries,      amount: "300000.00", share: "51.3", count: 1 }
+        - { slug: food_beverage,  amount: "155000.00", share: "26.5", count: 3 }
+        - { slug: transportation, amount: "120000.00", share: "20.5", count: 1 }
+        - { slug: shopping,       amount: "10000.00",  share: "1.7",  count: 1 }
+  - name: top merchants use the most recent display name and skip the transfer
+    request: merchants
+    expect:
+      items:
+        - { merchant_key: indomaret,      name: Indomaret,     amount: "300000.00", count: 1 }
+        - { merchant_key: kopi kenangan,  name: Kopi Kenangan, amount: "155000.00", count: 3 }
+        - { merchant_key: grab,           name: Grab,          amount: "120000.00", count: 1 }
+        - { merchant_key: tokopedia,      name: Tokopedia,     amount: "10000.00",  count: 1 }
+  - name: merchants honour limit
+    request: merchants?limit=2
+    expect:
+      items:
+        - { merchant_key: indomaret }
+        - { merchant_key: kopi kenangan }
+  - name: payment method split
+    request: payment-methods
+    expect:
+      total_expenses: "585000.00"
+      items:
+        - { payment_method: debit_card, amount: "300000.00", share: "51.3", count: 1 }
+        - { payment_method: e_wallet,   amount: "250000.00", share: "42.7", count: 3 }
+        - { payment_method: cash,       amount: "35000.00",  share: "6.0",  count: 2 }
+  - name: previous period is a whole period compared with the one before it
+    request: summary?range=previous_period
+    expect:
+      period: { range: previous_period, start: "2026-10-01", end: "2026-10-31", period_id: "2026-10-01", days_in_period: 31, days_elapsed: 31, in_progress: false }
+      income: "5000000.00"
+      expenses: "1400000.00"
+      net: "3600000.00"
+      savings_rate: "72.0"
+      comparison:
+        label: "vs. previous period"
+        previous: { start: "2026-09-01", end: "2026-09-30", income: "0.00", expenses: "50000.00", net: "-50000.00", savings_rate: null }
+        change: { income: null, expenses: "2700.0", net: "7300.0" }
+  - name: last 3 periods are the three most recent completed ones
+    request: summary?range=last_3_periods
+    expect:
+      period: { range: last_3_periods, start: "2026-08-01", end: "2026-10-31", period_id: null, days_in_period: 92, in_progress: false }
+      income: "5000000.00"
+      expenses: "1450000.00"
+      net: "3550000.00"
+      savings_rate: "71.0"
+      comparison:
+        previous: { start: "2026-05-01", end: "2026-07-31", income: "0.00", expenses: "0.00" }
+        change: { income: null, expenses: null, net: null }
+  - name: custom range with a previous window of equal length
+    request: summary?range=custom&date_from=2026-11-01&date_to=2026-11-10
+    expect:
+      period: { range: custom, start: "2026-11-01", end: "2026-11-10", period_id: null, days_in_period: 10 }
+      income: "5000000.00"
+      expenses: "385000.00"
+      comparison:
+        label: "vs. previous period"
+        previous: { start: "2026-10-22", end: "2026-10-31", expenses: "900000.00" }
+        change: { income: null, expenses: "-57.2", net: "612.8" }
+  - name: daily trend is zero-filled, cumulative, and future days have no cumulative
+    request: trends
+    expect:
+      granularity: day
+      budget_limit: "3000000.00"
+    spot:
+      - { index: 0,  expect: { start: "2026-11-01", end: "2026-11-01", expenses: "85000.00",  cumulative: "85000.00",  future: false, budget_pace: "100000.00" } }
+      - { index: 1,  expect: { expenses: "0.00",      cumulative: "85000.00",  future: false, budget_pace: "200000.00" } }
+      - { index: 2,  expect: { expenses: "300000.00", cumulative: "385000.00", budget_pace: "300000.00" } }
+      - { index: 14, expect: { start: "2026-11-15",   expenses: "120000.00", cumulative: "505000.00" } }
+      - { index: 19, expect: { start: "2026-11-20",   expenses: "80000.00",  cumulative: "585000.00", future: false, budget_pace: "2000000.00" } }
+      - { index: 20, expect: { start: "2026-11-21",   expenses: "0.00",      cumulative: null, future: true, budget_pace: "2100000.00" } }
+      - { index: 29, expect: { start: "2026-11-30",   cumulative: null, future: true, budget_pace: "3000000.00" } }
+    series_length: 30
+  - name: weekly trend over three periods uses Monday weeks clipped to the range
+    request: trends?range=last_3_periods
+    expect:
+      granularity: week
+      budget_limit: null            # pace only applies to a single period
+    series_length: 14               # Sat-Sun first, then 12 Monday weeks, then Mon-Sat last
+    spot:
+      - { index: 0,  expect: { start: "2026-08-01", end: "2026-08-02", expenses: "0.00" } }
+      - { index: 1,  expect: { start: "2026-08-03", end: "2026-08-09" } }
+      - { index: 7,  expect: { start: "2026-09-14", end: "2026-09-20", expenses: "50000.00", cumulative: "50000.00", budget_pace: null } }
+      - { index: 9,  expect: { start: "2026-09-28", end: "2026-10-04", expenses: "400000.00" } }
+      - { index: 11, expect: { start: "2026-10-12", end: "2026-10-18", expenses: "100000.00" } }
+      - { index: 12, expect: { start: "2026-10-19", end: "2026-10-25", expenses: "900000.00", cumulative: "1450000.00" } }
+      - { index: 13, expect: { start: "2026-10-26", end: "2026-10-31", expenses: "0.00", cumulative: "1450000.00" } }
+  - name: monthly trend uses budget periods, not calendar months
+    request: trends?range=last_3_periods&granularity=month
+    expect:
+      granularity: month
+      series:
+        - { start: "2026-08-01", end: "2026-08-31", expenses: "0.00",       cumulative: "0.00" }
+        - { start: "2026-09-01", end: "2026-09-30", expenses: "50000.00",   cumulative: "50000.00" }
+        - { start: "2026-10-01", end: "2026-10-31", expenses: "1400000.00", cumulative: "1450000.00" }

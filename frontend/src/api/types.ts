@@ -31,3 +31,28 @@ export const PAYMENT_METHODS = [
   "other",
 ] as const;
 export type PaymentMethod = (typeof PAYMENT_METHODS)[number];
+
+export type Summary = S["SummaryOut"];
+export type CategorySplit = S["CategoriesOut"];
+export type Trends = S["TrendsOut"];
+export type TrendPoint = S["TrendPoint"];
+export type Merchants = S["MerchantsOut"];
+export type Budget = S["BudgetOut"];
+export type BudgetList = S["BudgetList"];
+export type BudgetHistory = S["BudgetHistory"];
+export type BudgetStatus = Budget["status"];
+export type AppNotification = S["NotificationOut"];
+export type NotificationPage = S["NotificationPage"];
+export type RangeName = "current_period" | "previous_period" | "last_3_periods";
+
+export type Anomaly = S["AnomalyOut"];
+export type AnomalyPage = S["AnomalyPage"];
+export type AnomalyStatus = Anomaly["status"];
+export type AnomalySeverity = Anomaly["severity"];
+export type AnomalyType = Anomaly["anomaly_type"];
+export type DismissReason = NonNullable<Anomaly["feedback_reason"]>;
+
+export type ForecastOut = S["ForecastOut"];
+export type ForecastUnavailable = S["ForecastUnavailable"];
+export type ForecastResponse = ForecastOut | ForecastUnavailable;
+export type ExceedBand = NonNullable<ForecastOut["budget"]>["exceed_band"];

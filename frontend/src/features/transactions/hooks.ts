@@ -70,7 +70,13 @@ export function useReviewCount() {
 
 function useInvalidate() {
   const client = useQueryClient();
-  return () => client.invalidateQueries({ queryKey: ["transactions"] });
+  // Spending feeds the dashboard, the budget bars and the threshold notifications.
+  return () =>
+    Promise.all(
+      ["transactions", "analytics", "budgets", "notifications"].map((key) =>
+        client.invalidateQueries({ queryKey: [key] }),
+      ),
+    );
 }
 
 export interface TransactionInput {

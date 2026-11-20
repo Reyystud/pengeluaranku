@@ -2794,3 +2794,28 @@ After the project is complete, add real results to this table.
 
 - `services/backend/openapi.json` is committed; `make openapi` regenerates it and `frontend/src/api/schema.d.ts`; `make openapi-check` runs in CI.
 - The mutating endpoints that require `Idempotency-Key` (13.1.4): create transaction, bulk delete, bulk categorize, import commit. The frontend sends a UUID per user action.
+
+### Addendum T-20: analytics response contract
+
+- Every response carries `period {range, start, end, period_id, days_in_period, days_elapsed, in_progress, timezone}` (`end` inclusive; `period_id` only for a single budget period).
+- `summary`: `balance, income, expenses, net, savings_rate, income_count, expense_count, comparison{label, current, previous, change{income, expenses, net}}, review_queue_count`. `categories`: `total_expenses, items[{slug, name, amount, share, count}]` (all categories, sorted by amount). `trends`: `granularity, budget_limit, series[{start, end, expenses, cumulative, future, budget_pace}]`. `merchants`: `items[{merchant_key, name, amount, count}]`, `limit` 1..20 (default 5). `payment-methods`: `total_expenses, items[{payment_method, amount, share, count}]`.
+- `trends` also takes `granularity=auto|day|week|month`; `month` means budget periods. Percentages are strings in percent with one decimal.
+- Ranges, comparison rules and the change formula are fixed in `docs/DECISIONS.md` (T-20).
+
+### Addendum T-21: budgets and notifications response contract
+
+- `BudgetOut`: `id, category{id,slug,name}|null, limit_amount, alert_thresholds, spent, remaining, utilization (percent, 1 decimal), status, projected (null until T-24), period{start,end,period_id,days_in_period,days_elapsed}, created_at, updated_at`. `GET /budgets` returns `{items, category_limits_exceed_overall}`; `GET /budgets/{id}` returns one; `GET /budgets/{id}/history?limit=1..60` returns `{items[{period_id, limit_amount, spent, utilization}]}`, newest first.
+- `PATCH /budgets/{id}` accepts `limit_amount` and `alert_thresholds` only. `POST` rejects non-expense categories with 422 `CATEGORY_TYPE_MISMATCH`.
+- Notifications: `GET /notifications?unread_only&limit=1..100&cursor` returns `{items, next_cursor}`; `unread-count` returns `{count}`; `POST /notifications/read-all` returns `{updated}`; `POST /notifications/{id}/read` returns the notification. Threshold notifications use `dedupe_key = budget:{budget_id}:{period_id}:{threshold}` and a payload with `budget_id, category, period_id, threshold, spent, limit_amount, utilization`.
+
+### Addendum T-23: anomaly API contract
+
+- `GET /intelligence/anomalies`: filters `status` (repeatable; default open, confirmed, dismissed, historical), `severity`, `type`, `period_id`, `alerts_only`, `limit` 1..100, `cursor`; returns `{items, next_cursor}`, newest first. `GET /intelligence/anomalies/{id}`; `POST /intelligence/anomalies/{id}/feedback` `{action: confirm|dismiss, reason?}` (reason only with dismiss; 409 `ANOMALY_SUPERSEDED` on a replaced row).
+- `AnomalyOut`: `id, anomaly_type, severity, status, is_alert, score (0..1), history_level, category|null, period_id, reasons[{code, message, feature, value, reference}], transaction{id, transaction_date, amount, merchant, description}|null, model_version, feedback_reason, feedback_at, created_at`.
+- Thresholds: `config/anomaly.yaml`; cold-start priors: `config/anomaly_priors.yaml`. Event handling and alert rules: `docs/DECISIONS.md` (T-23).
+
+### Addendum T-24: forecast API contract
+
+- `GET /intelligence/forecast?category=<expense slug>` always returns 200 with `ForecastOut` (`available: true`) or `{available: false, reason: "INSUFFICIENT_HISTORY", days_needed, transactions_needed}`. Unknown category 422 `UNKNOWN_CATEGORY`; non-expense 422 `CATEGORY_TYPE_MISMATCH`.
+- `ForecastOut`: `period{start,end,period_id,days_in_period,days_elapsed}`, `category|null`, `spent_to_date, predicted_total, interval_low, interval_high, predicted_remaining, expected_recurring_remaining, baseline_prediction` (strings), `method, history_level, model_version` (config version until a model exists), `generated_at`, `budget{limit_amount, predicted_over_budget, exceed_band}|null`, `estimated_period_end_balance|null` (overall only), `daily_curve[{date,p10,p50,p90}]` (cumulative period total per remaining day).
+- `BudgetOut.projected` is `on_track` | `may_exceed` | `null` (FR-05.07). Thresholds and the interval heuristic: `config/forecast.yaml`, `docs/DECISIONS.md` (T-24).
