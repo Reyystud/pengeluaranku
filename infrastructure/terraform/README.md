@@ -55,8 +55,10 @@ Cloud Run starts from Google's hello image. The deploy workflow (T-32) builds th
 them to the registry in the `artifact_registry` output and rolls revisions by digest; Terraform
 ignores the image field afterwards (`lifecycle.ignore_changes`), so `apply` never reverts a deploy.
 
-GitHub needs two repository variables, from the outputs `github_workload_identity_provider` and
-`github_deployer_service_account`. Only this repository, on `deploy_branch`, can impersonate the
+GitHub needs these repository variables: `GCP_PROJECT_ID`, optionally `GCP_REGION`, and from the
+outputs `github_workload_identity_provider` and `github_deployer_service_account`:
+`GCP_WORKLOAD_IDENTITY_PROVIDER` and `GCP_DEPLOYER_SERVICE_ACCOUNT`. Also create the `demo`
+environment with required reviewers: it is the approval step of `deploy.yml`. Only this repository, on `deploy_branch`, can impersonate the
 deployer, and no key file exists.
 
 ## Access

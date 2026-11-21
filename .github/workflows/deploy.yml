@@ -1,0 +1,87 @@
+name: deploy
+
+# PRD 19.5: after `build` succeeds on main (and CI passed for the same commit), wait for approval
+# of the `demo` environment, then: migrate (Cloud Run job) -> roll every service to the image
+# digest -> smoke test -> roll traffic back to the previous revisions if anything failed.
+# Runs only when the repository variables exist: GCP_PROJECT_ID, GCP_REGION (optional),
+# GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOYER_SERVICE_ACCOUNT. Configure required reviewers on the
+# `demo` environment in the repository settings; they are the manual approval.
+on:
+  workflow_run:
+    workflows: [build]
+    types: [completed]
+    branches: [main]
+  workflow_dispatch:
+    inputs:
+      sha:
+        description: "Commit whose images are already in Artifact Registry"
+        required: true
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-demo
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: deploy to demo
+    if: >-
+      vars.GCP_PROJECT_ID != '' && vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' &&
+      (github.event_name == 'workflow_dispatch' || github.event.workflow_run.conclusion == 'success')
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    environment: demo
+    permissions:
+      contents: read
+      actions: read
+      id-token: write
+    env:
+      PROJECT_ID: ${{ vars.GCP_PROJECT_ID }}
+      REGION: ${{ vars.GCP_REGION || 'asia-southeast2' }}
+      TAG: ${{ github.event.workflow_run.head_sha || inputs.sha }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ env.TAG }}
+      - name: CI must have passed for this commit
+        run: |
+          set -euo pipefail
+          result="$(gh run list --workflow ci.yml --commit "${TAG}" --json conclusion \
+            --jq '[.[] | select(.conclusion != "")] | .[0].conclusion // "none"')"
+          echo "ci conclusion for ${TAG}: ${result}"
+          [ "${result}" = "success" ] || { echo "::error::CI has not passed for ${TAG}"; exit 1; }
+      - uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+      - uses: google-github-actions/setup-gcloud@v2
+      - name: registry path
+        run: echo "REGISTRY=${REGION}-docker.pkg.dev/${PROJECT_ID}/sei" >> "$GITHUB_ENV"
+      - name: migrate
+        run: infrastructure/deploy/deploy.sh migrate
+      - name: deploy by digest
+        run: infrastructure/deploy/deploy.sh deploy
+      - uses: astral-sh/setup-uv@v5
+      - run: uv sync --frozen --package sei-backend
+      - name: smoke test
+        run: |
+          set -euo pipefail
+          SMOKE_BASE_URL="$(gcloud run services describe backend --project "${PROJECT_ID}" \
+            --region "${REGION}" --format='value(status.url)')"
+          DEMO_USER_PASSWORD="$(gcloud secrets versions access latest --secret=demo-user-password \
+            --project "${PROJECT_ID}")"
+          echo "::add-mask::${DEMO_USER_PASSWORD}"
+          export SMOKE_BASE_URL DEMO_USER_PASSWORD
+          cd services/backend
+          # Cold start (Cloud Run min instances 0, Cloud SQL connect): retry the whole run a few times.
+          for attempt in 1 2 3; do
+            if uv run python -m app.smoke; then exit 0; fi
+            echo "smoke attempt ${attempt} failed"; sleep 20
+          done
+          exit 1
+      - name: roll back to the previous revisions
+        if: failure() && hashFiles('.deploy-state/previous-revisions.txt') != ''
+        run: infrastructure/deploy/deploy.sh rollback

@@ -19,6 +19,7 @@ locals {
     worker    = ["jwt-secret", "cursor-signing-key", "export-pseudonym-key", "demo-user-password", "database-url"]
     mlflow    = ["mlflow-backend-store-uri"]
     pipelines = ["database-url", "export-pseudonym-key"]
+    deployer  = ["demo-user-password"] # the post-deploy smoke test logs in as the demo user
   }
 
   secret_bindings = {

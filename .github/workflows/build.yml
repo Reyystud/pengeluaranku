@@ -1,0 +1,96 @@
+name: build
+
+# PRD 19.5: build every image on main, scan it with Trivy (fail on CRITICAL) and push it to
+# Artifact Registry tagged with the git SHA. The scan always runs; the push runs only once the
+# repository variables below exist (see infrastructure/terraform/README.md, outputs):
+#   GCP_PROJECT_ID, GCP_REGION (default asia-southeast2),
+#   GCP_WORKLOAD_IDENTITY_PROVIDER, GCP_DEPLOYER_SERVICE_ACCOUNT
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: build-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  images:
+    name: ${{ matrix.image }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      contents: read
+      id-token: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - image: backend
+            file: infrastructure/docker/python.Dockerfile
+            args: |
+              PACKAGE=sei-backend
+            target: backend
+          - image: ml-service
+            file: infrastructure/docker/python.Dockerfile
+            args: |
+              PACKAGE=sei-ml-service
+            target: ml-service
+          - image: pipelines
+            file: infrastructure/docker/python.Dockerfile
+            args: |
+              PACKAGE=sei-pipelines
+            target: pipelines
+          - image: frontend
+            file: infrastructure/docker/frontend.Dockerfile
+            args: ""
+            target: ""
+          - image: mlflow
+            file: infrastructure/docker/mlflow.Dockerfile
+            args: ""
+            target: ""
+    env:
+      PUSH: ${{ vars.GCP_PROJECT_ID != '' && vars.GCP_WORKLOAD_IDENTITY_PROVIDER != '' }}
+      REGION: ${{ vars.GCP_REGION || 'asia-southeast2' }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: docker/setup-buildx-action@v3
+      - name: build (kept local until the scan passes)
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: ${{ matrix.file }}
+          target: ${{ matrix.target }}
+          build-args: ${{ matrix.args }}
+          load: true
+          tags: local/${{ matrix.image }}:${{ github.sha }}
+          cache-from: type=gha,scope=${{ matrix.image }}
+          cache-to: type=gha,mode=max,scope=${{ matrix.image }}
+      - name: trivy scan (fails on CRITICAL)
+        uses: aquasecurity/trivy-action@0.28.0
+        with:
+          image-ref: local/${{ matrix.image }}:${{ github.sha }}
+          severity: CRITICAL
+          ignore-unfixed: true
+          exit-code: "1"
+          vuln-type: os,library
+      - name: authenticate to Google Cloud (Workload Identity Federation, no key file)
+        if: env.PUSH == 'true'
+        uses: google-github-actions/auth@v2
+        with:
+          workload_identity_provider: ${{ vars.GCP_WORKLOAD_IDENTITY_PROVIDER }}
+          service_account: ${{ vars.GCP_DEPLOYER_SERVICE_ACCOUNT }}
+      - name: push to Artifact Registry
+        if: env.PUSH == 'true'
+        run: |
+          set -euo pipefail
+          registry="${REGION}-docker.pkg.dev/${{ vars.GCP_PROJECT_ID }}/sei"
+          gcloud auth configure-docker "${REGION}-docker.pkg.dev" --quiet
+          docker tag "local/${{ matrix.image }}:${{ github.sha }}" "${registry}/${{ matrix.image }}:${{ github.sha }}"
+          docker push "${registry}/${{ matrix.image }}:${{ github.sha }}"
+      - name: not pushed
+        if: env.PUSH != 'true'
+        run: echo "::notice::GCP repository variables are not set, so the image was built and scanned but not pushed."

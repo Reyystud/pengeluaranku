@@ -2866,3 +2866,11 @@ After the project is complete, add real results to this table.
 - Required inputs: `project_id`, `billing_account_id`, `alert_email`, `github_repository`, `monthly_budget_idr`. Cost guardrails are enforced by variable validation (max instances 1-3, `ml_service_min_instances` 0 or 1) and by `tests/guardrails.tftest.hcl`.
 - Contract the application must meet: `POST /internal/jobs/{name}` on the worker with a Google OIDC token (audience = worker URL, allowed accounts in `INTERNAL_ALLOWED_SA`); `python -m pipelines <job-name>` in the `pipelines` image for the Cloud Run jobs of 15.1; the `mlflow` image reads `MLFLOW_BACKEND_STORE_URI` and `MLFLOW_DEFAULT_ARTIFACT_ROOT`.
 - New workflow `.github/workflows/terraform.yml` (fmt, validate, `terraform test`; plan and apply when configured). New target `make terraform-check`.
+
+### Addendum T-32: build and deploy workflows
+
+- `build.yml` (push to main): images `backend`, `ml-service`, `pipelines`, `frontend`, `mlflow`; Trivy fails on CRITICAL; push to `<region>-docker.pkg.dev/<project>/sei/<image>:<git sha>` through Workload Identity Federation.
+- `deploy.yml` (after `build`, environment `demo`): `deploy.sh migrate` (Cloud Run job `migrate` on the backend digest), `deploy.sh deploy` (services `ml-service`, `mlflow`, `backend`, `worker`, `frontend` and job `pipelines` by digest; `worker` uses the backend image), `python -m app.smoke`, and on failure `deploy.sh rollback`.
+- Repository variables: `GCP_PROJECT_ID`, `GCP_REGION` (optional), `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOYER_SERVICE_ACCOUNT` (Terraform outputs).
+- Smoke test contract: `GET /healthz` 200; `POST /api/v1/auth/login` 200 for the demo user (registered on 401); `POST /api/v1/transactions` 201; `GET` 200 and `DELETE` 204 of that transaction.
+- Rollback restores Cloud Run traffic only; schema changes must be backward compatible with the previous release.

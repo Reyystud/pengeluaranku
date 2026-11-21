@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-32 (CI/CD build and deploy; needs the Terraform outputs and the known gaps listed in `infrastructure/terraform/README.md`); remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
+**Current focus:** next T-33 (see PRD 20.3); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-22 — T-32 CI/CD build and deploy (WIF, migrations job, smoke tests, rollback)
+- Done: `.github/workflows/build.yml` (5 images, Trivy fails on CRITICAL, push by SHA), `.github/workflows/deploy.yml` (environment `demo`, CI-passed check, migrate, deploy by digest, smoke, auto-rollback), `infrastructure/deploy/deploy.sh` (migrate / deploy / rollback) with 10 tests against a fake `gcloud`, `services/backend/app/smoke.py` (healthz, login or register, create, read, delete) with 10 unit tests, a `pipelines` image target, deployer access to the `demo-user-password` secret (Terraform + offline test), PRD addendum and DECISIONS rows.
+- Verified: `make check` OK (623 non-integration tests, 550 backend, coverage 98.78%, 99 Vitest); `terraform test` 9 passed; the `pipelines` image builds and `python -m pipelines --help` runs. The image build exposed a real bug: `sei-pipelines` did not declare `sei-ml`, `mlflow`, `pyarrow` and others (fixed, `uv.lock` updated).
+- Not verified: **the workflows never ran** (no GitHub variables, no GCP project): the YAML parses and the logic is tested only through the fake `gcloud` and the mocked smoke test. Trivy, `google-github-actions/*`, `gh run list --commit` and the Cloud Run commands are untested against real services. The backend, ml-service, frontend and mlflow image builds were not repeated in this task.
+- Gotchas: migrations are forward-only, rollback restores traffic only; the pipelines CLI has no scheduled job names yet (T-35, T-37); the frontend image is still the dev server and mlflow still uses SQLite; `e2e.yml` is not part of this task.
+- Next: T-33.
 
 ### 2026-11-22 — T-31 Terraform for GCP + budget alerts
 - Done: `infrastructure/terraform/` (versions, variables, APIs, Artifact Registry, Cloud SQL, Secret Manager, buckets, BigQuery, one service account per workload and IAM, Cloud Run services and jobs, Pub/Sub with DLQ, Cloud Scheduler (paused), Workload Identity Federation for GitHub, billing budget and email channel, outputs, README, `terraform.tfvars.example`, committed `.terraform.lock.hcl`), `tests/guardrails.tftest.hcl`, `.github/workflows/terraform.yml`, `make terraform-check`, `.gitignore` rules for state and tfvars.
@@ -279,7 +286,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 |---|---|---|---|---|
 | T-30 | Recurring detection (FR-08) + forecast decomposition with recurring | T-24 | done 2026-11-21 | precision 98.5% / recall 78.2% on synthetic labels |
 | T-31 | Terraform for all GCP resources + budget alerts | T-29 | done 2026-11-22 | validated and tested offline; not applied to a real project |
-| T-32 | CI/CD build/deploy with WIF, migrations job, smoke tests, revision rollback | T-31 | todo | |
+| T-32 | CI/CD build/deploy with WIF, migrations job, smoke tests, revision rollback | T-31 | done 2026-11-22 | workflows never ran against GitHub or GCP |
 
 ### Week 8 — Events and monitoring (= Cut line B)
 | ID | Task | Deps | Status | Notes |

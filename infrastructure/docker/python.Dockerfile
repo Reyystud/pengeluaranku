@@ -1,4 +1,4 @@
-# One build for the Python services (PRD 19.1, 16.7). Targets: `backend`, `ml-service`.
+# One build for the Python services (PRD 19.1, 16.7). Targets: `backend`, `ml-service`, `pipelines`.
 #   docker build -f infrastructure/docker/python.Dockerfile --target backend --build-arg PACKAGE=sei-backend .
 FROM python:3.12-slim AS base
 ENV PYTHONDONTWRITEBYTECODE=1 PYTHONUNBUFFERED=1 UV_COMPILE_BYTECODE=1 UV_LINK_MODE=copy \
@@ -37,3 +37,8 @@ WORKDIR /app
 ENV HOST=0.0.0.0 PORT=8080
 EXPOSE 8080
 CMD ["python", "-m", "ml_service"]
+
+# Cloud Run job image (PRD 16.1, 15.1): Cloud Scheduler passes the job name as its argument.
+FROM runtime AS pipelines
+WORKDIR /app
+ENTRYPOINT ["python", "-m", "pipelines"]

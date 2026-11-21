@@ -34,7 +34,7 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
-testpaths = ["ml", "data_generator", "pipelines", "services"]
+testpaths = ["ml", "data_generator", "pipelines", "services", "infrastructure/deploy"]
 markers = ["integration: needs real PostgreSQL / services (testcontainers)"]
 
 [tool.ruff]

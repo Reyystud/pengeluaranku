@@ -115,6 +115,7 @@ run "access_is_least_privilege" {
       [for n in ["jwt-secret", "cursor-signing-key", "export-pseudonym-key", "demo-user-password", "database-url"] : "backend/${n}"],
       [for n in ["jwt-secret", "cursor-signing-key", "export-pseudonym-key", "demo-user-password", "database-url"] : "worker/${n}"],
       ["mlflow/mlflow-backend-store-uri", "pipelines/database-url", "pipelines/export-pseudonym-key"],
+      ["deployer/demo-user-password"],
     ))
     error_message = "secret access is per service account and per secret"
   }

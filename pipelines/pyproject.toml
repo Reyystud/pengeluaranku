@@ -8,6 +8,11 @@ version = "0.0.0"
 description = "ML pipelines (Prefect flows)"
 requires-python = ">=3.12,<3.13"
 dependencies = [
+    "sei-ml",
+    "sei-data-generator",
+    "mlflow>=3.18.0",
+    "numpy",
+    "pyarrow",
     "pandas>=3.1.1",
     "prefect>=3,<4",
 ]
