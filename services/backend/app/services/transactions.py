@@ -113,7 +113,8 @@ class TransactionService:
     def after_write(self) -> None:
         """Everything that follows a ledger write: budget thresholds, then anomaly scoring."""
         self.check_budgets()
-        drain_safely(self.session, self.user, load_anomaly_config().max_events_per_drain)
+        if self.settings.event_bus == "inmemory":  # with Pub/Sub the relay and the worker consume
+            drain_safely(self.session, self.user, load_anomaly_config().max_events_per_drain)
 
     # -- validation helpers -------------------------------------------------------------------
     def clean_field(

@@ -1,6 +1,7 @@
 # Local stack (PRD 19.1). `make up` / `make down`; `make demo` also trains and seeds.
-# Not in this file yet: worker (no relay or jobs exist), pubsub-emulator (EVENT_BUS=inmemory),
-# prometheus/grafana (profile `observability`, with the monitoring task).
+# Profile `events` adds the Pub/Sub emulator and the worker (outbox relay + push endpoint):
+#   EVENT_BUS=pubsub docker compose --profile events up -d --build      (make up-events)
+# Not in this file yet: prometheus/grafana (profile `observability`, with the monitoring task).
 name: sei
 
 x-python-env: &python-env
@@ -85,6 +86,8 @@ services:
       CORS_ORIGINS: http://localhost:3000
       ML_SERVICE_URL: http://ml-service:8080
       ML_TIMEOUT_MS: ${ML_TIMEOUT_MS:-300}
+      EVENT_BUS: ${EVENT_BUS:-inmemory}
+      PUBSUB_PROJECT_ID: sei-local
     ports: ["127.0.0.1:${BACKEND_PORT:-8000}:8000"]
     depends_on:
       postgres: {condition: service_healthy}
@@ -94,6 +97,54 @@ services:
       interval: 5s
       timeout: 5s
       retries: 30
+
+  pubsub-emulator:
+    profiles: [events]
+    image: gcr.io/google.com/cloudsdktool/google-cloud-cli:emulators
+    command: ["gcloud", "beta", "emulators", "pubsub", "start", "--host-port=0.0.0.0:8085", "--project=sei-local"]
+    ports: ["127.0.0.1:${PUBSUB_PORT:-8085}:8085"]
+
+  worker:
+    profiles: [events]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/python.Dockerfile
+      target: backend
+      args: {PACKAGE: sei-backend}
+    environment:
+      <<: *python-env
+      ROLE: worker
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/sei
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (make setup copies .env.example)}
+      EXPORT_PSEUDONYM_KEY: ${EXPORT_PSEUDONYM_KEY:-dev-only-pseudonym-key}
+      EVENT_BUS: pubsub
+      PUBSUB_PROJECT_ID: sei-local
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      # No INTERNAL_OIDC_AUDIENCE: the emulator sends no token (allowed for APP_ENV=local only).
+    depends_on:
+      backend: {condition: service_healthy}   # the backend applies the migrations
+      pubsub-emulator: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  pubsub-init:
+    profiles: [events]
+    build:
+      context: .
+      dockerfile: infrastructure/docker/python.Dockerfile
+      target: backend
+      args: {PACKAGE: sei-backend}
+    command: ["python", "-m", "app.events.bootstrap"]
+    environment:
+      PUBSUB_EMULATOR_HOST: pubsub-emulator:8085
+      PUBSUB_PROJECT_ID: sei-local
+      PUSH_ENDPOINT: http://worker:8000/internal/events/transaction
+    depends_on:
+      pubsub-emulator: {condition: service_started}
+    restart: "no"
 
   frontend:
     build:

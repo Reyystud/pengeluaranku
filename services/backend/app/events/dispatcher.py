@@ -1,4 +1,4 @@
-"""In-process event path (PRD 6.3, 7.11): drain this user's pending outbox events.
+"""Event consumers (PRD 6.3, 7.11): the in-process drain and the shared ``dispatch``.
 
 Two consumers read each event: the anomaly scorer and the recurring updater (FR-08.06).
 
@@ -13,6 +13,8 @@ from __future__ import annotations
 
 import logging
 import uuid
+from collections.abc import Sequence
+from typing import Any
 
 from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
@@ -20,6 +22,7 @@ from sqlalchemy.orm import Session
 
 from app.models import OutboxEvent, ProcessedEvent, User
 from app.models.base import utcnow
+from app.repositories import TransactionRepository
 from app.services.anomalies import AnomalyService
 from app.services.recurring import RecurringService
 
@@ -30,7 +33,10 @@ SCORED_EVENTS = ("transaction.created", "transaction.updated")
 
 
 def drain_pending(session: Session, user: User, limit: int) -> int:
-    """Handle up to ``limit`` pending events of ``user``; returns how many were handled."""
+    """Handle up to ``limit`` pending events of ``user``; returns how many were handled.
+
+    Used when ``EVENT_BUS=inmemory``. With Pub/Sub the relay owns ``published_at``.
+    """
     events = list(
         session.execute(
             select(OutboxEvent)
@@ -42,24 +48,49 @@ def drain_pending(session: Session, user: User, limit: int) -> int:
     )
     if not events:
         return 0
-    service = AnomalyService(session, user)
-    touched: set[uuid.UUID] = set()
+    dispatch(session, user, [(e.id, e.payload) for e in events])
     for event in events:
-        if _claim(session, event, CONSUMER) and event.event_type in SCORED_EVENTS:
-            service.score_transaction(uuid.UUID(event.payload["data"]["transaction_id"]))
-        if _claim(session, event, RECURRING_CONSUMER) and event.event_type in SCORED_EVENTS:
-            touched.add(uuid.UUID(event.payload["data"]["transaction_id"]))
         event.published_at = utcnow()
-    if touched:  # FR-08.06: one refresh per known recurring merchant, however many rows arrived
-        RecurringService(session, user).refresh_for_transactions(touched)
     return len(events)
 
 
-def _claim(session: Session, event: OutboxEvent, consumer: str) -> bool:
-    """True the first time ``consumer`` sees ``event`` (idempotent handling, PRD 14.3)."""
+def dispatch(
+    session: Session, user: User, deliveries: Sequence[tuple[uuid.UUID, dict[str, Any]]]
+) -> None:
+    """Run every consumer for each ``(event_id, envelope)``: shared by the in-process path and
+    the worker's push endpoint. Idempotent per ``(event_id, consumer)`` (FR-11.03); an event whose
+    ``transaction_version`` is older than the stored one is ignored (FR-11.04: a newer event for
+    the same transaction follows). Raises if a consumer fails, so the caller can roll back the
+    claims and let the bus retry.
+    """
+    service = AnomalyService(session, user)
+    transactions = TransactionRepository(session)
+    touched: set[uuid.UUID] = set()
+    for event_id, envelope in deliveries:
+        scored = envelope["event_type"] in SCORED_EVENTS
+        tx_id = uuid.UUID(envelope["data"]["transaction_id"]) if scored else None
+        if tx_id is not None and _is_stale(transactions, user, tx_id, envelope):
+            continue
+        if _claim(session, event_id, CONSUMER) and tx_id is not None:
+            service.score_transaction(tx_id)
+        if _claim(session, event_id, RECURRING_CONSUMER) and tx_id is not None:
+            touched.add(tx_id)
+    if touched:  # FR-08.06: one refresh per known recurring merchant, however many rows arrived
+        RecurringService(session, user).refresh_for_transactions(touched)
+
+
+def _is_stale(
+    transactions: TransactionRepository, user: User, tx_id: uuid.UUID, envelope: dict[str, Any]
+) -> bool:
+    current = transactions.get(user.id, tx_id)
+    return current is not None and int(envelope["data"]["transaction_version"]) < current.version
+
+
+def _claim(session: Session, event_id: uuid.UUID, consumer: str) -> bool:
+    """True the first time ``consumer`` sees ``event_id`` (idempotent handling, PRD 14.3)."""
     claimed = session.execute(
         insert(ProcessedEvent)
-        .values(event_id=event.id, consumer=consumer, processed_at=utcnow())
+        .values(event_id=event_id, consumer=consumer, processed_at=utcnow())
         .on_conflict_do_nothing()
         .returning(ProcessedEvent.event_id)
     ).first()

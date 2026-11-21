@@ -97,7 +97,7 @@ These belong to application tasks, not to this configuration:
 2. `ml-service` and `pipelines` call `mlflow` (IAM-protected) and need the same ID-token support.
 3. A production `frontend` image: today's Dockerfile runs the Next.js dev server.
 4. An `mlflow` image for Cloud Run (see the contract above) and a `pipelines` image target.
-5. The worker `/internal/*` endpoints and the Pub/Sub relay (T-33, T-37).
+5. The worker `POST /internal/events/transaction` and the outbox relay exist (T-33); `POST /internal/jobs/{name}` and the pipelines job names do not yet (T-35, T-37). With `event_bus = "pubsub"` the worker keeps one instance always on (relay thread), which costs money; the default `inmemory` scales to zero.
 6. Cloud SQL uses the built-in `postgres` user for both databases: PostgreSQL 15+ only lets a
    database's owner create tables in the public schema, and Terraform cannot run SQL grants for a
    narrower role.

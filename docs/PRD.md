@@ -2874,3 +2874,13 @@ After the project is complete, add real results to this table.
 - Repository variables: `GCP_PROJECT_ID`, `GCP_REGION` (optional), `GCP_WORKLOAD_IDENTITY_PROVIDER`, `GCP_DEPLOYER_SERVICE_ACCOUNT` (Terraform outputs).
 - Smoke test contract: `GET /healthz` 200; `POST /api/v1/auth/login` 200 for the demo user (registered on 401); `POST /api/v1/transactions` 201; `GET` 200 and `DELETE` 204 of that transaction.
 - Rollback restores Cloud Run traffic only; schema changes must be backward compatible with the previous release.
+
+### Addendum T-33: outbox relay, push endpoint, consumers
+
+- Event schemas: `schemas/events/<event_type>.v1.json` (JSON Schema 2020-12) for `transaction.created|updated|deleted` and `import.committed`; `additionalProperties: false`, so no amount, description or merchant can enter a payload. `changed_fields` on `transaction.updated` is optional.
+- Settings added to 19.4: `RELAY_INTERVAL_S` (1.0), `RELAY_BATCH_SIZE` (100). `INTERNAL_OIDC_AUDIENCE` empty disables the token check and is refused for `APP_ENV=demo` with `ROLE=worker`.
+- `ROLE=worker`: routes `/healthz`, `/readyz`, `POST /internal/events/transaction`; Google OIDC bearer token, audience `INTERNAL_OIDC_AUDIENCE`, `email_verified` and `email` in `INTERNAL_ALLOWED_SA` (401 without or with an invalid token, 403 for another account). Body: Pub/Sub push (`message.data` = base64 of the envelope).
+- Responses: 204 handled, duplicate, stale or unknown user; 400 `INVALID_EVENT`; 5xx consumer failure (retried by Pub/Sub, 5 attempts, then `transaction-events-dlq`).
+- Stale rule (FR-11.04): `transaction_version` lower than the stored `transactions.version` is acknowledged without running consumers.
+- Relay (FR-11.02): `publish_pending` (`FOR UPDATE SKIP LOCKED`, batch, `published_at` on success) in a thread of the worker when `EVENT_BUS=pubsub`; failures back off up to 30 s and leave events pending.
+- Local (FR-11.06): compose profile `events`, `make up-events`, `python -m app.events.bootstrap`.

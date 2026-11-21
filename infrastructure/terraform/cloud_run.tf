@@ -211,7 +211,9 @@ resource "google_cloud_run_v2_service" "worker" {
     max_instance_request_concurrency = 10
 
     scaling {
-      min_instance_count = 0
+      # The outbox relay is a background thread: with EVENT_BUS=pubsub the worker must keep an
+      # instance with CPU always allocated (PRD 7.11). With inmemory events it scales to zero.
+      min_instance_count = var.event_bus == "pubsub" ? 1 : 0
       max_instance_count = var.max_instances["worker"]
     }
 
@@ -229,7 +231,7 @@ resource "google_cloud_run_v2_service" "worker" {
       }
       resources {
         limits            = { cpu = "1", memory = "1Gi" }
-        cpu_idle          = true
+        cpu_idle          = var.event_bus != "pubsub"
         startup_cpu_boost = true
       }
       volume_mounts {

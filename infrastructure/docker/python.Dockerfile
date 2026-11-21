@@ -17,6 +17,7 @@ COPY data_generator ./data_generator
 COPY pipelines ./pipelines
 COPY services ./services
 COPY config ./config
+COPY schemas ./schemas
 COPY data_splits ./data_splits
 RUN uv sync --frozen --no-dev --package ${PACKAGE}
 

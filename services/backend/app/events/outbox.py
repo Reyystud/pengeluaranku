@@ -1,7 +1,7 @@
 """Transactional outbox (PRD 6.3, 14.3): events are written in the change's own DB transaction.
 
-A publisher/worker (later task) reads unpublished rows. Payloads carry ids and enums only, never
-descriptions, merchants, notes or amounts (PRD 17.3).
+The relay (``app.events.relay``) or the in-process dispatcher reads unpublished rows. Payloads
+carry ids and enums only, never descriptions, merchants, notes or amounts (PRD 17.3).
 """
 
 from __future__ import annotations
@@ -13,6 +13,7 @@ from typing import Any
 from sqlalchemy.orm import Session
 
 from app.core.ids import new_uuid7
+from app.events.schema import validate_envelope
 from app.models import OutboxEvent
 
 SCHEMA_VERSION = 1
@@ -37,6 +38,7 @@ def enqueue(
         "user_id": str(user_id),
         "data": data,
     }
+    validate_envelope(envelope)  # a producer bug fails here, not in a consumer later
     row = OutboxEvent(
         id=event_id,
         event_type=event_type,

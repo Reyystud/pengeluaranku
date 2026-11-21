@@ -130,7 +130,7 @@ variable "enable_schedulers" {
 }
 
 variable "event_bus" {
-  description = "EVENT_BUS for backend and worker. `inmemory` until the Pub/Sub relay exists (T-33)."
+  description = "EVENT_BUS for backend and worker. `pubsub` runs the outbox relay in the worker, which then keeps one always-on instance with CPU allocated (extra cost); `inmemory` drains in-process and scales to zero."
   type        = string
   default     = "inmemory"
 

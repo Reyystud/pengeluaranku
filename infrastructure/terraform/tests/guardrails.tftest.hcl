@@ -230,3 +230,26 @@ run "a_zero_budget_is_rejected" {
 
   expect_failures = [var.monthly_budget_idr]
 }
+
+run "pubsub_mode_keeps_the_relay_alive_and_inmemory_scales_to_zero" {
+  command = plan
+
+  variables {
+    event_bus = "pubsub"
+  }
+
+  assert {
+    condition     = google_cloud_run_v2_service.worker.template[0].scaling[0].min_instance_count == 1
+    error_message = "the outbox relay needs one always-on worker instance when EVENT_BUS=pubsub"
+  }
+
+  assert {
+    condition     = google_cloud_run_v2_service.worker.template[0].containers[0].resources[0].cpu_idle == false
+    error_message = "the relay thread needs CPU outside requests"
+  }
+
+  assert {
+    condition     = google_cloud_run_v2_service.backend.template[0].scaling[0].min_instance_count == 0
+    error_message = "only the worker is kept warm"
+  }
+}

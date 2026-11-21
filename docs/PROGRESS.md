@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-33 (see PRD 20.3); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
+**Current focus:** next T-34 (see PRD 20.3); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-22 — T-33 Outbox relay, Pub/Sub, worker push endpoint, DLQ, idempotent consumers
+- Done: JSON Schemas `schemas/events/*.v1.json` (enqueue validates them), `app/events/{schema,publisher,relay,bootstrap}.py`, `app/core/internal_auth.py` (Google OIDC, audience + service account), `app/api/internal.py` (`POST /internal/events/transaction`), `ROLE=worker` routing and relay thread in `app/main.py`, `dispatch()` shared by the in-process drain and the push endpoint (idempotent per `(event_id, consumer)`, stale `transaction_version` ignored), settings (`EVENT_BUS`, `PUBSUB_*`, `RELAY_*`, `INTERNAL_*`), compose profile `events` + `make up-events`, Terraform worker kept warm when `event_bus = pubsub`, PRD addendum, DECISIONS rows.
+- Verified: `make check` OK (669 non-integration tests, 596 backend, coverage 98.53%, 99 Vitest); `terraform test` 10 passed; **real run on the Pub/Sub emulator** (`make up-events`): a transaction created through the API was published by the relay, pushed by the emulator to the worker and consumed by both consumers, 0 events pending afterwards.
+- Not verified: Pub/Sub on GCP (OIDC tokens from a real subscription, `google_token_verifier` against Google's keys, dead-lettering after 5 attempts, the DLQ itself: the emulator accepts the policy, my tests only cover the 4xx/5xx contract); the Terraform push subscription was never applied. Redelivery and failure handling are tested against PostgreSQL with a fake bus.
+- Gotchas: while testing, the host disk reached 100% and PostgreSQL returned DiskFull; the worker answered 5xx and the emulator kept retrying, which is the intended failure path. I removed only dangling Docker images (25 GB). `import.committed` has no consumer (notification and historical batch scoring are not built); the budget check stays synchronous. With `EVENT_BUS=pubsub` on Cloud Run the worker needs one always-on instance (cost). `POST /internal/jobs/{name}` is T-37.
+- Next: T-34.
 
 ### 2026-11-22 — T-32 CI/CD build and deploy (WIF, migrations job, smoke tests, rollback)
 - Done: `.github/workflows/build.yml` (5 images, Trivy fails on CRITICAL, push by SHA), `.github/workflows/deploy.yml` (environment `demo`, CI-passed check, migrate, deploy by digest, smoke, auto-rollback), `infrastructure/deploy/deploy.sh` (migrate / deploy / rollback) with 10 tests against a fake `gcloud`, `services/backend/app/smoke.py` (healthz, login or register, create, read, delete) with 10 unit tests, a `pipelines` image target, deployer access to the `demo-user-password` secret (Terraform + offline test), PRD addendum and DECISIONS rows.
@@ -291,7 +298,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 8 — Events and monitoring (= Cut line B)
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-33 | Outbox + relay + Pub/Sub + worker push endpoint + DLQ + idempotent consumers | T-23, T-31 | todo | |
+| T-33 | Outbox + relay + Pub/Sub + worker push endpoint + DLQ + idempotent consumers | T-23, T-31 | done 2026-11-22 | emulator verified; not run on GCP |
 | T-34 | Metrics, Grafana dashboards, Cloud Monitoring alerts, prediction log sink | T-32 | todo | |
 | T-35 | Evidently drift job + reports | T-34 | todo | |
 | T-36 | Runbook (≥ 3 entries, each tested once) + rollback drill | T-34 | todo | |
