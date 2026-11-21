@@ -296,6 +296,40 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/intelligence/recurring": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Recurring */
+        get: operations["list_recurring_api_v1_intelligence_recurring_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/intelligence/recurring/{series_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        /** Patch Recurring */
+        patch: operations["patch_recurring_api_v1_intelligence_recurring__series_id__patch"];
+        trace?: never;
+    };
     "/api/v1/merchant-rules": {
         parameters: {
             query?: never;
@@ -704,6 +738,16 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
     schemas: {
+        /**
+         * AmountChangeOut
+         * @description FR-08.03: the latest charge against the median of the charges before it.
+         */
+        AmountChangeOut: {
+            /** Latest Amount */
+            latest_amount: string;
+            /** Previous Amount */
+            previous_amount: string;
+        };
         /** AnomalyFeedback */
         AnomalyFeedback: {
             /**
@@ -1401,6 +1445,84 @@ export interface components {
              * @default false
              */
             force: boolean;
+        };
+        /** RecurringList */
+        RecurringList: {
+            /** Detection Version */
+            detection_version: string;
+            /** Items */
+            items: components["schemas"]["RecurringOut"][];
+            /** Monthly Expense Total */
+            monthly_expense_total: string;
+            /** Monthly Income Total */
+            monthly_income_total: string;
+            /** Upcoming */
+            upcoming: components["schemas"]["RecurringOut"][];
+        };
+        /** RecurringOut */
+        RecurringOut: {
+            amount_change: components["schemas"]["AmountChangeOut"] | null;
+            /** Amount Cv */
+            amount_cv: number;
+            category: components["schemas"]["CategoryRef"];
+            /** Confidence */
+            confidence: number;
+            /** Effective Amount */
+            effective_amount: string;
+            /** Expected Amount */
+            expected_amount: string;
+            /**
+             * Frequency
+             * @enum {string}
+             */
+            frequency: "weekly" | "biweekly" | "monthly" | "quarterly" | "yearly";
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /**
+             * Last Date
+             * Format: date
+             */
+            last_date: string;
+            /** Median Interval Days */
+            median_interval_days: number;
+            /** Merchant Display */
+            merchant_display: string;
+            /** Merchant Key */
+            merchant_key: string;
+            /** Monthly Equivalent */
+            monthly_equivalent: string;
+            /**
+             * Next Expected Date
+             * Format: date
+             */
+            next_expected_date: string;
+            /** Occurrences */
+            occurrences: number;
+            /**
+             * Status
+             * @enum {string}
+             */
+            status: "active" | "paused" | "ended" | "user_confirmed" | "user_rejected";
+            /**
+             * Transaction Type
+             * @enum {string}
+             */
+            transaction_type: "income" | "expense";
+            /** User Expected Amount */
+            user_expected_amount: string | null;
+        };
+        /**
+         * RecurringPatch
+         * @description FR-08.05. ``user_expected_amount: null`` clears the user's amount.
+         */
+        RecurringPatch: {
+            /** Status */
+            status?: ("user_confirmed" | "user_rejected") | null;
+            /** User Expected Amount */
+            user_expected_amount?: number | string | null;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -2478,6 +2600,61 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ForecastOut"] | components["schemas"]["ForecastUnavailable"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_recurring_api_v1_intelligence_recurring_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringList"];
+                };
+            };
+        };
+    };
+    patch_recurring_api_v1_intelligence_recurring__series_id__patch: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                series_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["RecurringPatch"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RecurringOut"];
                 };
             };
             /** @description Validation Error */

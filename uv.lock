@@ -2600,14 +2600,24 @@ name = "sei-pipelines"
 version = "0.0.0"
 source = { editable = "pipelines" }
 dependencies = [
+    { name = "mlflow" },
+    { name = "numpy" },
     { name = "pandas" },
     { name = "prefect" },
+    { name = "pyarrow" },
+    { name = "sei-data-generator" },
+    { name = "sei-ml" },
 ]
 
 [package.metadata]
 requires-dist = [
+    { name = "mlflow", specifier = ">=3.18.0" },
+    { name = "numpy" },
     { name = "pandas", specifier = ">=3.1.1" },
     { name = "prefect", specifier = ">=3,<4" },
+    { name = "pyarrow" },
+    { name = "sei-data-generator", editable = "data_generator" },
+    { name = "sei-ml", editable = "ml" },
 ]
 
 [[package]]

@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-30 (see PRD 20.3); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-33 (see PRD 20.3); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,28 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-22 — T-32 CI/CD build and deploy (WIF, migrations job, smoke tests, rollback)
+- Done: `.github/workflows/build.yml` (5 images, Trivy fails on CRITICAL, push by SHA), `.github/workflows/deploy.yml` (environment `demo`, CI-passed check, migrate, deploy by digest, smoke, auto-rollback), `infrastructure/deploy/deploy.sh` (migrate / deploy / rollback) with 10 tests against a fake `gcloud`, `services/backend/app/smoke.py` (healthz, login or register, create, read, delete) with 10 unit tests, a `pipelines` image target, deployer access to the `demo-user-password` secret (Terraform + offline test), PRD addendum and DECISIONS rows.
+- Verified: `make check` OK (623 non-integration tests, 550 backend, coverage 98.78%, 99 Vitest); `terraform test` 9 passed; the `pipelines` image builds and `python -m pipelines --help` runs. The image build exposed a real bug: `sei-pipelines` did not declare `sei-ml`, `mlflow`, `pyarrow` and others (fixed, `uv.lock` updated).
+- Not verified: **the workflows never ran** (no GitHub variables, no GCP project): the YAML parses and the logic is tested only through the fake `gcloud` and the mocked smoke test. Trivy, `google-github-actions/*`, `gh run list --commit` and the Cloud Run commands are untested against real services. The backend, ml-service, frontend and mlflow image builds were not repeated in this task.
+- Gotchas: migrations are forward-only, rollback restores traffic only; the pipelines CLI has no scheduled job names yet (T-35, T-37); the frontend image is still the dev server and mlflow still uses SQLite; `e2e.yml` is not part of this task.
+- Next: T-33.
+
+### 2026-11-22 — T-31 Terraform for GCP + budget alerts
+- Done: `infrastructure/terraform/` (versions, variables, APIs, Artifact Registry, Cloud SQL, Secret Manager, buckets, BigQuery, one service account per workload and IAM, Cloud Run services and jobs, Pub/Sub with DLQ, Cloud Scheduler (paused), Workload Identity Federation for GitHub, billing budget and email channel, outputs, README, `terraform.tfvars.example`, committed `.terraform.lock.hcl`), `tests/guardrails.tftest.hcl`, `.github/workflows/terraform.yml`, `make terraform-check`, `.gitignore` rules for state and tfvars.
+- Verified: `terraform fmt`, `validate` and `terraform test` (9 offline runs against mocked providers: cost guardrails, least-privilege access, paused schedulers, Pub/Sub settings, BigQuery expiry, rejected inputs) with Terraform 1.17.2 and provider 8.12. The mock tests found one real bug (a `for_each` keyed on apply-time emails), fixed. `make check` OK (603 non-integration tests, 540 backend, coverage 98.78%, 99 Vitest; no Python changed in this task).
+- Not verified: **no `terraform plan` or `apply` against a real GCP project**; provider-side validation (quotas, org policies, the budget currency, Cloud SQL edition and tier availability in `asia-southeast2`) can only fail on the first apply. The plan and apply jobs of `terraform.yml` never ran.
+- Gotchas: PRD Q4 was answered with its default (assume no free tier; the budget cap is yours to set, no default). Known gaps before the first deploy (all in the Terraform README): `ML_AUTH=google_id_token` is not implemented in the backend, `ml-service` and `pipelines` cannot call the IAM-protected MLflow yet, the frontend image is the dev server, the mlflow and pipelines images need Cloud Run variants, the worker `/internal/*` endpoints are T-33/T-37. Generated secrets also live in the Terraform state, so the state bucket must stay private.
+- Next: T-32 (build and deploy workflows with WIF, migrations job, smoke tests, revision rollback).
+
+### 2026-11-21 — T-30 Recurring detection (FR-08) + forecast decomposition
+- Done: `config/recurring.yaml` (`rules-2`), `ml/recurring/` (`detect`, `expected_dates`, `monthly_equivalent`, `amount_change`, `evaluate`), repository/service/API `GET|PATCH /intelligence/recurring[/{id}]`, event consumer `recurring-updater` (FR-08.06), forecast decomposition (history, period-to-date and spread exclude recurring; remaining recurring added; income raises the period-end balance; `forecast.yaml` is `run-rate-2`), Recurring tab in Intelligence (list, monthly total, due in 7 days, confirm, not recurring, edit amount, price-change note), `make recurring-eval`, OpenAPI and frontend types regenerated.
+- Measured (`docs/MODEL_EVALUATION.md` section 2, 1,000 synthetic users, one run): expense-series precision 98.5%, recall 78.2%. The plain PRD rules gave 98.9% / 58.3%; an amount-cluster retry (a decision beyond the PRD) lifted recall, and a 50% share guard kept precision.
+- Verified: `make check` OK (603 non-integration tests, 540 backend, coverage 98.78%, 99 Vitest passed / 4 skipped). Real event path checked through `POST /transactions` in an integration test. Not verified: browser, `make demo` with the new tab.
+- Decisions: `docs/DECISIONS.md` (6 T-30 rows), PRD addendum T-30.
+- Gotchas: until T-37 there is no nightly job, so detection runs on reading the list, on forecast recompute and for already-known merchants on new transactions. Yearly series cannot appear (3 occurrences in 400 days). A merchant that is mostly used for other purchases is not found (605 of 674 misses). The price-change flag exists on the API but the insight INS-08 is T-37. The UI was not opened in a browser (360 px, dark mode), same as T-24.
+- Next: T-31 (Terraform for GCP). PRD Q4 must be decided first.
 
 ### 2026-11-21 — T-29 Docker images, compose, `make demo`
 - Done: `docker-compose.yml`, `infrastructure/docker/{python,mlflow,frontend}.Dockerfile`, `.dockerignore`, `make up|down|seed-demo|demo`, `services/backend/app/seed_demo.py` (+7 unit tests), http(s) `MLFLOW_TRACKING_URI` support in `train-local` and the pipeline, README setup section, `.env.example` entries.
@@ -262,9 +284,9 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 7 — Deployment
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-30 | Recurring detection (FR-08) + forecast decomposition with recurring | T-24 | todo | |
-| T-31 | Terraform for all GCP resources + budget alerts | T-29 | todo | Decide Q4 first |
-| T-32 | CI/CD build/deploy with WIF, migrations job, smoke tests, revision rollback | T-31 | todo | |
+| T-30 | Recurring detection (FR-08) + forecast decomposition with recurring | T-24 | done 2026-11-21 | precision 98.5% / recall 78.2% on synthetic labels |
+| T-31 | Terraform for all GCP resources + budget alerts | T-29 | done 2026-11-22 | validated and tested offline; not applied to a real project |
+| T-32 | CI/CD build/deploy with WIF, migrations job, smoke tests, revision rollback | T-31 | done 2026-11-22 | workflows never ran against GitHub or GCP |
 
 ### Week 8 — Events and monitoring (= Cut line B)
 | ID | Task | Deps | Status | Notes |
@@ -301,7 +323,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | Q1 | Public dataset for classifier generalization testing | End of week 1 (T-06) | decided 2026-11-20: no public dataset (see DATA_SOURCES.md) |
 | Q2 | UI language: English only, or Indonesian too | Week 4 | open (default: English, i18n-ready) |
 | Q3 | IndoBERT base vs smaller distilled model | Week 9 | open |
-| Q4 | GCP free tier/credits at deploy time | Week 7 | open (default: assume none) |
+| Q4 | GCP free tier/credits at deploy time | Week 7 | default applied in T-31 (assume none; budget cap `monthly_budget_idr` is chosen by the owner at apply time) |
 | Q5 | Internship application deadline | Week 1 | open (default: ≥ 10 weeks) |
 
 ## Blockers

@@ -1,0 +1,15 @@
+# Copy to terraform.tfvars (gitignored) and fill in. None of these values is a secret.
+project_id         = "my-sei-demo"
+billing_account_id = "0123AB-4567CD-89EF01"
+alert_email        = "you@example.com"
+github_repository  = "your-user/pengeluaranku"
+
+# The monthly cap the budget alerts are measured against. Choose it after checking which free
+# tier or credits apply to your account (PRD Q4); it is not a spending limit.
+# monthly_budget_idr = <your cap in rupiah>   # required: no default on purpose
+
+# Optional.
+# region                   = "asia-southeast2"
+# ml_service_min_instances = 1          # during a demo or recording
+# mlflow_invokers          = ["user:you@example.com"]
+# enable_schedulers        = false      # keep paused until T-35 / T-37 ship

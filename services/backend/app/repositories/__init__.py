@@ -4,11 +4,7 @@ from __future__ import annotations
 
 from typing import Any
 
-from app.models import (
-    ForecastOutcome,
-    Insight,
-    RecurringSeries,
-)
+from app.models import ForecastOutcome, Insight
 from app.repositories.anomalies import AnomalyRepository, AnomalySuppressionRepository
 from app.repositories.auth import RefreshTokenStore
 from app.repositories.base import ScopedRepository
@@ -22,16 +18,13 @@ from app.repositories.forecasts import ForecastRepository
 from app.repositories.idempotency import IdempotencyRepository
 from app.repositories.imports import TransactionImportRepository
 from app.repositories.notifications import NotificationRepository
+from app.repositories.recurring import RecurringSeriesRepository
 from app.repositories.transactions import TransactionFilters, TransactionRepository
 from app.repositories.users import CategoryRepository, UserRepository
 
 
 class ForecastOutcomeRepository(ScopedRepository[ForecastOutcome]):
     model = ForecastOutcome
-
-
-class RecurringSeriesRepository(ScopedRepository[RecurringSeries]):
-    model = RecurringSeries
 
 
 class InsightRepository(ScopedRepository[Insight]):

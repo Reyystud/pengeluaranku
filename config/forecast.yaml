@@ -1,6 +1,6 @@
 # Period-end expense forecast (PRD 7.7). Versioned: bump `version` with any value change.
 # Business code never hardcodes these (PRD 0.3 rule 3). "decision" = see docs/DECISIONS.md (T-24).
-version: run-rate-1
+version: run-rate-2
 min_history_days: 14          # below this: not shown (7.7.2)
 personal_history_days: 60     # from here: seasonal naive (7.7.2) and per-category forecasts (7.7 FR-07.01)
 min_category_transactions: 20 # FR-07.01

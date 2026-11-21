@@ -1,6 +1,25 @@
 {
   "components": {
     "schemas": {
+      "AmountChangeOut": {
+        "description": "FR-08.03: the latest charge against the median of the charges before it.",
+        "properties": {
+          "latest_amount": {
+            "title": "Latest Amount",
+            "type": "string"
+          },
+          "previous_amount": {
+            "title": "Previous Amount",
+            "type": "string"
+          }
+        },
+        "required": [
+          "previous_amount",
+          "latest_amount"
+        ],
+        "title": "AmountChangeOut",
+        "type": "object"
+      },
       "AnomalyFeedback": {
         "properties": {
           "action": {
@@ -1864,6 +1883,213 @@
           }
         },
         "title": "RecategorizeRequest",
+        "type": "object"
+      },
+      "RecurringList": {
+        "properties": {
+          "detection_version": {
+            "title": "Detection Version",
+            "type": "string"
+          },
+          "items": {
+            "items": {
+              "$ref": "#/components/schemas/RecurringOut"
+            },
+            "title": "Items",
+            "type": "array"
+          },
+          "monthly_expense_total": {
+            "title": "Monthly Expense Total",
+            "type": "string"
+          },
+          "monthly_income_total": {
+            "title": "Monthly Income Total",
+            "type": "string"
+          },
+          "upcoming": {
+            "items": {
+              "$ref": "#/components/schemas/RecurringOut"
+            },
+            "title": "Upcoming",
+            "type": "array"
+          }
+        },
+        "required": [
+          "items",
+          "monthly_expense_total",
+          "monthly_income_total",
+          "upcoming",
+          "detection_version"
+        ],
+        "title": "RecurringList",
+        "type": "object"
+      },
+      "RecurringOut": {
+        "properties": {
+          "amount_change": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/AmountChangeOut"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "amount_cv": {
+            "title": "Amount Cv",
+            "type": "number"
+          },
+          "category": {
+            "$ref": "#/components/schemas/CategoryRef"
+          },
+          "confidence": {
+            "title": "Confidence",
+            "type": "number"
+          },
+          "effective_amount": {
+            "title": "Effective Amount",
+            "type": "string"
+          },
+          "expected_amount": {
+            "title": "Expected Amount",
+            "type": "string"
+          },
+          "frequency": {
+            "enum": [
+              "weekly",
+              "biweekly",
+              "monthly",
+              "quarterly",
+              "yearly"
+            ],
+            "title": "Frequency",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "last_date": {
+            "format": "date",
+            "title": "Last Date",
+            "type": "string"
+          },
+          "median_interval_days": {
+            "title": "Median Interval Days",
+            "type": "number"
+          },
+          "merchant_display": {
+            "title": "Merchant Display",
+            "type": "string"
+          },
+          "merchant_key": {
+            "title": "Merchant Key",
+            "type": "string"
+          },
+          "monthly_equivalent": {
+            "title": "Monthly Equivalent",
+            "type": "string"
+          },
+          "next_expected_date": {
+            "format": "date",
+            "title": "Next Expected Date",
+            "type": "string"
+          },
+          "occurrences": {
+            "title": "Occurrences",
+            "type": "integer"
+          },
+          "status": {
+            "enum": [
+              "active",
+              "paused",
+              "ended",
+              "user_confirmed",
+              "user_rejected"
+            ],
+            "title": "Status",
+            "type": "string"
+          },
+          "transaction_type": {
+            "enum": [
+              "income",
+              "expense"
+            ],
+            "title": "Transaction Type",
+            "type": "string"
+          },
+          "user_expected_amount": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Expected Amount"
+          }
+        },
+        "required": [
+          "id",
+          "merchant_key",
+          "merchant_display",
+          "transaction_type",
+          "category",
+          "frequency",
+          "median_interval_days",
+          "expected_amount",
+          "user_expected_amount",
+          "effective_amount",
+          "monthly_equivalent",
+          "amount_cv",
+          "last_date",
+          "next_expected_date",
+          "occurrences",
+          "confidence",
+          "status",
+          "amount_change"
+        ],
+        "title": "RecurringOut",
+        "type": "object"
+      },
+      "RecurringPatch": {
+        "additionalProperties": false,
+        "description": "FR-08.05. ``user_expected_amount: null`` clears the user's amount.",
+        "properties": {
+          "status": {
+            "anyOf": [
+              {
+                "enum": [
+                  "user_confirmed",
+                  "user_rejected"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Status"
+          },
+          "user_expected_amount": {
+            "anyOf": [
+              {
+                "type": "number"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "User Expected Amount"
+          }
+        },
+        "title": "RecurringPatch",
         "type": "object"
       },
       "RegisterRequest": {
@@ -4488,6 +4714,80 @@
           }
         },
         "summary": "Get Forecast",
+        "tags": [
+          "intelligence"
+        ]
+      }
+    },
+    "/api/v1/intelligence/recurring": {
+      "get": {
+        "operationId": "list_recurring_api_v1_intelligence_recurring_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringList"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "List Recurring",
+        "tags": [
+          "intelligence"
+        ]
+      }
+    },
+    "/api/v1/intelligence/recurring/{series_id}": {
+      "patch": {
+        "operationId": "patch_recurring_api_v1_intelligence_recurring__series_id__patch",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "series_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Series Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/RecurringPatch"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/RecurringOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Patch Recurring",
         "tags": [
           "intelligence"
         ]

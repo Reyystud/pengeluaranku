@@ -143,7 +143,9 @@ function ForecastDetail({ f }: { f: ForecastOut }) {
           <div className="mt-2 space-y-1 text-muted-foreground">
             <p>{f.method === "run_rate" ? t("forecast.howRunRate") : t("forecast.howSeasonal")}</p>
             <p>{t("forecast.howRange")}</p>
-            <p>{t("forecast.howRecurring")}</p>
+            <p>
+              {t("forecast.howRecurring", { value: formatIdr(f.expected_recurring_remaining) })}
+            </p>
             <p>{t("forecast.howBaseline", { value: formatIdr(f.baseline_prediction) })}</p>
           </div>
         </details>

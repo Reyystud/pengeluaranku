@@ -159,7 +159,7 @@ const FORECAST = {
   baseline_prediction: "3000000.00",
   method: "run_rate",
   history_level: "limited",
-  model_version: "run-rate-1",
+  model_version: "run-rate-2",
   generated_at: "2026-11-20T05:00:00Z",
   budget: {
     limit_amount: "3100000.00",

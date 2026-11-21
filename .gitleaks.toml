@@ -1,0 +1,10 @@
+# Extends the default rules; one narrow exception (PRD 17.1: no secrets in the repository).
+title = "pengeluaranku gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "Terraform maps the env var DEMO_USER_PASSWORD to the Secret Manager secret *name* demo-user-password; it is not a value"
+regexTarget = "line"
+regexes = ['''DEMO_USER_PASSWORD\s*=\s*"demo-user-password"''']

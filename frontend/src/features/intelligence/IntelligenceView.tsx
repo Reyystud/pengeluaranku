@@ -5,10 +5,12 @@ import { cn } from "@/lib/utils";
 import { t } from "@/lib/i18n";
 import { AnomaliesView } from "./AnomaliesView";
 import { ForecastView } from "./ForecastView";
+import { RecurringView } from "./RecurringView";
 
 const TABS = [
   { id: "alerts", key: "intel.tabAlerts" },
   { id: "forecast", key: "intel.tabForecast" },
+  { id: "recurring", key: "intel.tabRecurring" },
 ] as const;
 
 export function IntelligenceView() {
@@ -41,7 +43,13 @@ export function IntelligenceView() {
         ))}
       </div>
       <div role="tabpanel" id={`panel-${tab}`} aria-labelledby={`tab-${tab}`}>
-        {tab === "alerts" ? <AnomaliesView /> : <ForecastView />}
+        {tab === "alerts" ? (
+          <AnomaliesView />
+        ) : tab === "forecast" ? (
+          <ForecastView />
+        ) : (
+          <RecurringView />
+        )}
       </div>
     </div>
   );

@@ -1,5 +1,7 @@
 """In-process event path (PRD 6.3, 7.11): drain this user's pending outbox events.
 
+Two consumers read each event: the anomaly scorer and the recurring updater (FR-08.06).
+
 The outbox rows are written in the same transaction as the change. Running the consumer right after
 the write (same transaction, inside a savepoint) keeps the baseline detector free of any network
 hop and makes saving a transaction independent of it: a failure rolls back only the savepoint, the
@@ -19,9 +21,11 @@ from sqlalchemy.orm import Session
 from app.models import OutboxEvent, ProcessedEvent, User
 from app.models.base import utcnow
 from app.services.anomalies import AnomalyService
+from app.services.recurring import RecurringService
 
 log = logging.getLogger(__name__)
 CONSUMER = "anomaly-scorer"
+RECURRING_CONSUMER = "recurring-updater"
 SCORED_EVENTS = ("transaction.created", "transaction.updated")
 
 
@@ -39,17 +43,27 @@ def drain_pending(session: Session, user: User, limit: int) -> int:
     if not events:
         return 0
     service = AnomalyService(session, user)
+    touched: set[uuid.UUID] = set()
     for event in events:
-        claimed = session.execute(
-            insert(ProcessedEvent)
-            .values(event_id=event.id, consumer=CONSUMER, processed_at=utcnow())
-            .on_conflict_do_nothing()
-            .returning(ProcessedEvent.event_id)
-        ).first()
-        if claimed is not None and event.event_type in SCORED_EVENTS:
+        if _claim(session, event, CONSUMER) and event.event_type in SCORED_EVENTS:
             service.score_transaction(uuid.UUID(event.payload["data"]["transaction_id"]))
+        if _claim(session, event, RECURRING_CONSUMER) and event.event_type in SCORED_EVENTS:
+            touched.add(uuid.UUID(event.payload["data"]["transaction_id"]))
         event.published_at = utcnow()
+    if touched:  # FR-08.06: one refresh per known recurring merchant, however many rows arrived
+        RecurringService(session, user).refresh_for_transactions(touched)
     return len(events)
+
+
+def _claim(session: Session, event: OutboxEvent, consumer: str) -> bool:
+    """True the first time ``consumer`` sees ``event`` (idempotent handling, PRD 14.3)."""
+    claimed = session.execute(
+        insert(ProcessedEvent)
+        .values(event_id=event.id, consumer=consumer, processed_at=utcnow())
+        .on_conflict_do_nothing()
+        .returning(ProcessedEvent.event_id)
+    ).first()
+    return claimed is not None
 
 
 def drain_safely(session: Session, user: User, limit: int) -> None:

@@ -1,0 +1,29 @@
+# Recurring expense/income detection (PRD 7.8, FR-08). Versioned: bump `version` with any value change.
+# Business code never hardcodes these (PRD 0.3 rule 3). "decision" = see docs/DECISIONS.md (T-30).
+version: rules-2
+lookback_days: 400            # FR-08.01
+min_occurrences: 3            # step 1 (also makes yearly undetectable inside the 400-day window)
+min_regularity: 0.7           # step 4: share of intervals inside the frequency window
+amount:
+  max_cv: 0.25                # step 5: above this only weekly series survive
+  cv_penalty: 0.7             # confidence multiplier for a weekly series above max_cv
+  change_pct: 0.10            # FR-08.03: price change if |latest - previous| / previous > this ...
+  change_min_amount: "5000"   # ... and the difference is at least this many rupiah
+  cluster_tolerance: 0.10     # decision: when a merchant group fails, retry on rows within +-10% of one amount
+  cluster_candidates: 5       # decision: at most this many amount clusters are retried per group
+  cluster_min_share: 0.5      # decision: the cluster must hold at least this share of the group's rows
+confidence:
+  occurrences_saturate: 4     # step 6: min(1, occurrences / 4)
+  show_min: 0.6               # step 6: series below this are not stored or shown
+  decomposition_min: 0.7      # 7.7.1: series used to split the forecast
+status:
+  ended_after_intervals: 2    # step 7: ended when overdue by more than this many intervals
+# Matching order is weekly -> yearly. `min_days`/`max_days` bound the median interval and the
+# regularity check; `tolerance_days` is the slack before a series counts as paused (step 7).
+# `per_year` gives the monthly equivalent (step 8): amount x per_year / 12.
+frequencies:
+  weekly:    {nominal_days: 7,   min_days: 6,   max_days: 8,   tolerance_days: 1,  per_year: 52}
+  biweekly:  {nominal_days: 14,  min_days: 12,  max_days: 16,  tolerance_days: 2,  per_year: 26}
+  monthly:   {nominal_days: 30,  min_days: 28,  max_days: 34,  tolerance_days: 4,  per_year: 12}
+  quarterly: {nominal_days: 91,  min_days: 84,  max_days: 98,  tolerance_days: 7,  per_year: 4}
+  yearly:    {nominal_days: 365, min_days: 355, max_days: 375, tolerance_days: 10, per_year: 1}

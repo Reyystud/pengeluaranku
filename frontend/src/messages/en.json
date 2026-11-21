@@ -311,6 +311,7 @@
     "txLabel": "Transaction",
     "tabAlerts": "Alerts",
     "tabForecast": "Forecast",
+    "tabRecurring": "Recurring",
     "tabs": "Intelligence sections"
   },
   "forecast": {
@@ -350,10 +351,53 @@
     "howSeasonal": "Same weekday average: the average spend on each weekday over the last 4 weeks, added up for the days left.",
     "howRange": "The range comes from how much your daily spending varies (its 10th to 90th percentile). It is a rough heuristic, not a guarantee.",
     "howBaseline": "Run-rate value for comparison: {value}",
-    "howRecurring": "Recurring payments are not separated yet, so they are part of the daily average.",
+    "howRecurring": "Recurring payments still due this period (rent, subscriptions) are added on top, {value} here, and are left out of the daily average.",
     "generated": "Updated {when}",
     "dashTitle": "Period-end estimate",
     "dashMore": "Details",
     "dashEmpty": "A forecast appears after 2 weeks of transactions."
+  },
+  "recurring": {
+    "intro": "Payments that repeat on a schedule, found from your own history. Confirm the ones you recognise and mark the rest as not recurring.",
+    "monthlyTotal": "Your recurring costs are about {amount} per month",
+    "monthlyIncome": "Recurring income is about {amount} per month",
+    "upcoming": "Due in the next 7 days",
+    "upcomingNone": "Nothing is due in the next 7 days.",
+    "all": "All recurring payments",
+    "empty": "No recurring payments found yet. They show up after a payment has repeated at least 3 times.",
+    "nextDue": "Next due {date}",
+    "lastSeen": "Last seen {date}",
+    "every": "Every {frequency}",
+    "seen": "{count} payments",
+    "confidence": "Confidence {pct}%",
+    "detected": "Detected amount {amount}",
+    "perMonth": "{amount} per month",
+    "income": "Income",
+    "priceChange": "Charged {latest} last time, up from {previous}.",
+    "priceChangeDown": "Charged {latest} last time, down from {previous}.",
+    "confirm": "Yes, recurring",
+    "reject": "Not recurring",
+    "editAmount": "Edit amount",
+    "amountLabel": "Expected amount (Rp)",
+    "amountHint": "Totals and the forecast use this instead of the detected amount. Leave empty to go back to the detected one.",
+    "save": "Save",
+    "frequency": {
+      "weekly": "week",
+      "biweekly": "2 weeks",
+      "monthly": "month",
+      "quarterly": "3 months",
+      "yearly": "year"
+    },
+    "status": {
+      "active": "Active",
+      "paused": "Paused",
+      "ended": "Ended",
+      "user_confirmed": "Confirmed",
+      "user_rejected": "Not recurring"
+    },
+    "statusHint": {
+      "paused": "The payment is later than usual.",
+      "ended": "No payment for a long time."
+    }
   }
 }
