@@ -71,17 +71,28 @@ verify-splits: ## Check committed splits still match data/synthetic/v1
 train-local: ## Train + evaluate classifier candidates, register best as `candidate` in local MLflow
 	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m ml.classification.train
 
-up: ## docker compose up (stub: T-29)
-	$(call NOT_YET,T-29)
+up: ## docker compose up -d --build (needs .env: make setup). Stack: postgres redis mlflow ml-service backend frontend
+	docker compose up -d --build --wait
 
-down: ## docker compose down (stub: T-29)
-	$(call NOT_YET,T-29)
+down: ## docker compose down (VOLUMES=1 also drops the database and MLflow volumes)
+	docker compose down $(if $(VOLUMES),--volumes)
 
-seed-demo: ## Create demo user with synthetic data (stub: T-29)
-	$(call NOT_YET,T-29)
+seed-demo: ## Create the demo user with 12 months of synthetic history via the running backend (needs make data + make up)
+	@set -a; . ./.env; set +a; \
+	DEMO_USER_PASSWORD="$$DEMO_USER_PASSWORD" uv run python -m app.seed_demo --base-url http://127.0.0.1:$${BACKEND_PORT:-8000}
 
-demo: ## data + train-local + up + seed-demo (stub: T-29)
-	$(call NOT_YET,T-29)
+demo: ## data + up + train-local (into the compose MLflow) + seed-demo, then print URLs
+	@test -f .env || { echo ".env missing: run make setup"; exit 1; }
+	$(MAKE) data
+	CLASSIFIER_ALIAS=candidate $(MAKE) up
+	MLFLOW_TRACKING_URI=http://127.0.0.1:$${MLFLOW_PORT:-5000} $(MAKE) train-local
+	$(MAKE) seed-demo
+	@echo ""
+	@echo "Frontend   http://localhost:$${FRONTEND_PORT:-3000}"
+	@echo "API docs   http://localhost:$${BACKEND_PORT:-8000}/docs"
+	@echo "MLflow     http://localhost:$${MLFLOW_PORT:-5000}"
+	@echo "ML service http://localhost:$${ML_PORT:-8080}/readyz  (loads the model within MODEL_POLL_INTERVAL_S)"
+	@echo "Demo user  demo@example.com / DEMO_USER_PASSWORD from .env. The model is the unpromoted T-09 baseline (alias candidate)."
 
 openapi: ## Regenerate services/backend/openapi.json and the frontend API types
 	uv run python -m app.openapi_export services/backend/openapi.json

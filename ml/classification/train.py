@@ -9,6 +9,7 @@ from __future__ import annotations
 import argparse
 import hashlib
 import json
+import os
 import subprocess
 import time
 from pathlib import Path
@@ -276,14 +277,21 @@ def _log_mlflow(
     from mlflow.tracking import MlflowClient
 
     base = ROOT / "data" / "mlflow"
-    base.mkdir(parents=True, exist_ok=True)
-    mlflow.set_tracking_uri(f"sqlite:///{base / 'mlflow.db'}")
+    remote = os.environ.get("MLFLOW_TRACKING_URI", "")
+    if remote.startswith(("http://", "https://")):
+        # A tracking server (the compose `mlflow` service) owns artifact storage.
+        mlflow.set_tracking_uri(remote)
+        artifact_location = None
+    else:
+        base.mkdir(parents=True, exist_ok=True)
+        mlflow.set_tracking_uri(f"sqlite:///{base / 'mlflow.db'}")
+        artifact_location = (base / "artifacts").as_uri()
     name = "classifier"
     exp = mlflow.get_experiment_by_name(name)
     exp_id = (
         exp.experiment_id
         if exp
-        else mlflow.create_experiment(name, artifact_location=(base / "artifacts").as_uri())
+        else mlflow.create_experiment(name, artifact_location=artifact_location)
     )
     winner = report["selection"]["winner"]
     for model_name, res in results.items():

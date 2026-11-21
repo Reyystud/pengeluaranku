@@ -2843,3 +2843,9 @@ After the project is complete, add real results to this table.
 ### Addendum T-28: reproducibility check
 
 - `make repro` runs `python -m pipelines.reproducibility [--out file.json]`: builds a small synthetic dataset in a temp directory, trains the baseline twice in separate processes (`PYTHONHASHSEED=0`, no registration) and compares. Exit 0 when the dataset hash, split hash and `|macro F1 difference| <= reproducibility.max_macro_f1_delta` (0.01) hold, 1 otherwise. The result JSON is uploaded by `.github/workflows/ml-reproducibility.yml`.
+
+### Addendum T-29: local stack
+
+- `docker-compose.yml` (project `sei`): `postgres`, `redis`, `mlflow`, `ml-service`, `backend` (runs `alembic upgrade head` on start), `frontend` (Next.js dev server). Images are built from `infrastructure/docker/{python,mlflow,frontend}.Dockerfile`; the Python Dockerfile has targets `backend` and `ml-service` (build arg `PACKAGE`), non-root user, repo layout kept at `/app`.
+- Make targets: `make up` (`docker compose up -d --build --wait`), `make down [VOLUMES=1]`, `make seed-demo` (`python -m app.seed_demo`, env `DEMO_USER_PASSWORD`, optional `DEMO_USER_EMAIL`), `make demo`. Host ports are configurable (`POSTGRES_PORT`, `REDIS_PORT`, `MLFLOW_PORT`, `ML_PORT`, `BACKEND_PORT`, `FRONTEND_PORT`).
+- `MLFLOW_TRACKING_URI` with an http(s) URL is honoured by `ml.classification.train` and `pipelines.train_flow`; the experiment then keeps the server's default artifact location.

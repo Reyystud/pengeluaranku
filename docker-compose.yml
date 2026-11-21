@@ -1,0 +1,110 @@
+# Local stack (PRD 19.1). `make up` / `make down`; `make demo` also trains and seeds.
+# Not in this file yet: worker (no relay or jobs exist), pubsub-emulator (EVENT_BUS=inmemory),
+# prometheus/grafana (profile `observability`, with the monitoring task).
+name: sei
+
+x-python-env: &python-env
+  APP_ENV: local
+  LOG_LEVEL: ${LOG_LEVEL:-INFO}
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
+      POSTGRES_DB: sei
+    ports: ["127.0.0.1:${POSTGRES_PORT:-5432}:5432"]
+    volumes: [pgdata:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres -d sei"]
+      interval: 5s
+      timeout: 5s
+      retries: 12
+
+  redis:
+    image: redis:7-alpine
+    ports: ["127.0.0.1:${REDIS_PORT:-6379}:6379"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+
+  mlflow:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/mlflow.Dockerfile
+    ports: ["127.0.0.1:${MLFLOW_PORT:-5000}:5000"]
+    volumes: [mlflow:/mlflow]
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:5000/health')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  ml-service:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/python.Dockerfile
+      target: ml-service
+      args: {PACKAGE: sei-ml-service}
+    environment:
+      <<: *python-env
+      ML_AUTH: none
+      MODEL_SOURCE: mlflow
+      MLFLOW_TRACKING_URI: http://mlflow:5000
+      CLASSIFIER_ALIAS: ${CLASSIFIER_ALIAS:-production}
+      MODEL_POLL_INTERVAL_S: ${MODEL_POLL_INTERVAL_S:-30}
+      MODELS_DIR: /tmp/models
+    ports: ["127.0.0.1:${ML_PORT:-8080}:8080"]
+    depends_on:
+      mlflow: {condition: service_healthy}
+    # Liveness only: /readyz stays 503 until a model has been registered and promoted.
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8080/healthz')"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  backend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/python.Dockerfile
+      target: backend
+      args: {PACKAGE: sei-backend}
+    # Migrations run on start in local development only (PRD 19.1).
+    command: ["sh", "-c", "alembic upgrade head && exec python -m app"]
+    environment:
+      <<: *python-env
+      DATABASE_URL: postgresql+psycopg://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/sei
+      JWT_SECRET: ${JWT_SECRET:?set JWT_SECRET in .env (make setup copies .env.example)}
+      CURSOR_SIGNING_KEY: ${CURSOR_SIGNING_KEY:-dev-only-cursor-signing-key}
+      EXPORT_PSEUDONYM_KEY: ${EXPORT_PSEUDONYM_KEY:-dev-only-pseudonym-key}
+      COOKIE_SECURE: "false"   # plain http on localhost; keep true anywhere else
+      CORS_ORIGINS: http://localhost:3000
+      ML_SERVICE_URL: http://ml-service:8080
+      ML_TIMEOUT_MS: ${ML_TIMEOUT_MS:-300}
+    ports: ["127.0.0.1:${BACKEND_PORT:-8000}:8000"]
+    depends_on:
+      postgres: {condition: service_healthy}
+      ml-service: {condition: service_started}
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request as u; u.urlopen('http://127.0.0.1:8000/healthz')"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+
+  frontend:
+    build:
+      context: .
+      dockerfile: infrastructure/docker/frontend.Dockerfile
+    environment:
+      BACKEND_INTERNAL_URL: http://backend:8000
+    ports: ["127.0.0.1:${FRONTEND_PORT:-3000}:3000"]
+    depends_on:
+      backend: {condition: service_healthy}
+
+volumes:
+  pgdata:
+  mlflow:

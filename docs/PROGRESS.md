@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-29 (see PRD 20.3: Docker/compose, `make demo`); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-30 (see PRD 20.3); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-21 — T-29 Docker images, compose, `make demo`
+- Done: `docker-compose.yml`, `infrastructure/docker/{python,mlflow,frontend}.Dockerfile`, `.dockerignore`, `make up|down|seed-demo|demo`, `services/backend/app/seed_demo.py` (+7 unit tests), http(s) `MLFLOW_TRACKING_URI` support in `train-local` and the pipeline, README setup section, `.env.example` entries.
+- Verified: `make check` OK (551 non-integration tests, 510 backend, coverage 98.82%, 90 Vitest). On this machine all four images build. The stack was run with host networking (this kernel cannot create Docker bridge networks, so `docker compose up` itself could not be run here): migrations ran, `/readyz` 200 on the backend, ML service 503 without a model, `seed-demo` imported 1,148 rows (all valid), a second run did nothing, `make train-local` registered version 1 in the MLflow server, the ML service loaded it by polling without a restart, `categorize-preview` through the backend returned `source: model`, and the frontend proxied a demo login (200). Image sizes: backend 1.41 GB, ml-service 1.39 GB, frontend 2.47 GB.
+- Not verified: `docker compose up` with the real bridge network and healthcheck ordering, `make demo` end to end, the UI in a browser (T-24 checks still pending too).
+- Gotchas: the first `make demo` trains on the full v1 dataset (about 10 minutes for 3 candidates). The demo model is alias `candidate`, not promoted. No worker, pubsub emulator or observability profile yet.
+- Next: T-30.
 
 ### 2026-11-21 — T-28 Reproducibility CI job
 - Done: `pipelines/reproducibility.py` (two training runs in separate processes, compare dataset hash, split hash and macro F1), config section `reproducibility`, `make repro`, `.github/workflows/ml-reproducibility.yml` (weekly, PRs touching ML paths, manual; uploads the result JSON), `pipelines/tests/test_reproducibility.py` (decision logic with fake runs).
@@ -250,7 +257,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-26 | Offline gates + behavioural tests + latency benchmark | T-25 | done | 2026-11-21; golden set + gates; T-09 baseline fails golden (0.781) |
 | T-27 | `make promote` / `make rollback`; ML service alias polling hot-swap | T-25, T-17 | done 2026-11-21 | |
 | T-28 | Reproducibility CI job | T-25 | done 2026-11-21 | |
-| T-29 | Docker images + full compose + `make demo` | all above | todo | |
+| T-29 | Docker images + full compose + `make demo` | all above | done 2026-11-21 | |
 
 ### Week 7 — Deployment
 | ID | Task | Deps | Status | Notes |

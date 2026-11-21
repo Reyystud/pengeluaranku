@@ -157,7 +157,12 @@ def _experiment(mlflow_dir: Path, explicit: bool) -> tuple[MlflowClient, str]:
     exp = client.get_experiment_by_name(EXPERIMENT)
     if exp is not None:
         return client, exp.experiment_id
-    artifacts = (mlflow_dir / "artifacts").resolve().as_uri()
+    # A tracking server owns artifact storage; local stores keep them next to the database.
+    artifacts = (
+        None
+        if uri.startswith(("http://", "https://"))
+        else ((mlflow_dir / "artifacts").resolve().as_uri())
+    )
     return client, client.create_experiment(EXPERIMENT, artifact_location=artifacts)
 
 
