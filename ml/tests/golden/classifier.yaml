@@ -1,0 +1,120 @@
+# Golden set for the transaction classifier (PRD 21.4): hand-labelled, written without looking
+# at model output. Case counts: >= 100 in total, >= 3 per category. Type follows the label.
+# Limit: written by the project team from common Indonesian merchants and bank-statement styles;
+# many merchants also exist in the synthetic catalogue, so accuracy here is optimistic.
+version: golden-1
+cases:
+  - {label: food_beverage, description: "KOPI KENANGAN SENAYAN CITY", merchant: "Kopi Kenangan", amount: "32000.00", type: expense, payment_method: qris}
+  - {label: food_beverage, description: "GRABFOOD ORDER 88213", merchant: "GrabFood", amount: "54500.00", type: expense, payment_method: e_wallet}
+  - {label: food_beverage, description: "WARTEG BAHARI MAMPANG", merchant: null, amount: "27000.00", type: expense, payment_method: cash}
+  - {label: food_beverage, description: "MCDONALDS PLAZA INDONESIA", merchant: null, amount: "68000.00", type: expense, payment_method: debit_card}
+  - {label: food_beverage, description: "Bakso Pak Kumis", merchant: null, amount: "22000.00", type: expense, payment_method: cash}
+  - {label: food_beverage, description: "GOFOOD*AYAM GEPREK BENSU", merchant: null, amount: "41000.00", type: expense, payment_method: e_wallet}
+  - {label: groceries, description: "INDOMARET JL MERDEKA 12", merchant: "Indomaret", amount: "48700.00", type: expense, payment_method: debit_card}
+  - {label: groceries, description: "ALFAMART KEBAYORAN", merchant: "Alfamart", amount: "35200.00", type: expense, payment_method: qris}
+  - {label: groceries, description: "SUPERINDO CIPUTAT", merchant: null, amount: "215000.00", type: expense, payment_method: debit_card}
+  - {label: groceries, description: "Belanja sayur di pasar", merchant: null, amount: "85000.00", type: expense, payment_method: cash}
+  - {label: groceries, description: "HYPERMART PURI", merchant: null, amount: "312000.00", type: expense, payment_method: credit_card}
+  - {label: groceries, description: "LOTTE MART KUNINGAN", merchant: null, amount: "420000.00", type: expense, payment_method: debit_card}
+  - {label: transportation, description: "GOJEK RIDE 4471", merchant: "Gojek", amount: "23000.00", type: expense, payment_method: e_wallet}
+  - {label: transportation, description: "GRAB* TRIP JKT", merchant: "Grab", amount: "31000.00", type: expense, payment_method: e_wallet}
+  - {label: transportation, description: "PERTAMINA SPBU 34.12", merchant: "Pertamina", amount: "100000.00", type: expense, payment_method: debit_card}
+  - {label: transportation, description: "TOP UP E-TOLL MANDIRI", merchant: null, amount: "200000.00", type: expense, payment_method: bank_transfer}
+  - {label: transportation, description: "KAI TIKET KRL COMMUTERLINE", merchant: null, amount: "12000.00", type: expense, payment_method: e_wallet}
+  - {label: transportation, description: "PARKIR MALL GRAND INDONESIA", merchant: null, amount: "10000.00", type: expense, payment_method: cash}
+  - {label: utilities, description: "PLN TOKEN LISTRIK 20500", merchant: "PLN", amount: "205000.00", type: expense, payment_method: bank_transfer}
+  - {label: utilities, description: "PDAM JAYA TAGIHAN AIR", merchant: null, amount: "95000.00", type: expense, payment_method: bank_transfer}
+  - {label: utilities, description: "TELKOMSEL PAKET DATA 30GB", merchant: "Telkomsel", amount: "120000.00", type: expense, payment_method: e_wallet}
+  - {label: utilities, description: "INDIHOME TAGIHAN INTERNET", merchant: "IndiHome", amount: "385000.00", type: expense, payment_method: bank_transfer}
+  - {label: utilities, description: "XL AXIATA PULSA", merchant: null, amount: "50000.00", type: expense, payment_method: e_wallet}
+  - {label: utilities, description: "BAYAR LISTRIK PLN PASCABAYAR", merchant: null, amount: "310000.00", type: expense, payment_method: bank_transfer}
+  - {label: housing, description: "BAYAR KOS BULAN MARET", merchant: null, amount: "1500000.00", type: expense, payment_method: bank_transfer}
+  - {label: housing, description: "SEWA KONTRAKAN", merchant: null, amount: "2500000.00", type: expense, payment_method: bank_transfer}
+  - {label: housing, description: "CICILAN KPR BTN", merchant: null, amount: "2100000.00", type: expense, payment_method: bank_transfer}
+  - {label: housing, description: "IURAN BULANAN APARTEMEN", merchant: null, amount: "650000.00", type: expense, payment_method: bank_transfer}
+  - {label: housing, description: "RENT PAYMENT STUDIO", merchant: null, amount: "3000000.00", type: expense, payment_method: bank_transfer}
+  - {label: housing, description: "PERBAIKAN ATAP RUMAH TUKANG", merchant: null, amount: "750000.00", type: expense, payment_method: cash}
+  - {label: shopping, description: "TOKOPEDIA ORDER INV/20260312", merchant: "Tokopedia", amount: "189000.00", type: expense, payment_method: e_wallet}
+  - {label: shopping, description: "SHOPEE CHECKOUT 7788", merchant: "Shopee", amount: "254000.00", type: expense, payment_method: e_wallet}
+  - {label: shopping, description: "UNIQLO GRAND INDONESIA", merchant: "Uniqlo", amount: "399000.00", type: expense, payment_method: credit_card}
+  - {label: shopping, description: "ZALORA INDONESIA", merchant: null, amount: "525000.00", type: expense, payment_method: credit_card}
+  - {label: shopping, description: "LAZADA PURCHASE", merchant: null, amount: "146000.00", type: expense, payment_method: e_wallet}
+  - {label: shopping, description: "MATAHARI DEPT STORE", merchant: null, amount: "275000.00", type: expense, payment_method: debit_card}
+  - {label: entertainment, description: "NETFLIX.COM", merchant: "Netflix", amount: "186000.00", type: expense, payment_method: credit_card}
+  - {label: entertainment, description: "SPOTIFY PREMIUM", merchant: "Spotify", amount: "54990.00", type: expense, payment_method: credit_card}
+  - {label: entertainment, description: "CGV CINEMAS GRAND INDONESIA", merchant: null, amount: "100000.00", type: expense, payment_method: qris}
+  - {label: entertainment, description: "TIKET KONSER TIKET.COM", merchant: null, amount: "850000.00", type: expense, payment_method: bank_transfer}
+  - {label: entertainment, description: "STEAM GAMES PURCHASE", merchant: null, amount: "150000.00", type: expense, payment_method: credit_card}
+  - {label: entertainment, description: "DISNEY+ HOTSTAR", merchant: null, amount: "39000.00", type: expense, payment_method: e_wallet}
+  - {label: health, description: "APOTEK K24 TEBET", merchant: "K24", amount: "67500.00", type: expense, payment_method: cash}
+  - {label: health, description: "KLINIK PRATAMA SEHAT", merchant: null, amount: "250000.00", type: expense, payment_method: cash}
+  - {label: health, description: "RS SILOAM TEBET", merchant: null, amount: "1200000.00", type: expense, payment_method: debit_card}
+  - {label: health, description: "GUARDIAN APOTEK VITAMIN", merchant: null, amount: "145000.00", type: expense, payment_method: debit_card}
+  - {label: health, description: "BPJS KESEHATAN IURAN", merchant: null, amount: "150000.00", type: expense, payment_method: bank_transfer}
+  - {label: health, description: "PRAKTEK DOKTER GIGI", merchant: null, amount: "450000.00", type: expense, payment_method: cash}
+  - {label: education, description: "SPP SEMESTER GANJIL UNIVERSITAS", merchant: null, amount: "6500000.00", type: expense, payment_method: bank_transfer}
+  - {label: education, description: "GRAMEDIA BUKU KULIAH", merchant: "Gramedia", amount: "185000.00", type: expense, payment_method: debit_card}
+  - {label: education, description: "UDEMY COURSE PURCHASE", merchant: "Udemy", amount: "199000.00", type: expense, payment_method: credit_card}
+  - {label: education, description: "RUANGGURU LANGGANAN", merchant: null, amount: "299000.00", type: expense, payment_method: e_wallet}
+  - {label: education, description: "LES PRIVAT MATEMATIKA", merchant: null, amount: "400000.00", type: expense, payment_method: cash}
+  - {label: education, description: "BIAYA UJIAN IELTS", merchant: null, amount: "3100000.00", type: expense, payment_method: bank_transfer}
+  - {label: personal_care, description: "SALON KECANTIKAN ANGGUN", merchant: null, amount: "180000.00", type: expense, payment_method: cash}
+  - {label: personal_care, description: "BARBERSHOP POTONG RAMBUT", merchant: null, amount: "60000.00", type: expense, payment_method: cash}
+  - {label: personal_care, description: "SOCIOLLA ORDER SKINCARE", merchant: "Sociolla", amount: "320000.00", type: expense, payment_method: e_wallet}
+  - {label: personal_care, description: "WATSONS PERSONAL CARE", merchant: "Watsons", amount: "98000.00", type: expense, payment_method: debit_card}
+  - {label: personal_care, description: "SPA REFLEKSI PIJAT", merchant: null, amount: "200000.00", type: expense, payment_method: cash}
+  - {label: personal_care, description: "CELEBRITY FITNESS MEMBERSHIP", merchant: null, amount: "450000.00", type: expense, payment_method: credit_card}
+  - {label: gifts_donations, description: "DONASI KITABISA", merchant: "Kitabisa", amount: "100000.00", type: expense, payment_method: e_wallet}
+  - {label: gifts_donations, description: "ZAKAT FITRAH BAZNAS", merchant: null, amount: "50000.00", type: expense, payment_method: bank_transfer}
+  - {label: gifts_donations, description: "SUMBANGAN MASJID AL IKHLAS", merchant: null, amount: "100000.00", type: expense, payment_method: cash}
+  - {label: gifts_donations, description: "HADIAH ULANG TAHUN TEMAN", merchant: null, amount: "250000.00", type: expense, payment_method: cash}
+  - {label: gifts_donations, description: "KADO PERNIKAHAN AMPLOP", merchant: null, amount: "500000.00", type: expense, payment_method: cash}
+  - {label: gifts_donations, description: "DONASI BENCANA ACT", merchant: "ACT", amount: "75000.00", type: expense, payment_method: e_wallet}
+  - {label: fees_charges, description: "BIAYA ADMIN BULANAN", merchant: null, amount: "12500.00", type: expense, payment_method: bank_transfer}
+  - {label: fees_charges, description: "BI-FAST FEE TRANSFER", merchant: null, amount: "2500.00", type: expense, payment_method: bank_transfer}
+  - {label: fees_charges, description: "ANNUAL CARD FEE KARTU KREDIT", merchant: null, amount: "150000.00", type: expense, payment_method: credit_card}
+  - {label: fees_charges, description: "PAJAK BUNGA TABUNGAN", merchant: null, amount: "3200.00", type: expense, payment_method: bank_transfer}
+  - {label: fees_charges, description: "DENDA KETERLAMBATAN TAGIHAN", merchant: null, amount: "50000.00", type: expense, payment_method: credit_card}
+  - {label: fees_charges, description: "BIAYA TARIK TUNAI ATM LAIN", merchant: null, amount: "6500.00", type: expense, payment_method: debit_card}
+  - {label: other_expense, description: "PEMBAYARAN LAIN-LAIN", merchant: null, amount: "75000.00", type: expense, payment_method: cash}
+  - {label: other_expense, description: "BELI PERLENGKAPAN TIDAK JELAS", merchant: null, amount: "64000.00", type: expense, payment_method: cash}
+  - {label: other_expense, description: "PENGELUARAN MISC", merchant: null, amount: "30000.00", type: expense, payment_method: cash}
+  - {label: other_expense, description: "BAYAR UTANG KE TEMAN", merchant: null, amount: "200000.00", type: expense, payment_method: cash}
+  - {label: other_expense, description: "TIP DRIVER", merchant: null, amount: "10000.00", type: expense, payment_method: cash}
+  - {label: other_expense, description: "OTHER EXPENSE", merchant: null, amount: "45000.00", type: expense, payment_method: other}
+  - {label: allowance, description: "UANG SAKU DARI ORANG TUA", merchant: null, amount: "2000000.00", type: income, payment_method: bank_transfer}
+  - {label: allowance, description: "KIRIMAN BULANAN IBU", merchant: null, amount: "1500000.00", type: income, payment_method: bank_transfer}
+  - {label: allowance, description: "TRANSFER AYAH UANG JAJAN", merchant: null, amount: "1000000.00", type: income, payment_method: bank_transfer}
+  - {label: allowance, description: "BEASISWA BULANAN", merchant: null, amount: "1200000.00", type: income, payment_method: bank_transfer}
+  - {label: allowance, description: "PARENT ALLOWANCE", merchant: null, amount: "2500000.00", type: income, payment_method: bank_transfer}
+  - {label: allowance, description: "UANG BULANAN DARI PAPA", merchant: null, amount: "1800000.00", type: income, payment_method: bank_transfer}
+  - {label: salary, description: "GAJI BULANAN PT MAJU JAYA", merchant: null, amount: "9500000.00", type: income, payment_method: bank_transfer}
+  - {label: salary, description: "PAYROLL MARET 2026", merchant: null, amount: "12000000.00", type: income, payment_method: bank_transfer}
+  - {label: salary, description: "SALARY CREDIT PT TEKNOLOGI NUSANTARA", merchant: null, amount: "15000000.00", type: income, payment_method: bank_transfer}
+  - {label: salary, description: "GAJI KARYAWAN", merchant: null, amount: "7000000.00", type: income, payment_method: bank_transfer}
+  - {label: salary, description: "THR TUNJANGAN HARI RAYA", merchant: null, amount: "8000000.00", type: income, payment_method: bank_transfer}
+  - {label: salary, description: "TRF GAJI CV SENTOSA", merchant: null, amount: "6500000.00", type: income, payment_method: bank_transfer}
+  - {label: freelance, description: "PEMBAYARAN PROYEK DESAIN LOGO", merchant: null, amount: "3500000.00", type: income, payment_method: bank_transfer}
+  - {label: freelance, description: "FEE FREELANCE WEBSITE KLIEN", merchant: null, amount: "5000000.00", type: income, payment_method: bank_transfer}
+  - {label: freelance, description: "PAYMENT UPWORK CLIENT", merchant: null, amount: "4200000.00", type: income, payment_method: bank_transfer}
+  - {label: freelance, description: "HONOR NARASUMBER WEBINAR", merchant: null, amount: "1500000.00", type: income, payment_method: bank_transfer}
+  - {label: freelance, description: "INVOICE 0042 JASA KONSULTASI", merchant: null, amount: "6000000.00", type: income, payment_method: bank_transfer}
+  - {label: freelance, description: "PEMBAYARAN JASA EDITING VIDEO", merchant: null, amount: "2000000.00", type: income, payment_method: bank_transfer}
+  - {label: refund, description: "REFUND TOKOPEDIA PESANAN DIBATALKAN", merchant: "Tokopedia", amount: "189000.00", type: income, payment_method: e_wallet}
+  - {label: refund, description: "PENGEMBALIAN DANA SHOPEE", merchant: "Shopee", amount: "254000.00", type: income, payment_method: e_wallet}
+  - {label: refund, description: "REFUND TIKET PESAWAT", merchant: null, amount: "1250000.00", type: income, payment_method: bank_transfer}
+  - {label: refund, description: "CASHBACK REVERSAL PEMBAYARAN", merchant: null, amount: "35000.00", type: income, payment_method: e_wallet}
+  - {label: refund, description: "RETUR BARANG ZALORA", merchant: null, amount: "525000.00", type: income, payment_method: bank_transfer}
+  - {label: refund, description: "REFUND GRABFOOD ORDER", merchant: "GrabFood", amount: "54500.00", type: income, payment_method: e_wallet}
+  - {label: other_income, description: "BUNGA TABUNGAN", merchant: null, amount: "15000.00", type: income, payment_method: bank_transfer}
+  - {label: other_income, description: "PENJUALAN BARANG BEKAS", merchant: null, amount: "350000.00", type: income, payment_method: cash}
+  - {label: other_income, description: "HADIAH LOMBA", merchant: null, amount: "500000.00", type: income, payment_method: bank_transfer}
+  - {label: other_income, description: "BAGI HASIL INVESTASI", merchant: null, amount: "250000.00", type: income, payment_method: bank_transfer}
+  - {label: other_income, description: "PEMASUKAN LAIN", merchant: null, amount: "100000.00", type: income, payment_method: cash}
+  - {label: other_income, description: "DIVIDEN SAHAM", merchant: null, amount: "420000.00", type: income, payment_method: bank_transfer}
+  - {label: transfer, description: "TRANSFER KE TABUNGAN SENDIRI", merchant: null, amount: "1000000.00", type: transfer, payment_method: bank_transfer}
+  - {label: transfer, description: "TOP UP GOPAY DARI BCA", merchant: null, amount: "200000.00", type: transfer, payment_method: bank_transfer}
+  - {label: transfer, description: "PINDAH DANA KE REKENING MANDIRI", merchant: null, amount: "2000000.00", type: transfer, payment_method: bank_transfer}
+  - {label: transfer, description: "TOP UP OVO", merchant: null, amount: "100000.00", type: transfer, payment_method: bank_transfer}
+  - {label: transfer, description: "TARIK TUNAI ATM BCA", merchant: null, amount: "500000.00", type: transfer, payment_method: debit_card}
+  - {label: transfer, description: "TRANSFER ANTAR REKENING", merchant: null, amount: "750000.00", type: transfer, payment_method: bank_transfer}

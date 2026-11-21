@@ -17,7 +17,7 @@ from typing import Any
 import mlflow
 from mlflow.tracking import MlflowClient
 
-from pipelines.gates import GateResult
+from pipelines.gates import GateResult, Reference, slice_scores
 
 CANDIDATE = "candidate"
 
@@ -67,6 +67,8 @@ def complete_metadata(
             "macro_f1_test": test["macro_f1"],
             "ece_test": test["ece"],
             "macro_f1_unseen_merchant": unseen["macro_f1"],
+            "golden_accuracy": (report.get("behavioural") or {}).get("golden_accuracy"),
+            "latency_p95_ms": (report.get("latency_benchmark") or {}).get("p95_ms"),
         },
         "gates": [{"name": g.name, "status": g.status, "detail": g.detail} for g in gates],
         "priors": None,
@@ -104,3 +106,31 @@ def register_candidate(
     client.log_artifact(run_id, str(model_dir / "metadata.json"), artifact_path="model")
     client.set_registered_model_alias(model_name, CANDIDATE, number)
     return number
+
+
+def fetch_production(client: MlflowClient, model_name: str, tmp: Path) -> Reference | None:
+    """Evidence of the version holding alias ``production``; ``None`` when there is none."""
+    try:
+        version = client.get_model_version_by_alias(model_name, "production")
+    except mlflow.exceptions.MlflowException:
+        return None
+    run_id = version.run_id
+    if run_id is None:
+        return None
+    try:
+        meta_path = client.download_artifacts(run_id, "model/metadata.json", str(tmp))
+        report_path = client.download_artifacts(run_id, "model/evaluation/report.json", str(tmp))
+    except mlflow.exceptions.MlflowException:
+        return None
+    meta = json.loads(Path(meta_path).read_text(encoding="utf-8"))
+    report = json.loads(Path(report_path).read_text(encoding="utf-8"))
+    winner = report["selection"]["winner"]
+    test = report["models"][winner]["test"]
+    metrics = meta.get("metrics") or {}
+    return Reference(
+        version=str(version.version),
+        split_hash=(meta.get("dataset") or {}).get("split_hash"),
+        test_macro_f1=metrics.get("macro_f1_test", test.get("macro_f1")),
+        slices=slice_scores(test),
+        golden_accuracy=metrics.get("golden_accuracy"),
+    )

@@ -9,6 +9,32 @@ import sys
 from pipelines.data_steps import PipelineError
 
 
+def _alias_command(args: argparse.Namespace) -> int:
+    from pipelines import promotion
+
+    client = promotion.open_client(args.tracking_uri)
+    try:
+        if args.command == "promote":
+            change = promotion.promote(
+                client,
+                args.model,
+                args.version,
+                actor=args.actor,
+                reason=args.reason,
+                force=args.force,
+            )
+        else:
+            change = promotion.rollback(client, args.model, actor=args.actor, reason=args.reason)
+    except PipelineError as exc:
+        print(f"{args.command} refused: {exc}", file=sys.stderr)
+        return 2
+    print(
+        f"{change.action}: {change.model} production "
+        f"v{change.from_version or '-'} -> v{change.to_version}"
+    )
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="pipelines")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -24,7 +50,21 @@ def main(argv: list[str] | None = None) -> int:
         default="auto",
         help="auto = Prefect when PREFECT_API_URL is set, otherwise the same steps run inline",
     )
+    promote = sub.add_parser("promote", help="move alias production to a version (PRD 16.3)")
+    rollback = sub.add_parser("rollback", help="swap production and previous (PRD 16.5)")
+    for p in (promote, rollback):
+        p.add_argument("--model", default="transaction-classifier")
+        p.add_argument("--reason", default="")
+        p.add_argument("--actor", default=os.environ.get("PROMOTE_ACTOR", "operator"))
+        p.add_argument("--tracking-uri", default=None)
+    promote.add_argument("--version", required=True)
+    promote.add_argument(
+        "--force", action="store_true", help="allow gate != passed; needs --reason"
+    )
     args = parser.parse_args(argv)
+
+    if args.command in ("promote", "rollback"):
+        return _alias_command(args)
 
     os.environ.setdefault("PYTHONHASHSEED", "0")  # recorded in the run; set it before launching
     from pipelines import train_flow

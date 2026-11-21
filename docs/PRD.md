@@ -2827,3 +2827,15 @@ After the project is complete, add real results to this table.
 - `metadata.json` (11.6) adds `mlflow_version`, `semantic_version`, `seed`, `metrics`, `gates` (name, status `pass|fail|skipped`, detail), `runtime`; `priors` stays `null` for the classifier. The ML service ignores the new keys.
 - MLflow: experiment `classifier`, run tags `dirty`, `gate` (`passed|failed`), `pipeline`; model version tag `gate`; only alias `candidate` is set by the pipeline.
 - Thresholds that belong to the pipeline are in `config/train/classifier.yaml` (`pipeline`, `gates`).
+
+### Addendum T-26: gates, behavioural tests, latency benchmark
+
+- `report.json` of a pipeline run gains `behavioural` (golden accuracy, per-category correct share, invariance pass rates, failures, `checks`) and `latency_benchmark` (requests, threads, P50/P95/P99, SLO, `within_slo`). `metadata.json` `metrics` gains `golden_accuracy` and `latency_p95_ms`; `gates[].status` may also be `review`.
+- MLflow run tag and model-version tag `gate` take `passed`, `needs_review` or `failed`; a `needs_review` version is registered as `candidate` but must not be auto-promoted.
+- Golden set: `ml/tests/golden/classifier.yaml`. Thresholds: `config/train/classifier.yaml` (`behavioural`, `benchmark`, `gates`).
+
+### Addendum T-27: promote, rollback, alias polling
+
+- `make promote MODEL=… VERSION=… [REASON=… FORCE=1]` and `make rollback MODEL=… REASON=…` run `python -m pipelines promote|rollback`. Exit 0 on success, 2 when refused (`VERSION_NOT_FOUND`, `GATE_NOT_PASSED`, `REASON_REQUIRED`, `ALREADY_PRODUCTION`, `NO_PREVIOUS`, `NO_PRODUCTION`). The registry is `MLFLOW_TRACKING_URI`, default `sqlite:///data/mlflow/mlflow.db`.
+- Promote moves `production` to the version and `previous` to the old production version; rollback swaps the two. Version tags written: `promote_at|promote_from|promote_by|forced`, `rollback_at|rollback_from|rollback_reason|rollback_by`, `rolled_back_reason`. Each action appends a row to `docs/ops/rollback-log.md`.
+- ML service: new setting `MODEL_POLL_INTERVAL_S` (default 300, `0` = off). `ModelRegistry.refresh()` compares the alias version with the loaded one and swaps only on a verified new version.

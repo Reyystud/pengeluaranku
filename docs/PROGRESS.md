@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-26 (offline gates, behavioural tests, latency benchmark); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-28 (reproducibility CI job); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,21 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-21 — T-27 Promote, rollback, ML service alias polling
+- Done: `pipelines/promotion.py` (`promote`, `rollback`), CLI `python -m pipelines promote|rollback`, Makefile targets `promote` and `rollback`, `docs/ops/rollback-log.md` written on first use, `ModelSource.current_version()`, `ModelRegistry.refresh()`, background poller in the ML service lifespan (`MODEL_POLL_INTERVAL_S`).
+- Verified: tests for first promotion, previous parking, refusal of `needs_review` / untagged versions, forced promotion with a reason, unknown and already-production versions, reversible rollback with log rows, CLI exit codes; polling tests (alias moves, unchanged alias, refused tampered artifact keeps the old model, unreachable registry, local_dir newer run, the real background poller swapping inside a running app). `make check`: OK (backend 503 tests, coverage 98.87%; the rest of the suite also green).
+- Gotchas: version 1 in the local registry has no `gate` tag, so promoting it needs `make promote VERSION=1 FORCE=1 REASON="..."`. A rollback drill (Week 8 exit) has not been run on a real service yet; the poller was tested in-process only.
+- Not done / for later: shadow loading of `@candidate` and `shadow-evaluate` (T-39), Docker/compose wiring of the poll interval (T-29), the weak golden-set result from T-26 still blocks new registrations.
+- Next: T-28.
+
+### 2026-11-21 — T-26 Offline gates, behavioural tests, latency benchmark
+- Done: `ml/tests/golden/classifier.yaml` (114 hand-labelled cases, 6 per label), `ml/classification/behavioural.py` (golden accuracy, minimum functionality, three invariance perturbations; `python -m ml.classification.behavioural <run dir>`), `ml/classification/benchmark.py` (1,000-request replay, 2 threads), `pipelines/gates.py` rewritten (all PRD 16.3 gates: data quality, reproducibility, beats baseline, beats production, slices, calibration, behavioural, latency; statuses `pass|fail|review|skipped`), `registry.fetch_production()`, model card sections for behavioural tests and latency, config sections `behavioural`, `benchmark`, extra `gates` knobs.
+- Verified: gate unit tests for every boundary (ECE, 0.5-point margin, 5.0-point slice drop, golden regression, latency), behavioural logic with a stub model, golden file integrity (>= 100 cases, >= 3 per category, types match labels), flow tests on the tiny dataset (metrics/gates in metadata, default thresholds block a weak model, a `production` alias becomes the reference and a model that does not gain 0.5 points is blocked and the alias is untouched); `make check` green (528 non-integration tests, 503 backend tests, backend coverage 98.87%, 90 Vitest).
+- **Real finding:** the T-09 baseline (run 20261120-024213) scores 0.781 golden accuracy (89/114) and fails minimum functionality in 8 categories; invariance passes (0.93 / 0.97 / 1.00) and latency is P95 25.8 ms. With the PRD thresholds a new `make train` on v1 will therefore NOT register a classifier. Details and examples in `docs/MODEL_EVALUATION.md`. Options for a later task: improve the model/generator realism, or amend the golden-set threshold through an ADR; I did not touch the thresholds or the golden cases.
+- Gotchas: version 1 in the local MLflow registry (alias `candidate`, from T-09) predates the gates. A `needs_review` version must be refused by T-27's promote unless forced. Directional anomaly/forecast tests live with those models.
+- Not done / for later: shadow evaluation (T-27+), reproducibility CI (T-28), gates for anomaly/forecast/clustering models (T-38, T-41), novelty handling for unseen merchants.
+- Next: T-27.
 
 ### 2026-11-21 — T-25 Prefect training flow, MLflow registry, model card
 - Done: `pipelines/{data_steps,gates,registry,model_card,train_flow,__main__}.py`; `make train MODEL=transaction-classifier DATASET=synthetic/v1` (`PYTHONHASHSEED=0`); `make prefect-server`. Steps: manifest hash check, Pandera on every row (quarantine file with ids only, stop above 1%), locked split hash check, batch-vs-online feature parity sample, candidates + calibration + thresholds + evaluation (`ml.classification.train.fit_candidates` / `write_run_dir`, shared with `make train-local`), gates, MLflow parent run with a child per candidate, `candidate` alias, generated `model_card.md`, `summary.md` (also appended to `$GITHUB_STEP_SUMMARY`). Config: `pipeline` and `gates` sections in `config/train/classifier.yaml`.
@@ -226,8 +241,8 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
 | T-25 | Prefect training flow; MLflow registry, aliases, metadata.json, model card generation | T-09 | done | 2026-11-21 |
-| T-26 | Offline gates + behavioural tests + latency benchmark | T-25 | todo | |
-| T-27 | `make promote` / `make rollback`; ML service alias polling hot-swap | T-25, T-17 | todo | |
+| T-26 | Offline gates + behavioural tests + latency benchmark | T-25 | done | 2026-11-21; golden set + gates; T-09 baseline fails golden (0.781) |
+| T-27 | `make promote` / `make rollback`; ML service alias polling hot-swap | T-25, T-17 | done 2026-11-21 | |
 | T-28 | Reproducibility CI job | T-25 | todo | |
 | T-29 | Docker images + full compose + `make demo` | all above | todo | |
 

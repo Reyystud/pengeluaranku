@@ -50,5 +50,17 @@ pipeline:  # PRD 16.1 (Prefect flow `train_model`)
   max_quarantine_share: 0.01    # step 2 fails above this share of invalid rows
   validation_batch_rows: 200000
   parity_sample_rows: 500       # step 4: batch vs online feature parity on a seeded sample
-gates:  # PRD 16.3 (the gates that run in T-25; the rest come with T-26)
+gates:  # PRD 16.3
   max_ece: 0.05                 # calibration gate on the temporal test split
+  slice_max_drop_points: 5.0    # no archetype/category may drop more than this vs production/baseline
+  beats_production_margin_points: 0.5   # macro F1 points over production on the same split
+behavioural:  # PRD 21.4 (CheckList-style tests on the winner, run in the pipeline)
+  golden_min_accuracy: 0.95           # PRD 21.4 golden set
+  min_correct_share_per_category: 0.6667   # PRD 21.4 minimum functionality: 2 of 3
+  invariance_min_pass_rate: 0.90      # share of perturbed cases that keep the top-1 category
+  seed: 42
+benchmark:  # PRD 16.1 step 7 and 5.3
+  requests: 1000                      # fixed replay, the golden cases cycled
+  warmup_requests: 20
+  threads: 2                          # CPU threads for BLAS/OpenMP
+  p95_slo_ms: 200                     # PRD 5.3: ML inference P95, linear models

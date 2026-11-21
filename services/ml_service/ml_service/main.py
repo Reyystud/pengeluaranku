@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import asyncio
+import contextlib
 import logging
 import time
 import uuid
@@ -61,6 +63,17 @@ class RequestMiddleware:
             )
 
 
+async def poll_models(registry: ModelRegistry, interval_s: float) -> None:
+    """Check the alias every ``interval_s``; loading runs in a thread, off the event loop."""
+    while True:
+        await asyncio.sleep(interval_s)
+        try:
+            if await asyncio.to_thread(registry.refresh):
+                log.info("model swapped")
+        except Exception:  # the loop must survive anything; the old model keeps serving
+            log.exception("model poll failed")
+
+
 def create_app(settings: Settings | None = None, registry: ModelRegistry | None = None) -> FastAPI:
     settings = settings or Settings()
     if settings.ml_auth != "none":
@@ -71,7 +84,18 @@ def create_app(settings: Settings | None = None, registry: ModelRegistry | None 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         registry.load()  # a failed load leaves /readyz at 503; the process stays up
-        yield
+        poller = (
+            asyncio.create_task(poll_models(registry, settings.model_poll_interval_s))
+            if settings.model_poll_interval_s > 0
+            else None
+        )
+        try:
+            yield
+        finally:
+            if poller is not None:
+                poller.cancel()
+                with contextlib.suppress(asyncio.CancelledError):
+                    await poller
 
     app = FastAPI(title="Smart Expense ML service", version="0.0.0", lifespan=lifespan)
     app.state.settings = settings

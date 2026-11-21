@@ -11,6 +11,7 @@ import json
 import os
 import random
 import subprocess
+import tempfile
 import time
 from collections.abc import Callable
 from dataclasses import dataclass, field
@@ -21,6 +22,8 @@ import mlflow
 import numpy as np
 from mlflow.tracking import MlflowClient
 
+from ml.classification.behavioural import run_behavioural
+from ml.classification.benchmark import latency_benchmark
 from ml.classification.config import load_train_config
 from ml.classification.data import load_split_frames
 from ml.classification.train import MODEL_NAME, fit_candidates, write_run_dir
@@ -36,7 +39,7 @@ SUPPORTED = (MODEL_NAME,)
 class TrainResult:
     run_dir: Path
     mlflow_run_id: str
-    gate: str  # passed | failed
+    gate: str  # passed | needs_review | failed
     registered_version: str | None
     gates: list[gates.GateResult] = field(default_factory=list)
     winner: str = ""
@@ -97,21 +100,47 @@ def train_and_evaluate(
     frames = load_split_frames(root / ds["data_dir"], root / ds["assignments"])
     results = fit_candidates(cfg, frames, names)
     report, model_dir = write_run_dir(cfg, frames, results, out_dir, git_commit=commit, root=root)
+    winner_artifacts = results[report["selection"]["winner"]]["_artifacts"]
+    report["behavioural"] = run_behavioural(winner_artifacts, cfg["behavioural"])
+    report["latency_benchmark"] = latency_benchmark(winner_artifacts, cfg["benchmark"])
+    (model_dir / "evaluation" / "report.json").write_text(
+        json.dumps(report, indent=2, default=float), encoding="utf-8"
+    )
     public = {k: {a: b for a, b in v.items() if not a.startswith("_")} for k, v in results.items()}
     return report, model_dir, public, time.perf_counter() - started
 
 
 # step "gate"
-def gate(report: dict[str, Any], cfg: dict[str, Any], dirty: bool) -> list[gates.GateResult]:
+def gate(
+    report: dict[str, Any],
+    cfg: dict[str, Any],
+    dirty: bool,
+    mlflow_dir: Path,
+    explicit_dir: bool,
+) -> list[gates.GateResult]:
     winner = report["selection"]["winner"]
+    baseline = report["selection"]["baseline"]
+    client, _ = _experiment(mlflow_dir, explicit_dir)
+    with tempfile.TemporaryDirectory() as tmp:
+        reference = registry.fetch_production(client, MODEL_NAME, Path(tmp))
+    test = report["models"][winner]["test"]
+    base_test = report["models"].get(baseline, {}).get("test", {})
     return gates.run_gates(
-        dirty=dirty,
-        seed=cfg.get("seed"),
-        winner=winner,
-        baseline=report["selection"]["baseline"],
-        selection=report["selection"],
-        test_ece=float(report["models"][winner]["test"]["ece"]),
-        max_ece=float(cfg["gates"]["max_ece"]),
+        gates.GateInputs(
+            dirty=dirty,
+            seed=cfg.get("seed"),
+            winner=winner,
+            baseline=baseline,
+            test_ece=float(test["ece"]),
+            test_macro_f1=float(test["macro_f1"]),
+            split_hash=report["dataset"]["split_hash"],
+            slices=gates.slice_scores(test),
+            baseline_slices=gates.slice_scores(base_test),
+            behavioural=report["behavioural"],
+            latency=report["latency_benchmark"],
+            reference=reference,
+            knobs=cfg["gates"],
+        )
     )
 
 
@@ -149,7 +178,7 @@ def log_and_register(
     """Steps 8-10: one parent run with a child per candidate; register only a gated clean run."""
     client, experiment_id = _experiment(mlflow_dir, explicit_dir)
     passed = gates.gates_passed(gate_results)
-    gate_tag = "passed" if passed else "failed"
+    gate_tag = gates.gate_outcome(gate_results)
     winner = report["selection"]["winner"]
     seed = int(cfg["seed"])
     metadata: dict[str, Any] = json.loads((model_dir / "metadata.json").read_text())
@@ -274,7 +303,15 @@ def run_training(
         "train-evaluate", train_and_evaluate, cfg, names, base, base / "models" / MODEL_NAME, commit
     )
     log("step 8 gate")
-    gate_results = run("gate", gate, report, cfg, dirty)
+    gate_results = run(
+        "gate",
+        gate,
+        report,
+        cfg,
+        dirty,
+        Path(mlflow_dir) if mlflow_dir else base / "data" / "mlflow",
+        mlflow_dir is not None,
+    )
     log("steps 9-10 register and notify")
     run_id, version, summary = run(
         "register",
@@ -295,7 +332,7 @@ def run_training(
     return TrainResult(
         run_dir=model_dir,
         mlflow_run_id=run_id,
-        gate="passed" if gates.gates_passed(gate_results) else "failed",
+        gate=gates.gate_outcome(gate_results),
         registered_version=version,
         gates=gate_results,
         winner=winner,

@@ -11,6 +11,29 @@ def _pct(value: float) -> str:
     return f"{value * 100:.1f}%"
 
 
+def _behavioural_lines(report: dict[str, Any]) -> list[str]:
+    beh, lat = report.get("behavioural"), report.get("latency_benchmark")
+    lines: list[str] = []
+    if beh:
+        lines.append(
+            f"- Golden set ({beh['golden_version']}, {beh['n_cases']} cases): accuracy "
+            f"{beh['golden_accuracy']:.3f}; categories under the minimum-functionality rule: "
+            f"{', '.join(beh['mft_failures']) or 'none'}."
+        )
+        lines.append(
+            "- Invariance (top-1 unchanged): "
+            + ", ".join(f"{n} {v:.2f}" for n, v in beh["invariance_pass_rate"].items())
+            + "."
+        )
+    if lat:
+        lines.append(
+            f"- Latency, {lat['requests']} replayed requests on {lat['threads']} CPU threads: "
+            f"P50 {lat['p50_ms']:.1f} ms, P95 {lat['p95_ms']:.1f} ms, P99 {lat['p99_ms']:.1f} ms "
+            "(this machine; not an SLO measurement)."
+        )
+    return lines
+
+
 def render_model_card(
     report: dict[str, Any],
     metadata: dict[str, Any],
@@ -60,9 +83,14 @@ def render_model_card(
         "|---|---|---|",
         *(f"| {g.name} | {g.status} | {g.detail} |" for g in gates),
         "",
+        "## Behavioural tests and latency",
+        *_behavioural_lines(report),
+        "",
         "## Limits",
         "- Unseen merchants are much weaker than seen ones; see the unseen row above.",
-        "- Gates marked `skipped` have not run for this version.",
+        "- Gates marked `skipped` had nothing to compare with (see their detail).",
+        "- The golden set was written by the project team; many merchants also exist in the "
+        "synthetic catalogue, so real-world accuracy is not shown by these numbers.",
         "",
     ]
     return "\n".join(lines)

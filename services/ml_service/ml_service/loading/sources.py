@@ -22,6 +22,20 @@ class ModelSource(Protocol):
         """Locate (and download, if remote) the artifact directory. Raises ModelLoadError."""
         ...
 
+    def current_version(self) -> str:
+        """Version the source points at now, without downloading. Raises ModelLoadError."""
+        ...
+
+
+def _local_directory(root: Path, version: str | None) -> Path:
+    if version:
+        candidates = [root / version]
+    else:
+        candidates = sorted(p for p in root.glob("*") if p.is_dir())[-1:]
+    if not candidates or not candidates[0].is_dir():
+        raise ModelLoadError("SOURCE_UNAVAILABLE", "no model directory found")
+    return candidates[0]
+
 
 class LocalDirSource:
     """``models/<name>/<run_id>/`` as written by ``make train-local``; newest run by default."""
@@ -31,13 +45,11 @@ class LocalDirSource:
         self._version = version
 
     def resolve(self) -> Resolved:
-        if self._version:
-            candidates = [self._root / self._version]
-        else:
-            candidates = sorted(p for p in self._root.glob("*") if p.is_dir())[-1:]
-        if not candidates or not candidates[0].is_dir():
-            raise ModelLoadError("SOURCE_UNAVAILABLE", "no model directory found")
-        return Resolved(candidates[0], candidates[0].name, None)
+        directory = _local_directory(self._root, self._version)
+        return Resolved(directory, directory.name, None)
+
+    def current_version(self) -> str:
+        return _local_directory(self._root, self._version).name
 
 
 class MlflowSource:
@@ -45,6 +57,17 @@ class MlflowSource:
 
     def __init__(self, tracking_uri: str, name: str, alias: str, cache_dir: Path) -> None:
         self._uri, self._name, self._alias, self._cache = tracking_uri, name, alias, cache_dir
+
+    def current_version(self) -> str:
+        try:
+            from mlflow import MlflowClient
+
+            client = MlflowClient(tracking_uri=self._uri, registry_uri=self._uri)
+            return str(client.get_model_version_by_alias(self._name, self._alias).version)
+        except Exception as exc:
+            raise ModelLoadError(
+                "SOURCE_UNAVAILABLE", f"MLflow lookup failed: {type(exc).__name__}"
+            ) from exc
 
     def resolve(self) -> Resolved:
         try:

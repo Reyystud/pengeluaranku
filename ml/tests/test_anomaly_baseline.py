@@ -398,3 +398,17 @@ def test_fr_06_history_builder_counts_windows_the_way_the_prd_defines_them() -> 
     assert h.merchant_seen is True
     assert build_history(history, as_of, "food_beverage", "never", CFG).merchant_seen is False
     assert build_history(history.iloc[0:0], as_of, "food_beverage", "m1", CFG).history_days == 0.0
+
+
+def top_score(amount: str) -> float:
+    found = detect(tx(amount), regular_history(), CFG)
+    return max((d.score for d in found), default=0.0)
+
+
+def test_fr_21_04_directional_five_times_the_amount_raises_the_score() -> None:
+    """PRD 21.4: same features, amount x5 -> the score increases (it saturates at 1.0, so the
+    strict check uses amounts whose unscaled version is not already saturated)."""
+    for base in ("50000", "60000", "80000"):
+        assert top_score(str(int(base) * 5)) > top_score(base)
+    ladder = [top_score(a) for a in ("40000", "60000", "100000", "200000", "1000000")]
+    assert ladder == sorted(ladder)  # never decreases as the amount grows

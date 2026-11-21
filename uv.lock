@@ -2559,6 +2559,7 @@ dependencies = [
     { name = "pandera" },
     { name = "pyyaml" },
     { name = "scikit-learn" },
+    { name = "threadpoolctl" },
 ]
 
 [package.metadata]
@@ -2570,6 +2571,7 @@ requires-dist = [
     { name = "pandera" },
     { name = "pyyaml" },
     { name = "scikit-learn", specifier = ">=1.9.1" },
+    { name = "threadpoolctl" },
 ]
 
 [[package]]

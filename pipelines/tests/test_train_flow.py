@@ -31,6 +31,9 @@ def relaxed_config(tmp_path: Path) -> str:
     """The tiny dataset is too small to meet the ECE gate; the gate itself has its own test."""
     cfg = load_train_config()
     cfg["gates"]["max_ece"] = 1.0
+    cfg["behavioural"].update(
+        golden_min_accuracy=0.0, min_correct_share_per_category=0.0, invariance_min_pass_rate=0.0
+    )
     path = tmp_path / "classifier.yaml"
     path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
     return str(path)
@@ -65,8 +68,15 @@ def test_fr_16_01_clean_run_registers_candidate_with_complete_metadata(
     assert meta["dataset"]["split_hash"] and meta["dataset"]["transactions_sha256"]
     assert meta["metrics"]["macro_f1_test"] == pytest.approx(result.test_macro_f1)
     assert {"python", "scikit-learn"} <= set(meta["runtime"])
-    skipped = {g["name"] for g in meta["gates"] if g["status"] == "skipped"}
-    assert {"slices", "behavioural_tests", "latency"} <= skipped  # never look fully gated
+    statuses = {g["name"]: g["status"] for g in meta["gates"]}
+    assert statuses["behavioural_tests"] == "pass" and statuses["latency"] == "pass"
+    assert statuses["beats_production"] == "skipped"  # nothing to compare with yet
+    assert 0.0 <= meta["metrics"]["golden_accuracy"] <= 1.0
+    assert meta["metrics"]["latency_p95_ms"] > 0
+    report = json.loads((result.run_dir / "evaluation" / "report.json").read_text())
+    assert report["behavioural"]["n_cases"] >= 100
+    assert report["latency_benchmark"]["requests"] == 1000
+    assert report["latency_benchmark"]["threads"] == 2
     # the logged artifact carries the same metadata and a generated model card
     local = client.download_artifacts(version.run_id, "model/metadata.json", str(tmp_path / "dl"))
     assert json.loads(Path(local).read_text())["mlflow_version"] == "1"
@@ -137,3 +147,34 @@ def test_fr_16_01_second_registration_moves_candidate_alias(
     # promotion is T-27: the flow must never create `production`
     with pytest.raises(Exception, match="not found|alias"):
         client.get_model_version_by_alias("transaction-classifier", "production")
+
+
+def test_fr_21_04_default_behavioural_thresholds_block_a_weak_model(
+    tiny_root: Path, tmp_path: Path, clean_tree: None
+) -> None:
+    """A model trained on 4 months of 60 users cannot reach the golden-set accuracy."""
+    cfg = load_train_config()
+    cfg["gates"]["max_ece"] = 1.0  # isolate the behavioural gate
+    path = tmp_path / "default_beh.yaml"
+    path.write_text(yaml.safe_dump(cfg), encoding="utf-8")
+    result = run_flow(tiny_root, tmp_path, str(path))
+    gate = next(g for g in result.gates if g.name == "behavioural_tests")
+    assert gate.status == "fail" and "golden_accuracy" in gate.detail
+    assert result.gate == "failed" and result.registered_version is None
+
+
+def test_fr_16_03_production_alias_is_the_reference_for_the_next_run(
+    tiny_root: Path, tmp_path: Path, clean_tree: None, relaxed_config: str
+) -> None:
+    first = run_flow(tiny_root, tmp_path, relaxed_config)
+    client = MlflowClient(f"sqlite:///{tmp_path / 'mlflow' / 'mlflow.db'}")
+    client.set_registered_model_alias(
+        "transaction-classifier", "production", first.registered_version
+    )
+    second = run_flow(tiny_root, tmp_path, relaxed_config)  # identical model: no +0.5 point gain
+    gate = next(g for g in second.gates if g.name == "beats_production")
+    assert gate.status == "fail" and "production v1" in gate.detail
+    assert second.gate == "failed" and second.registered_version is None
+    # the production alias was neither moved nor removed by the flow
+    prod = client.get_model_version_by_alias("transaction-classifier", "production")
+    assert str(prod.version) == "1"

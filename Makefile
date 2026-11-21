@@ -103,11 +103,11 @@ train: ## Prefect flow train_model: make train MODEL=transaction-classifier DATA
 prefect-server: ## Run a Prefect server on :4200 in its own environment (then export PREFECT_API_URL=http://127.0.0.1:4200/api)
 	uvx --from "prefect>=3,<4" --with "fastapi<0.160" prefect server start
 
-promote: ## Promote a model version (stub: T-27)
-	$(call NOT_YET,T-27)
+promote: ## make promote MODEL=transaction-classifier VERSION=2 [REASON=... FORCE=1] (PRD 16.3)
+	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m pipelines promote --model $(MODEL) --version $(VERSION) --reason "$(REASON)" $(if $(FORCE),--force)
 
-rollback: ## Roll back @production to @previous (stub: T-27)
-	$(call NOT_YET,T-27)
+rollback: ## make rollback MODEL=transaction-classifier REASON="..." : swap @production and @previous (PRD 16.5)
+	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m pipelines rollback --model $(MODEL) --reason "$(REASON)"
 
 loadtest: ## k6 load test (stub: T-43)
 	$(call NOT_YET,T-43)
