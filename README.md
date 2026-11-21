@@ -24,15 +24,16 @@ Python 3.12 (uv), FastAPI, PostgreSQL, scikit-learn / LightGBM / statsmodels, ML
 
 ## Setup
 
-> The scaffold is not built yet (task T-01). These commands are the target interface from PRD §19.1.
-
 Requirements: Docker, [uv](https://docs.astral.sh/uv/), Node 22 LTS + pnpm, make.
 
 ```bash
 make setup   # install toolchains, pre-commit hooks, create .env from .env.example
-make demo    # generate synthetic data, train baseline models, start the stack, seed a demo user
+make demo    # generate synthetic data, start the stack, train the baseline into MLflow, seed a demo user
 make check   # lint, type-check, tests, coverage gates
+make down    # stop the stack (VOLUMES=1 also drops the database and MLflow volumes)
 ```
+
+`make demo` serves the frontend on http://localhost:3000, the API docs on http://localhost:8000/docs and MLflow on http://localhost:5000. The demo user is `demo@example.com` with `DEMO_USER_PASSWORD` from `.env`. The first demo run trains on the full synthetic dataset and takes several minutes. The demo classifier is the baseline registered as alias `candidate`; it has not passed the promotion gates (see `docs/MODEL_EVALUATION.md`).
 
 No GCP account is needed to run locally.
 

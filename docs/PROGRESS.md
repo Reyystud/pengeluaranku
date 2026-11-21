@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-25 (Prefect training flow, MLflow registry); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-30 (see PRD 20.3); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,41 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-21 — T-29 Docker images, compose, `make demo`
+- Done: `docker-compose.yml`, `infrastructure/docker/{python,mlflow,frontend}.Dockerfile`, `.dockerignore`, `make up|down|seed-demo|demo`, `services/backend/app/seed_demo.py` (+7 unit tests), http(s) `MLFLOW_TRACKING_URI` support in `train-local` and the pipeline, README setup section, `.env.example` entries.
+- Verified: `make check` OK (551 non-integration tests, 510 backend, coverage 98.82%, 90 Vitest). On this machine all four images build. The stack was run with host networking (this kernel cannot create Docker bridge networks, so `docker compose up` itself could not be run here): migrations ran, `/readyz` 200 on the backend, ML service 503 without a model, `seed-demo` imported 1,148 rows (all valid), a second run did nothing, `make train-local` registered version 1 in the MLflow server, the ML service loaded it by polling without a restart, `categorize-preview` through the backend returned `source: model`, and the frontend proxied a demo login (200). Image sizes: backend 1.41 GB, ml-service 1.39 GB, frontend 2.47 GB.
+- Not verified: `docker compose up` with the real bridge network and healthcheck ordering, `make demo` end to end, the UI in a browser (T-24 checks still pending too).
+- Gotchas: the first `make demo` trains on the full v1 dataset (about 10 minutes for 3 candidates). The demo model is alias `candidate`, not promoted. No worker, pubsub emulator or observability profile yet.
+- Next: T-30.
+
+### 2026-11-21 — T-28 Reproducibility CI job
+- Done: `pipelines/reproducibility.py` (two training runs in separate processes, compare dataset hash, split hash and macro F1), config section `reproducibility`, `make repro`, `.github/workflows/ml-reproducibility.yml` (weekly, PRs touching ML paths, manual; uploads the result JSON), `pipelines/tests/test_reproducibility.py` (decision logic with fake runs).
+- Verified: `make check` OK (544 non-integration tests, 503 backend, coverage 98.87%, 90 Vitest). A real `make repro` run (about 2.5 min): macro F1 0.9655 in both runs, delta 0.0, same dataset and split hashes. The workflow itself has not run on GitHub yet.
+- Gotchas: the check measures determinism of the baseline on a tiny dataset, not model quality. It is not in `make check` (time).
+- Next: T-29.
+
+### 2026-11-21 — T-27 Promote, rollback, ML service alias polling
+- Done: `pipelines/promotion.py` (`promote`, `rollback`), CLI `python -m pipelines promote|rollback`, Makefile targets `promote` and `rollback`, `docs/ops/rollback-log.md` written on first use, `ModelSource.current_version()`, `ModelRegistry.refresh()`, background poller in the ML service lifespan (`MODEL_POLL_INTERVAL_S`).
+- Verified: tests for first promotion, previous parking, refusal of `needs_review` / untagged versions, forced promotion with a reason, unknown and already-production versions, reversible rollback with log rows, CLI exit codes; polling tests (alias moves, unchanged alias, refused tampered artifact keeps the old model, unreachable registry, local_dir newer run, the real background poller swapping inside a running app). `make check`: OK (backend 503 tests, coverage 98.87%; the rest of the suite also green).
+- Gotchas: version 1 in the local registry has no `gate` tag, so promoting it needs `make promote VERSION=1 FORCE=1 REASON="..."`. A rollback drill (Week 8 exit) has not been run on a real service yet; the poller was tested in-process only.
+- Not done / for later: shadow loading of `@candidate` and `shadow-evaluate` (T-39), Docker/compose wiring of the poll interval (T-29), the weak golden-set result from T-26 still blocks new registrations.
+- Next: T-28.
+
+### 2026-11-21 — T-26 Offline gates, behavioural tests, latency benchmark
+- Done: `ml/tests/golden/classifier.yaml` (114 hand-labelled cases, 6 per label), `ml/classification/behavioural.py` (golden accuracy, minimum functionality, three invariance perturbations; `python -m ml.classification.behavioural <run dir>`), `ml/classification/benchmark.py` (1,000-request replay, 2 threads), `pipelines/gates.py` rewritten (all PRD 16.3 gates: data quality, reproducibility, beats baseline, beats production, slices, calibration, behavioural, latency; statuses `pass|fail|review|skipped`), `registry.fetch_production()`, model card sections for behavioural tests and latency, config sections `behavioural`, `benchmark`, extra `gates` knobs.
+- Verified: gate unit tests for every boundary (ECE, 0.5-point margin, 5.0-point slice drop, golden regression, latency), behavioural logic with a stub model, golden file integrity (>= 100 cases, >= 3 per category, types match labels), flow tests on the tiny dataset (metrics/gates in metadata, default thresholds block a weak model, a `production` alias becomes the reference and a model that does not gain 0.5 points is blocked and the alias is untouched); `make check` green (528 non-integration tests, 503 backend tests, backend coverage 98.87%, 90 Vitest).
+- **Real finding:** the T-09 baseline (run 20261120-024213) scores 0.781 golden accuracy (89/114) and fails minimum functionality in 8 categories; invariance passes (0.93 / 0.97 / 1.00) and latency is P95 25.8 ms. With the PRD thresholds a new `make train` on v1 will therefore NOT register a classifier. Details and examples in `docs/MODEL_EVALUATION.md`. Options for a later task: improve the model/generator realism, or amend the golden-set threshold through an ADR; I did not touch the thresholds or the golden cases.
+- Gotchas: version 1 in the local MLflow registry (alias `candidate`, from T-09) predates the gates. A `needs_review` version must be refused by T-27's promote unless forced. Directional anomaly/forecast tests live with those models.
+- Not done / for later: shadow evaluation (T-27+), reproducibility CI (T-28), gates for anomaly/forecast/clustering models (T-38, T-41), novelty handling for unseen merchants.
+- Next: T-27.
+
+### 2026-11-21 — T-25 Prefect training flow, MLflow registry, model card
+- Done: `pipelines/{data_steps,gates,registry,model_card,train_flow,__main__}.py`; `make train MODEL=transaction-classifier DATASET=synthetic/v1` (`PYTHONHASHSEED=0`); `make prefect-server`. Steps: manifest hash check, Pandera on every row (quarantine file with ids only, stop above 1%), locked split hash check, batch-vs-online feature parity sample, candidates + calibration + thresholds + evaluation (`ml.classification.train.fit_candidates` / `write_run_dir`, shared with `make train-local`), gates, MLflow parent run with a child per candidate, `candidate` alias, generated `model_card.md`, `summary.md` (also appended to `$GITHUB_STEP_SUMMARY`). Config: `pipeline` and `gates` sections in `config/train/classifier.yaml`.
+- Verified: 27 tests in `pipelines/tests` (tiny generated dataset with locked splits: clean run registers v1 with complete metadata and alias, parent/child runs, dirty tree never registers, ECE gate blocks, second run moves `candidate`, every data-step failure, gate rules, model card text); `make check` green (511 non-integration tests, 503 backend tests, backend coverage 98.87%, 90 Vitest). The Prefect wrapper was run once against a real Prefect server (tiny dataset, registered v1). Smoke run on the real synthetic v1 (`--models logreg --max-rows-per-class 2000`, dirty tree, scratch MLflow store): 2,171,358 rows validated with 0 quarantined, splits and parity passed, test macro F1 0.9702, ECE 0.0010 (capped training sample, not the T-09 result), gate failed only on `reproducibility` as designed.
+- Gotchas: (1) Prefect 3.8.8's server cannot start inside this workspace (FastAPI 0.165 removed `min_items`); the flow runs inline by default and as Prefect tasks when `PREFECT_API_URL` points to `make prefect-server` (isolated `uvx` environment). (2) A dirty working tree (even untracked files) makes the run `gate=failed`/`dirty=true` and it is not registered: commit first, then `make train`. (3) Full run on v1 validates 2.1M rows and trains three candidates: allow ~25 minutes and 3+ GB RAM. (4) `semantic_version` is `0.<registry version>.0`.
+- Not done / for later: slices, behavioural tests, latency benchmark and beats-production gates (T-26; listed as `skipped` in metadata), promote/rollback and `production`/`previous` aliases (T-27), reproducibility CI job (T-28), curated-label merge (needs feedback data), other models (T-38, T-41), a full `make train` registration of v1 (needs a clean tree).
+- Next: T-26.
 
 ### 2026-11-21 — T-24 Forecast run-rate + decomposition + API/UI
 - Done: `ml/forecasting` (run-rate, seasonal naive, interval heuristic, exceed band, daily P10/P50/P90 curve), `config/forecast.yaml`; backend `ForecastRepository`/`ForecastService` (compute, store in `forecasts`, lazy 6 h cache rule, prune to 30, `refresh_all()` for the daily batch), `GET /intelligence/forecast` (overall or `category`), `BudgetOut.projected` (FR-05.07), estimated period-end balance; frontend Forecast tab on `/intelligence` (estimate label, range, band in words, chart + table, "How is this calculated?") and a dashboard estimate card.
@@ -218,11 +253,11 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 ### Week 6 — MLOps core (= Cut line A)
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
-| T-25 | Prefect training flow; MLflow registry, aliases, metadata.json, model card generation | T-09 | todo | |
-| T-26 | Offline gates + behavioural tests + latency benchmark | T-25 | todo | |
-| T-27 | `make promote` / `make rollback`; ML service alias polling hot-swap | T-25, T-17 | todo | |
-| T-28 | Reproducibility CI job | T-25 | todo | |
-| T-29 | Docker images + full compose + `make demo` | all above | todo | |
+| T-25 | Prefect training flow; MLflow registry, aliases, metadata.json, model card generation | T-09 | done | 2026-11-21 |
+| T-26 | Offline gates + behavioural tests + latency benchmark | T-25 | done | 2026-11-21; golden set + gates; T-09 baseline fails golden (0.781) |
+| T-27 | `make promote` / `make rollback`; ML service alias polling hot-swap | T-25, T-17 | done 2026-11-21 | |
+| T-28 | Reproducibility CI job | T-25 | done 2026-11-21 | |
+| T-29 | Docker images + full compose + `make demo` | all above | done 2026-11-21 | |
 
 ### Week 7 — Deployment
 | ID | Task | Deps | Status | Notes |

@@ -46,3 +46,28 @@ thresholds:  # PRD 7.3.4 calibration procedure; applied by ml/classification/thr
   band_width: 0.05              # confidence bands walked from the top down
   min_band_support: 100         # bands with fewer validation rows are ignored
   defaults: {t_high: 0.85, t_low: 0.60}   # PRD defaults when a constraint cannot be met
+pipeline:  # PRD 16.1 (Prefect flow `train_model`)
+  max_quarantine_share: 0.01    # step 2 fails above this share of invalid rows
+  validation_batch_rows: 200000
+  parity_sample_rows: 500       # step 4: batch vs online feature parity on a seeded sample
+gates:  # PRD 16.3
+  max_ece: 0.05                 # calibration gate on the temporal test split
+  slice_max_drop_points: 5.0    # no archetype/category may drop more than this vs production/baseline
+  beats_production_margin_points: 0.5   # macro F1 points over production on the same split
+behavioural:  # PRD 21.4 (CheckList-style tests on the winner, run in the pipeline)
+  golden_min_accuracy: 0.95           # PRD 21.4 golden set
+  min_correct_share_per_category: 0.6667   # PRD 21.4 minimum functionality: 2 of 3
+  invariance_min_pass_rate: 0.90      # share of perturbed cases that keep the top-1 category
+  seed: 42
+benchmark:  # PRD 16.1 step 7 and 5.3
+  requests: 1000                      # fixed replay, the golden cases cycled
+  warmup_requests: 20
+  threads: 2                          # CPU threads for BLAS/OpenMP
+  p95_slo_ms: 200                     # PRD 5.3: ML inference P95, linear models
+reproducibility:  # PRD 16.2 re-run test (pipelines/reproducibility.py)
+  max_macro_f1_delta: 0.01      # PRD 21.1: |metric(run1) - metric(run2)| on the same seed and data
+  data_seed: 7
+  users: 60
+  months: 4
+  models: [logreg]              # the baseline only: the check is about determinism, not quality
+  max_rows_per_class: 200

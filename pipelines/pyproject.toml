@@ -7,7 +7,10 @@ name = "sei-pipelines"
 version = "0.0.0"
 description = "ML pipelines (Prefect flows)"
 requires-python = ">=3.12,<3.13"
-dependencies = []
+dependencies = [
+    "pandas>=3.1.1",
+    "prefect>=3,<4",
+]
 
 [tool.setuptools]
 package-dir = {"pipelines" = "."}

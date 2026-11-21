@@ -1,0 +1,42 @@
+name: ml-reproducibility
+
+# PRD 16.2 / 19.5: train the baseline twice on a small dataset and compare.
+on:
+  schedule:
+    - cron: "0 3 * * 1" # weekly, Monday 03:00 UTC
+  pull_request:
+    paths:
+      - "ml/**"
+      - "pipelines/**"
+      - "data_generator/**"
+      - "config/train/**"
+      - "config/generator/**"
+      - "uv.lock"
+      - ".github/workflows/ml-reproducibility.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ml-reproducibility-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  reproducibility:
+    name: baseline twice, |delta macro F1| <= limit
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v5
+        with:
+          enable-cache: true
+      - run: uv sync --all-packages --frozen
+      - run: make repro
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: reproducibility
+          path: data/reproducibility.json
+          if-no-files-found: ignore

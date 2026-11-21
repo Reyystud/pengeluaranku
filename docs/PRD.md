@@ -2819,3 +2819,33 @@ After the project is complete, add real results to this table.
 - `GET /intelligence/forecast?category=<expense slug>` always returns 200 with `ForecastOut` (`available: true`) or `{available: false, reason: "INSUFFICIENT_HISTORY", days_needed, transactions_needed}`. Unknown category 422 `UNKNOWN_CATEGORY`; non-expense 422 `CATEGORY_TYPE_MISMATCH`.
 - `ForecastOut`: `period{start,end,period_id,days_in_period,days_elapsed}`, `category|null`, `spent_to_date, predicted_total, interval_low, interval_high, predicted_remaining, expected_recurring_remaining, baseline_prediction` (strings), `method, history_level, model_version` (config version until a model exists), `generated_at`, `budget{limit_amount, predicted_over_budget, exceed_band}|null`, `estimated_period_end_balance|null` (overall only), `daily_curve[{date,p10,p50,p90}]` (cumulative period total per remaining day).
 - `BudgetOut.projected` is `on_track` | `may_exceed` | `null` (FR-05.07). Thresholds and the interval heuristic: `config/forecast.yaml`, `docs/DECISIONS.md` (T-24).
+
+### Addendum T-25: training pipeline and registry contract
+
+- `make train MODEL=transaction-classifier DATASET=synthetic/v1` runs `pipelines.train_flow.run_training` (Prefect tasks when `PREFECT_API_URL` is set, otherwise inline). Only the classifier is supported; other model names fail with `MODEL_UNSUPPORTED` until their training tasks exist.
+- Dataset layout by convention: `data/<version>/` (manifest, parquet), `data/splits/<version>/assignments.parquet`, `data_splits/<version>/splits.json`.
+- `metadata.json` (11.6) adds `mlflow_version`, `semantic_version`, `seed`, `metrics`, `gates` (name, status `pass|fail|skipped`, detail), `runtime`; `priors` stays `null` for the classifier. The ML service ignores the new keys.
+- MLflow: experiment `classifier`, run tags `dirty`, `gate` (`passed|failed`), `pipeline`; model version tag `gate`; only alias `candidate` is set by the pipeline.
+- Thresholds that belong to the pipeline are in `config/train/classifier.yaml` (`pipeline`, `gates`).
+
+### Addendum T-26: gates, behavioural tests, latency benchmark
+
+- `report.json` of a pipeline run gains `behavioural` (golden accuracy, per-category correct share, invariance pass rates, failures, `checks`) and `latency_benchmark` (requests, threads, P50/P95/P99, SLO, `within_slo`). `metadata.json` `metrics` gains `golden_accuracy` and `latency_p95_ms`; `gates[].status` may also be `review`.
+- MLflow run tag and model-version tag `gate` take `passed`, `needs_review` or `failed`; a `needs_review` version is registered as `candidate` but must not be auto-promoted.
+- Golden set: `ml/tests/golden/classifier.yaml`. Thresholds: `config/train/classifier.yaml` (`behavioural`, `benchmark`, `gates`).
+
+### Addendum T-27: promote, rollback, alias polling
+
+- `make promote MODEL=… VERSION=… [REASON=… FORCE=1]` and `make rollback MODEL=… REASON=…` run `python -m pipelines promote|rollback`. Exit 0 on success, 2 when refused (`VERSION_NOT_FOUND`, `GATE_NOT_PASSED`, `REASON_REQUIRED`, `ALREADY_PRODUCTION`, `NO_PREVIOUS`, `NO_PRODUCTION`). The registry is `MLFLOW_TRACKING_URI`, default `sqlite:///data/mlflow/mlflow.db`.
+- Promote moves `production` to the version and `previous` to the old production version; rollback swaps the two. Version tags written: `promote_at|promote_from|promote_by|forced`, `rollback_at|rollback_from|rollback_reason|rollback_by`, `rolled_back_reason`. Each action appends a row to `docs/ops/rollback-log.md`.
+- ML service: new setting `MODEL_POLL_INTERVAL_S` (default 300, `0` = off). `ModelRegistry.refresh()` compares the alias version with the loaded one and swaps only on a verified new version.
+
+### Addendum T-28: reproducibility check
+
+- `make repro` runs `python -m pipelines.reproducibility [--out file.json]`: builds a small synthetic dataset in a temp directory, trains the baseline twice in separate processes (`PYTHONHASHSEED=0`, no registration) and compares. Exit 0 when the dataset hash, split hash and `|macro F1 difference| <= reproducibility.max_macro_f1_delta` (0.01) hold, 1 otherwise. The result JSON is uploaded by `.github/workflows/ml-reproducibility.yml`.
+
+### Addendum T-29: local stack
+
+- `docker-compose.yml` (project `sei`): `postgres`, `redis`, `mlflow`, `ml-service`, `backend` (runs `alembic upgrade head` on start), `frontend` (Next.js dev server). Images are built from `infrastructure/docker/{python,mlflow,frontend}.Dockerfile`; the Python Dockerfile has targets `backend` and `ml-service` (build arg `PACKAGE`), non-root user, repo layout kept at `/app`.
+- Make targets: `make up` (`docker compose up -d --build --wait`), `make down [VOLUMES=1]`, `make seed-demo` (`python -m app.seed_demo`, env `DEMO_USER_PASSWORD`, optional `DEMO_USER_EMAIL`), `make demo`. Host ports are configurable (`POSTGRES_PORT`, `REDIS_PORT`, `MLFLOW_PORT`, `ML_PORT`, `BACKEND_PORT`, `FRONTEND_PORT`).
+- `MLFLOW_TRACKING_URI` with an http(s) URL is honoured by `ml.classification.train` and `pipelines.train_flow`; the experiment then keeps the server's default artifact location.

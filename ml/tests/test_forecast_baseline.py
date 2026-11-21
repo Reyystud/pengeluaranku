@@ -203,3 +203,9 @@ def test_fr_07_02_forecast_invariants(
     assert len(f.curve) == (END - today).days
     for a, b in zip(f.curve, f.curve[1:], strict=False):
         assert a.p50 <= b.p50 + 1e-6 and a.day < b.day
+
+
+def test_fr_21_04_directional_higher_spend_to_date_never_lowers_the_p50() -> None:
+    """PRD 21.4: with the same history, more spending so far does not decrease the P50."""
+    totals = [ok(run(spent=spent)).predicted_total for spent in (500_000, 1_000_000, 2_000_000)]
+    assert totals == sorted(totals)

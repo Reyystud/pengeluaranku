@@ -51,6 +51,19 @@ Chosen on the validation split only (`config/train/classifier.yaml`, section `th
 
 Reading: on merchants the model has seen, 90% of rows are auto-categorized at near-perfect precision and the remaining 10% (the coin-flip merchants) go to review, which is the intended behaviour. On unseen merchants the same thresholds auto-apply 45% of rows at only 68% precision, far below the 0.95 target. **The 0.95 guarantee holds only for known merchants.** The PRD defaults (0.85 / 0.60) give the same validation outcome, so the data cannot prefer 0.90 over 0.85. Thresholds are not tuned on the unseen split (it is a locked test set); a novelty rule for unknown merchants is the open fix.
 
+### Behavioural tests and latency (T-26)
+
+Measured with `uv run python -m ml.classification.behavioural models/transaction-classifier/20261120-024213` (the T-09 baseline above; golden set `ml/tests/golden/classifier.yaml`, 114 hand-labelled cases, 6 per category, written without looking at model output).
+
+| check | threshold (`config/train/classifier.yaml`) | result |
+|---|---|---|
+| golden accuracy | >= 0.95 (PRD 21.4) | **0.781 (89 of 114): fails** |
+| minimum functionality (>= 2 of 3 right per category) | every category | **fails** for allowance, education, entertainment, fees_charges, other_expense, refund, shopping, transportation |
+| invariance, top-1 unchanged (typo / reference prefix / case + location) | >= 0.90 each | 0.930 / 0.965 / 1.000 (passes) |
+| latency, 1,000 replayed requests, 2 CPU threads | P95 <= 200 ms | P50 20.9 ms, P95 25.8 ms, P99 29.7 ms (passes; this machine, one run, not an SLO measurement) |
+
+Reading: the model is robust to typos, reference numbers and casing, but it does not generalize to descriptions that look unlike the synthetic generator's templates (for example `BPJS KESEHATAN IURAN` -> utilities, `STEAM GAMES PURCHASE` -> food_beverage, `PENGEMBALIAN DANA SHOPEE` -> other_income). This is the same weakness as the unseen-merchant result above, seen from the other side, and it means this version would not pass the offline gates (PRD 16.3, "behavioural tests"). The invariance threshold (0.90) was fixed before this measurement; the golden cases were not edited after it. Since the golden set reuses many merchants of the synthetic catalogue, real-world accuracy would be lower, not higher.
+
 ### Plots
 ![confusion matrix](figures/classifier_confusion_matrix.png)
 ![coverage curve](figures/classifier_coverage_curve.png)

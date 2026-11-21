@@ -40,6 +40,24 @@ class ModelRegistry:
         record_model_loaded(loaded.name, loaded.version, loaded.alias or "local")
         return True
 
+    def refresh(self) -> bool:
+        """Poll step (PRD 11.5): load only when the source now points at another version.
+
+        The old model keeps serving until the new one is loaded and verified; a lookup or load
+        failure leaves it in place. Returns True when a new version was swapped in.
+        """
+        current = self.classifier
+        try:
+            latest = self._source.current_version()
+        except ModelLoadError as exc:
+            with self._lock:
+                self.error = exc
+            record_model_load_failure(self._settings.classifier_model_name, exc.code)
+            return False
+        if current is not None and current.version == latest:
+            return False
+        return self.load()
+
     def require_classifier(self) -> LoadedClassifier:
         classifier = self.classifier
         if classifier is None:
