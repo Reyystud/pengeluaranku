@@ -32,6 +32,7 @@ from app.schemas.forecasts import (
 )
 from app.schemas.transactions import CategoryRef
 from app.services.analytics import AnalyticsService
+from app.services.recurring import RecurringService
 from ml.forecasting import Forecast as Computed
 from ml.forecasting import Unavailable, exceed_band, forecast, load_forecast_config
 
@@ -51,6 +52,7 @@ class ForecastService:
         self.repo = ForecastRepository(session)
         self.budgets = BudgetRepository(session)
         self.analytics = AnalyticsService(session, user, now)
+        self.recurring = RecurringService(session, user, now)
         self.now = self.analytics.now
         self.today = self.analytics.today
         self.tz = ZoneInfo(user.timezone)
@@ -79,15 +81,24 @@ class ForecastService:
         if first is None:
             return Unavailable(self.cfg.min_history_days, 0)
         history_days = (self.today - first).days + 1
+        self.recurring.detect()  # series first: they split the history and the rest of the period
+        rec_min = self.recurring.cfg.decomposition_min
         lo, hi = bounds_to_utc(period.start, self.today, self.tz)
         spent = self.repo.spent_between(user_id, lo, hi, category_id)
+        spent_nonrecurring = self.repo.spent_between(user_id, lo, hi, category_id, rec_min)
         window_start = max(first, self.today - dt.timedelta(days=self.cfg.spread_window_days - 1))
         w_lo, w_hi = bounds_to_utc(window_start, self.today, self.tz)
         history = self.repo.daily_spend(
-            user_id, self.user.timezone, window_start, self.today, w_lo, w_hi, category_id
+            user_id, self.user.timezone, window_start, self.today, w_lo, w_hi, category_id, rec_min
         )
+        recurring = [
+            (day, float(amount))
+            for day, amount in self.recurring.expected_expenses(period.end, category_id)
+        ]
         return forecast(
             spent_to_date=float(spent),
+            nonrecurring_spent_to_date=float(spent_nonrecurring),
+            recurring=recurring,
             today=self.today,
             period_start=period.start,
             period_end=period.end,
@@ -196,8 +207,9 @@ class ForecastService:
                 exceed_band=band,
             )
         balance = None
-        if category is None:  # FR-07.04: no expected income until recurring detection (T-30)
-            balance = str(to_money(self.analytics.current_balance() - remaining))
+        if category is None:  # FR-07.04: recurring income due before the period ends
+            income = self.recurring.expected_income(period.end)
+            balance = str(to_money(self.analytics.current_balance() - remaining + income))
         elapsed = min(max((self.today - period.start).days + 1, 0), period.days)
         return ForecastOut(
             period=BudgetPeriod(

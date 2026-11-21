@@ -47,3 +47,11 @@ test-results/
 .idea/
 .vscode/
 .DS_Store
+
+# terraform (PRD 22): state and local variable files never leave the machine
+infrastructure/terraform/.terraform/
+*.tfstate
+*.tfstate.*
+*.tfvars
+!*.tfvars.example
+crash.log

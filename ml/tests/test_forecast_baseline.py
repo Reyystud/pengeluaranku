@@ -47,7 +47,7 @@ def ok(result: Forecast | Unavailable) -> Forecast:
 
 
 def test_fr_07_config_comes_from_the_versioned_file() -> None:
-    assert CFG.version == "run-rate-1"
+    assert CFG.version == "run-rate-2"
     assert (CFG.min_history_days, CFG.personal_history_days, CFG.min_category_transactions) == (
         14,
         60,

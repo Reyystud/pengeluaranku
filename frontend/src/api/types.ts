@@ -56,3 +56,8 @@ export type ForecastOut = S["ForecastOut"];
 export type ForecastUnavailable = S["ForecastUnavailable"];
 export type ForecastResponse = ForecastOut | ForecastUnavailable;
 export type ExceedBand = NonNullable<ForecastOut["budget"]>["exceed_band"];
+
+export type RecurringSeries = S["RecurringOut"];
+export type RecurringList = S["RecurringList"];
+export type RecurringStatus = RecurringSeries["status"];
+export type RecurringFrequency = RecurringSeries["frequency"];

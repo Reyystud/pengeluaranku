@@ -12,6 +12,7 @@ from app.api import (
     imports,
     merchant_rules,
     notifications,
+    recurring,
     transactions,
     users,
 )
@@ -28,3 +29,4 @@ api_router.include_router(budgets.router)
 api_router.include_router(notifications.router)
 api_router.include_router(anomalies.router)
 api_router.include_router(forecasts.router)
+api_router.include_router(recurring.router)

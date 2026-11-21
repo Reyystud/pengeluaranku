@@ -79,6 +79,24 @@ def _victim_anomaly(client: TestClient, headers: dict[str, str]) -> str:
     return str(items[0]["id"])
 
 
+def _victim_recurring(client: TestClient, headers: dict[str, str]) -> str:
+    """Four charges 30 days apart at one merchant make a monthly series (7.8)."""
+    today = dt.date.today()
+    for ago in (120, 90, 60, 30):
+        make(
+            client,
+            headers,
+            amount="54000",
+            category="entertainment",
+            merchant="Victim Streaming",
+            description="Victim private subscription",
+            transaction_date=(today - dt.timedelta(days=ago)).isoformat(),
+        )
+    items = client.get(f"{API}/intelligence/recurring", headers=headers).json()["items"]
+    assert items
+    return str(items[0]["id"])
+
+
 # Path parameter name -> how to create a resource of the victim that it can point to.
 RESOURCES: dict[str, Callable[[TestClient, dict[str, str]], str]] = {
     "transaction_id": _victim_transaction,
@@ -87,6 +105,7 @@ RESOURCES: dict[str, Callable[[TestClient, dict[str, str]], str]] = {
     "budget_id": _victim_budget,
     "notification_id": _victim_notification,
     "anomaly_id": _victim_anomaly,
+    "series_id": _victim_recurring,
 }
 
 # Minimal valid bodies, so a 404 can only come from ownership and never from validation.
@@ -96,6 +115,7 @@ BODIES: dict[tuple[str, str], dict[str, Any]] = {
     ("PATCH", "/api/v1/merchant-rules/{rule_id}"): {"category": "transportation"},
     ("PATCH", "/api/v1/budgets/{budget_id}"): {"limit_amount": "1.00"},
     ("POST", "/api/v1/intelligence/anomalies/{anomaly_id}/feedback"): {"action": "confirm"},
+    ("PATCH", "/api/v1/intelligence/recurring/{series_id}"): {"status": "user_rejected"},
 }
 
 
@@ -154,6 +174,7 @@ def test_17_1_every_route_with_an_id_is_covered_by_this_suite(client: TestClient
         "budget_id",
         "notification_id",
         "anomaly_id",
+        "series_id",
     } <= seen
 
 
@@ -185,6 +206,8 @@ def test_every_endpoint_with_id_returns_404_for_other_user(
     assert budget["limit_amount"] == "100.00"  # the intruder's PATCH to 1.00 did not apply
     anomaly = client.get(f"{API}/intelligence/anomalies/{ids['anomaly_id']}", headers=victim)
     assert anomaly.json()["status"] == "open"  # the intruder's confirm did not apply
+    series = client.get(f"{API}/intelligence/recurring", headers=victim).json()["items"]
+    assert [i["id"] for i in series] == [ids["series_id"]]  # the intruder's reject did not apply
     unread = client.get(f"{API}/notifications?unread_only=true", headers=victim).json()["items"]
     assert ids["notification_id"] in {n["id"] for n in unread}  # still unread
     with engine.connect() as conn:

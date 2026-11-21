@@ -107,7 +107,7 @@ def test_fr_07_02_twenty_days_gives_a_run_rate_estimate(
     assert f["baseline_prediction"] == "3000000.00"
     assert f["expected_recurring_remaining"] == "0.00"
     assert f["interval_low"] == f["interval_high"] == "3000000.00"  # no variation in the history
-    assert f["model_version"] == "run-rate-1" and f["budget"] is None
+    assert f["model_version"] == "run-rate-2" and f["budget"] is None
     p = f["period"]
     assert (p["start"], p["end"], p["days_elapsed"], p["days_in_period"]) == (
         "2026-11-01",

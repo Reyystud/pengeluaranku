@@ -74,3 +74,25 @@ Reading: the model is robust to typos, reference numbers and casing, but it does
 - **Learning curve** for the 25k-per-class cap.
 - **Novelty handling:** lowering confidence (or forcing review) for merchants unseen in training or by the user.
 - No public dataset was evaluated (Q1 decision, `docs/DATA_SOURCES.md`).
+
+## 2. Recurring detection (T-30)
+
+Rule-based (PRD 7.8), no model and no training. Measured with `make recurring-eval` (`uv run python -m ml.recurring.evaluate --users 1000 --seed 42`): 1,000 users sampled at random from `synthetic/v1`, each judged at the date of their last transaction, config `rules-2`. **All data is synthetic.**
+
+Ground truth is the generator's `recurring_series_id`, which labels subscriptions and monthly bills (all monthly, expense). Habit merchants and income are not labelled, so some "false positives" may be real habits and income is only counted, not scored. A detected series is correct when more than half of its transactions carry one ground-truth series id; recall counts ground-truth series that have at least 3 transactions.
+
+| variant (same 1,000 users) | detected expense series | precision | ground-truth series | recall |
+|---|---|---|---|---|
+| PRD 7.8 steps 1-8 only | 1,821 | 98.9% (1,801) | 3,090 | 58.3% |
+| plus amount-cluster retry, no share guard | 3,015 | 91.2% (2,751) | 3,090 | 89.0% |
+| **plus amount-cluster retry with the 50% share guard (shipped)** | **2,454** | **98.5% (2,416)** | **3,090** | **78.2%** |
+
+Also detected in the shipped variant: 115 income series (90 monthly, 25 quarterly; not scored) and 29 quarterly expense series (counted as false positives, there is no quarterly ground truth).
+
+Findings:
+- The plain rules miss most series because a bill merchant is also used for ordinary purchases, so intervals are mixed. In a diagnosis of 399 missed series over 300 users, 279 shared their merchant key with non-recurring rows.
+- Retrying on amount clusters recovers many of them, but without a guard it also finds coincidental regular subsets of busy merchants (176 spurious quarterly series). Requiring the cluster to hold at least half of the merchant's rows removes most of those at a cost of recall.
+- The remaining 674 ground-truth series (21.8%) are not found. Diagnosis on the same users: in 605 of them the labelled bill rows are less than half of the merchant's expense rows (the generator also draws ordinary purchases from the same merchants, so the merchant is mostly something else), in 26 the other rows sit within 10% of the bill amount, and 43 have neither cause (not diagnosed further).
+- The 98.5% precision is an upper bound for real data: the generator's subscriptions are monthly with 0-2 days of jitter and a constant price, which is easier than real billing.
+
+Not done: no real transaction data was evaluated; income detection and the amount-change flag (FR-08.03) have unit tests but no ground truth; the decomposition has not been compared against the plain run rate on closed periods (`forecast_outcomes` arrives with T-37/T-38).
