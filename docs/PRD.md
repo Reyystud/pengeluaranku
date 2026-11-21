@@ -2839,3 +2839,7 @@ After the project is complete, add real results to this table.
 - `make promote MODEL=… VERSION=… [REASON=… FORCE=1]` and `make rollback MODEL=… REASON=…` run `python -m pipelines promote|rollback`. Exit 0 on success, 2 when refused (`VERSION_NOT_FOUND`, `GATE_NOT_PASSED`, `REASON_REQUIRED`, `ALREADY_PRODUCTION`, `NO_PREVIOUS`, `NO_PRODUCTION`). The registry is `MLFLOW_TRACKING_URI`, default `sqlite:///data/mlflow/mlflow.db`.
 - Promote moves `production` to the version and `previous` to the old production version; rollback swaps the two. Version tags written: `promote_at|promote_from|promote_by|forced`, `rollback_at|rollback_from|rollback_reason|rollback_by`, `rolled_back_reason`. Each action appends a row to `docs/ops/rollback-log.md`.
 - ML service: new setting `MODEL_POLL_INTERVAL_S` (default 300, `0` = off). `ModelRegistry.refresh()` compares the alias version with the loaded one and swaps only on a verified new version.
+
+### Addendum T-28: reproducibility check
+
+- `make repro` runs `python -m pipelines.reproducibility [--out file.json]`: builds a small synthetic dataset in a temp directory, trains the baseline twice in separate processes (`PYTHONHASHSEED=0`, no registration) and compares. Exit 0 when the dataset hash, split hash and `|macro F1 difference| <= reproducibility.max_macro_f1_delta` (0.01) hold, 1 otherwise. The result JSON is uploaded by `.github/workflows/ml-reproducibility.yml`.

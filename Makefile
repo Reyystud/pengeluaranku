@@ -9,7 +9,7 @@ define NOT_YET
 endef
 
 .PHONY: openapi-check web thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
-        data train-local prefect-server up down seed-demo demo openapi train promote rollback loadtest jobs-run
+        data train-local prefect-server up down seed-demo demo openapi train repro promote rollback loadtest jobs-run
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -99,6 +99,9 @@ MODEL ?= transaction-classifier
 DATASET ?= synthetic/v1
 train: ## Prefect flow train_model: make train MODEL=transaction-classifier DATASET=synthetic/v1 (PRD 16.1)
 	MLFLOW_DISABLE_AGENT_HINT=1 PYTHONHASHSEED=0 uv run python -m pipelines train --model $(MODEL) --dataset $(DATASET)
+
+repro: ## Re-run test (PRD 16.2): train the baseline twice in separate processes, assert |delta macro F1| <= 0.01 (~2.5 min)
+	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m pipelines.reproducibility --out data/reproducibility.json
 
 prefect-server: ## Run a Prefect server on :4200 in its own environment (then export PREFECT_API_URL=http://127.0.0.1:4200/api)
 	uvx --from "prefect>=3,<4" --with "fastapi<0.160" prefect server start

@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-28 (reproducibility CI job); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
+**Current focus:** next T-29 (see PRD 20.3: Docker/compose, `make demo`); remember the `suggest` band is empty and unseen merchants are over-confident (T-09/T-10 notes)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,12 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-21 — T-28 Reproducibility CI job
+- Done: `pipelines/reproducibility.py` (two training runs in separate processes, compare dataset hash, split hash and macro F1), config section `reproducibility`, `make repro`, `.github/workflows/ml-reproducibility.yml` (weekly, PRs touching ML paths, manual; uploads the result JSON), `pipelines/tests/test_reproducibility.py` (decision logic with fake runs).
+- Verified: `make check` OK (544 non-integration tests, 503 backend, coverage 98.87%, 90 Vitest). A real `make repro` run (about 2.5 min): macro F1 0.9655 in both runs, delta 0.0, same dataset and split hashes. The workflow itself has not run on GitHub yet.
+- Gotchas: the check measures determinism of the baseline on a tiny dataset, not model quality. It is not in `make check` (time).
+- Next: T-29.
 
 ### 2026-11-21 — T-27 Promote, rollback, ML service alias polling
 - Done: `pipelines/promotion.py` (`promote`, `rollback`), CLI `python -m pipelines promote|rollback`, Makefile targets `promote` and `rollback`, `docs/ops/rollback-log.md` written on first use, `ModelSource.current_version()`, `ModelRegistry.refresh()`, background poller in the ML service lifespan (`MODEL_POLL_INTERVAL_S`).
@@ -243,7 +249,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-25 | Prefect training flow; MLflow registry, aliases, metadata.json, model card generation | T-09 | done | 2026-11-21 |
 | T-26 | Offline gates + behavioural tests + latency benchmark | T-25 | done | 2026-11-21; golden set + gates; T-09 baseline fails golden (0.781) |
 | T-27 | `make promote` / `make rollback`; ML service alias polling hot-swap | T-25, T-17 | done 2026-11-21 | |
-| T-28 | Reproducibility CI job | T-25 | todo | |
+| T-28 | Reproducibility CI job | T-25 | done 2026-11-21 | |
 | T-29 | Docker images + full compose + `make demo` | all above | todo | |
 
 ### Week 7 — Deployment
