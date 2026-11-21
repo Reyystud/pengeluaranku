@@ -21,5 +21,8 @@ resource "google_bigquery_dataset" "datasets" {
   # `raw` exports expire after 400 days (PRD 10.5).
   default_table_expiration_ms = each.key == "raw" ? 400 * 24 * 3600 * 1000 : null
 
+  # Prediction logs keep 90 days of partitions (PRD 18.4).
+  default_partition_expiration_ms = each.key == "predictions" ? 90 * 24 * 3600 * 1000 : null
+
   depends_on = [google_project_service.enabled]
 }

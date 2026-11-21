@@ -1,0 +1,68 @@
+# Alert rules (PRD 18.1, 18.7). Every alert links to its runbook entry (docs/RUNBOOK.md, T-36).
+# Thresholds: latency from the SLOs of PRD 5.3 (backend 500 ms is the loosest: POST /transactions;
+# ML inference 200 ms), the rest from PRD 18.1. Pub/Sub DLQ and Cloud Run job alerts exist only in
+# Cloud Monitoring (infrastructure/terraform/monitoring.tf): there are no such metrics locally.
+groups:
+  - name: system
+    rules:
+      - alert: BackendLatencyP95High
+        expr: |
+          histogram_quantile(0.95, sum by (le) (
+            rate(http_request_duration_seconds_bucket{service="backend"}[5m]))) > 0.5
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: Backend P95 latency above 500 ms for 10 minutes
+          runbook: docs/RUNBOOK.md#inference-latency-p95-high
+
+      - alert: MlInferenceLatencyP95High
+        expr: |
+          histogram_quantile(0.95, sum by (le) (
+            rate(inference_duration_seconds_bucket[5m]))) > 0.2
+        for: 10m
+        labels: {severity: warning}
+        annotations:
+          summary: ML inference P95 latency above 200 ms for 10 minutes
+          runbook: docs/RUNBOOK.md#inference-latency-p95-high
+
+      - alert: High5xxRate
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+            / sum(rate(http_requests_total[5m])) > 0.02
+        for: 5m
+        labels: {severity: critical}
+        annotations:
+          summary: More than 2% of requests fail with 5xx for 5 minutes
+          runbook: docs/RUNBOOK.md#job-failed
+
+      - alert: MlCircuitOpen
+        expr: max(ml_circuit_state) == 2
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: The ML circuit breaker has been open for 5 minutes (transactions go to needs_review)
+          runbook: docs/RUNBOOK.md#ml-circuit-open
+
+      - alert: OutboxBacklogGrowing
+        expr: outbox_oldest_age_seconds > 300
+        for: 5m
+        labels: {severity: warning}
+        annotations:
+          summary: The oldest unpublished outbox event is older than 5 minutes
+          runbook: docs/RUNBOOK.md#outbox-backlog-growing
+
+  - name: models-and-jobs
+    rules:
+      - alert: ModelLoadFailure
+        expr: increase(model_load_failures_total[15m]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: The ML service refused a model load (hash mismatch or unreadable artifact)
+          runbook: docs/RUNBOOK.md#model-load-failure--hash-mismatch
+
+      - alert: JobFailed
+        expr: increase(jobs_runs_total{status="error"}[1h]) > 0
+        labels: {severity: warning}
+        annotations:
+          summary: A batch job failed in the last hour
+          runbook: docs/RUNBOOK.md#job-failed

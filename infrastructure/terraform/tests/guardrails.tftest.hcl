@@ -253,3 +253,59 @@ run "pubsub_mode_keeps_the_relay_alive_and_inmemory_scales_to_zero" {
     error_message = "only the worker is kept warm"
   }
 }
+
+run "alerts_cover_the_system_layer_of_prd_18_1" {
+  command = plan
+
+  assert {
+    condition     = google_monitoring_alert_policy.http_5xx.conditions[0].condition_threshold[0].threshold_value == 0.02 && google_monitoring_alert_policy.http_5xx.conditions[0].condition_threshold[0].duration == "300s"
+    error_message = "5xx alert: more than 2 percent for 5 minutes"
+  }
+
+  assert {
+    condition = alltrue([
+      for name, p in google_monitoring_alert_policy.latency_p95 :
+      p.conditions[0].condition_threshold[0].duration == "600s" && p.conditions[0].condition_threshold[0].threshold_value == (name == "backend" ? 500 : 200)
+    ]) && toset(keys(google_monitoring_alert_policy.latency_p95)) == toset(["backend", "ml-service"])
+    error_message = "P95 latency alerts: 10 minutes, SLO 500 ms backend and 200 ms ml-service"
+  }
+
+  assert {
+    condition     = google_monitoring_alert_policy.dlq.conditions[0].condition_threshold[0].threshold_value == 0
+    error_message = "any DLQ message alerts"
+  }
+
+  assert {
+    condition     = google_monitoring_alert_policy.ml_circuit_open.conditions[0].condition_threshold[0].duration == "300s"
+    error_message = "circuit open alert after 5 minutes"
+  }
+
+  assert {
+    condition = alltrue([
+      for p in concat(
+        [google_monitoring_alert_policy.http_5xx, google_monitoring_alert_policy.dlq, google_monitoring_alert_policy.job_failed, google_monitoring_alert_policy.ml_circuit_open],
+        values(google_monitoring_alert_policy.latency_p95)
+      ) : length(p.notification_channels) == 1 && strcontains(p.documentation[0].content, "docs/RUNBOOK.md#")
+    ])
+    error_message = "every alert notifies the email channel and links its runbook entry"
+  }
+}
+
+run "prediction_logs_go_to_a_partitioned_bigquery_table_for_90_days" {
+  command = plan
+
+  assert {
+    condition     = google_logging_project_sink.predictions.filter == "resource.type=\"cloud_run_revision\" AND resource.labels.service_name=\"ml-service\" AND jsonPayload.event=\"prediction\""
+    error_message = "the sink selects only prediction log lines of ml-service"
+  }
+
+  assert {
+    condition     = google_logging_project_sink.predictions.bigquery_options[0].use_partitioned_tables == true && google_logging_project_sink.predictions.unique_writer_identity == true
+    error_message = "partitioned table and a dedicated writer identity"
+  }
+
+  assert {
+    condition     = google_bigquery_dataset.datasets["predictions"].default_partition_expiration_ms == 7776000000 && google_bigquery_dataset.datasets["curated"].default_partition_expiration_ms == null
+    error_message = "only prediction logs expire after 90 days"
+  }
+}

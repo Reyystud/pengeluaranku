@@ -13,7 +13,7 @@ from sqlalchemy.orm import Session
 from app.core.config import Settings
 from app.core.cursor import Cursor, decode_cursor, encode_cursor
 from app.core.errors import ProblemError, not_found, validation_problem
-from app.core.metrics import CATEGORIZE_PREVIEW
+from app.core.metrics import CATEGORIZATION_DECISIONS, CATEGORIZE_PREVIEW, CATEGORY_FEEDBACK
 from app.core.text import clean_text, mask_long_numbers
 from app.events.dispatcher import drain_safely
 from app.events.outbox import enqueue
@@ -301,7 +301,9 @@ class TransactionService:
         """FR-03.03: every rule/model/fallback decision is stored, even if the user overrides it."""
         if result.source == "user":
             return  # a category given by the user involves no prediction
-        self.predictions.add(self.user.id, self.prediction_row(tx.id, result, self.request_id))
+        row = self.prediction_row(tx.id, result, self.request_id)
+        self.predictions.add(self.user.id, row)
+        CATEGORIZATION_DECISIONS.labels(row.decision, row.source).inc()
         if result.rule_id:
             self.rules.mark_applied(self.user.id, [result.rule_id])
 
@@ -476,6 +478,9 @@ class TransactionService:
                     merchant_key=tx.merchant_key,
                 ),
             )
+            CATEGORY_FEEDBACK.labels(
+                kind, (latest.model_version if latest else None) or "none"
+            ).inc()
 
         past = 0
         if tx.merchant_key and category.slug != UNCATEGORIZED:

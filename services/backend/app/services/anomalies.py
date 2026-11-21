@@ -18,6 +18,7 @@ from sqlalchemy.orm import Session
 from app.core.cursor import Cursor, decode_cursor, encode_cursor
 from app.core.errors import ProblemError, not_found
 from app.core.ids import new_uuid7
+from app.core.metrics import ANOMALIES
 from app.models import Anomaly, Transaction, User
 from app.models.base import utcnow
 from app.repositories import (
@@ -126,6 +127,7 @@ class AnomalyService:
             if not inserted:
                 continue
             created += 1
+            ANOMALIES.labels(d.anomaly_type, d.severity, str(is_alert).lower()).inc()
             if is_alert:
                 used += 1
                 self._notify(anomaly_id, d, category.name, tx.id)

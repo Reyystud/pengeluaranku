@@ -27,6 +27,18 @@ CONFIDENCE = Histogram(
     buckets=(0.1, 0.2, 0.3, 0.4, 0.5, 0.6, 0.7, 0.8, 0.9, 0.95, 0.99, 1.0),
     registry=REGISTRY,
 )
+INFERENCE_REQUESTS = Counter(
+    "inference_requests_total",
+    "Inference calls by outcome",
+    ["model", "endpoint", "outcome"],
+    registry=REGISTRY,
+)
+PREDICTED_CATEGORY = Counter(
+    "predicted_category_total",
+    "Predictions per category (about 14 labels: bounded cardinality)",
+    ["model_version", "category"],
+    registry=REGISTRY,
+)
 INFERENCE_SECONDS = Histogram(
     "inference_duration_seconds",
     "Feature + model time per call",

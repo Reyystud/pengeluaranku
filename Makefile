@@ -9,7 +9,7 @@ define NOT_YET
 endef
 
 .PHONY: openapi-check web thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
-        data train-local prefect-server up up-events down seed-demo demo openapi train repro recurring-eval terraform-check promote rollback loadtest jobs-run
+        data train-local prefect-server up up-events up-observability down seed-demo demo openapi train repro recurring-eval dashboards terraform-check promote rollback loadtest jobs-run
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -78,8 +78,15 @@ up-events: ## Same as up, plus the Pub/Sub emulator, the worker (outbox relay) a
 	EVENT_BUS=pubsub docker compose --profile events up -d --build --wait backend worker pubsub-emulator frontend
 	EVENT_BUS=pubsub docker compose --profile events run --rm pubsub-init
 
+up-observability: ## Same as up, plus Prometheus (:9090) and Grafana (:3001, dashboards from monitoring/)
+	docker compose --profile observability up -d --build --wait
+	docker compose --profile observability up -d prometheus grafana
+
+dashboards: ## Regenerate monitoring/dashboards/*.json from monitoring/build_dashboards.py
+	uv run python monitoring/build_dashboards.py
+
 down: ## docker compose down (VOLUMES=1 also drops the database and MLflow volumes)
-	docker compose --profile events down $(if $(VOLUMES),--volumes)
+	docker compose --profile events --profile observability down $(if $(VOLUMES),--volumes)
 
 seed-demo: ## Create the demo user with 12 months of synthetic history via the running backend (needs make data + make up)
 	@set -a; . ./.env; set +a; \

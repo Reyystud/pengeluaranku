@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import dataclasses
+import json
 import logging
 import shutil
 from pathlib import Path
@@ -294,3 +295,48 @@ def test_decision_dataclass_is_frozen() -> None:
 
     assert dataclasses.is_dataclass(LoadedClassifier)
     assert LoadedClassifier.__dataclass_params__.frozen  # type: ignore[attr-defined]
+
+
+def prediction_lines(out: str) -> list[dict[str, object]]:
+    lines = [json.loads(x) for x in out.splitlines() if x.startswith("{")]
+    return [x for x in lines if x.get("event") == "prediction"]
+
+
+def test_18_2_inference_counters_by_outcome_and_predicted_category(client: TestClient) -> None:
+    client.post("/v1/classify", json=classify_body())
+    client.post(
+        "/v1/classify/batch", json={"request_id": "b", "items": [classify_body(), classify_body()]}
+    )
+    text = client.get("/metrics").text
+    assert (
+        'inference_requests_total{endpoint="classify",model="transaction-classifier",outcome="ok"}'
+        in text
+    )
+    assert 'endpoint="classify_batch"' in text and "predicted_category_total{" in text
+    assert "user" not in text.split("predicted_category_total")[1].split("\n")[0]
+
+
+def test_18_4_each_prediction_emits_one_json_line_without_text_or_exact_amount(
+    client: TestClient, capsys: pytest.CaptureFixture[str]
+) -> None:
+    secret = "RAHASIA-WARUNG-XYZ"
+    body = classify_body(description=secret, merchant_key=secret.lower(), amount="45000")
+    client.post("/v1/classify", json=body)
+    out = capsys.readouterr().out
+    (line,) = prediction_lines(out)
+    assert line["model"] == "transaction-classifier" and line["shadow"] is False
+    assert line["request_id"] == body["request_id"]
+    assert set(line["features_summary"]) == {"log_amount", "payment_method", "hour_bucket"}  # type: ignore[arg-type]
+    assert set(line["output"]) == {"predicted_category", "confidence", "decision"}  # type: ignore[arg-type]
+    assert len(str(line["input_hash"])) == 12
+    assert secret not in out and secret.lower() not in out and "45000" not in out
+
+
+def test_18_4_batch_emits_one_line_per_item_and_the_hash_is_stable(
+    client: TestClient, capsys: pytest.CaptureFixture[str]
+) -> None:
+    client.post(
+        "/v1/classify/batch", json={"request_id": "b", "items": [classify_body(), classify_body()]}
+    )
+    lines = prediction_lines(capsys.readouterr().out)
+    assert len(lines) == 2 and lines[0]["input_hash"] == lines[1]["input_hash"]

@@ -9,8 +9,12 @@ from collections.abc import Callable
 
 from fastapi import APIRouter, Request, Response
 from prometheus_client import CONTENT_TYPE_LATEST, generate_latest
+from sqlalchemy import func, select
 
 from app.core.errors import ProblemError
+from app.core.metrics import OUTBOX_OLDEST_AGE, OUTBOX_PENDING
+from app.models import OutboxEvent
+from app.models.base import utcnow
 
 router = APIRouter(tags=["health"])
 
@@ -43,6 +47,25 @@ def readyz(request: Request) -> dict[str, object]:
     return {"status": "ok", "checks": results}
 
 
+def refresh_outbox_gauges(request: Request) -> None:
+    """Outbox backlog and age, read at scrape time with one indexed query (PRD 18.2)."""
+    factory = getattr(request.app.state, "session_factory", None)
+    if factory is None:
+        return
+    try:
+        with factory() as session:
+            count, oldest = session.execute(
+                select(func.count(), func.min(OutboxEvent.created_at)).where(
+                    OutboxEvent.published_at.is_(None)
+                )
+            ).one()
+    except Exception:  # a scrape must not fail because the database is down
+        return
+    OUTBOX_PENDING.set(count)
+    OUTBOX_OLDEST_AGE.set(0 if oldest is None else max(0.0, (utcnow() - oldest).total_seconds()))
+
+
 @router.get("/metrics", include_in_schema=False)
-def metrics() -> Response:
+def metrics(request: Request) -> Response:
+    refresh_outbox_gauges(request)
     return Response(generate_latest(), media_type=CONTENT_TYPE_LATEST)

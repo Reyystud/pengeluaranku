@@ -4,11 +4,18 @@ from __future__ import annotations
 
 from fastapi import APIRouter, Request
 
+from ml_service import prediction_log
 from ml_service.errors import ProblemError
 from ml_service.inference import classify
 from ml_service.loading.artifact import LoadedClassifier
 from ml_service.loading.registry import ModelRegistry
-from ml_service.metrics import CONFIDENCE, INFERENCE_SECONDS, PREDICTIONS
+from ml_service.metrics import (
+    CONFIDENCE,
+    INFERENCE_REQUESTS,
+    INFERENCE_SECONDS,
+    PREDICTED_CATEGORY,
+    PREDICTIONS,
+)
 from ml_service.schemas import BatchRequest, BatchResponse, ClassifyRequest, ClassifyResponse
 
 router = APIRouter(prefix="/v1", tags=["classify"])
@@ -46,11 +53,18 @@ def _check_versions(model: LoadedClassifier, items: list[ClassifyRequest]) -> No
 def _run(
     model: LoadedClassifier, items: list[ClassifyRequest], endpoint: str
 ) -> list[ClassifyResponse]:
-    with INFERENCE_SECONDS.labels(model.name, endpoint).time():
-        results = classify(model, items)
-    for r in results:
+    try:
+        with INFERENCE_SECONDS.labels(model.name, endpoint).time():
+            results = classify(model, items)
+    except Exception:
+        INFERENCE_REQUESTS.labels(model.name, endpoint, "error").inc()
+        raise
+    INFERENCE_REQUESTS.labels(model.name, endpoint, "ok").inc()
+    for item, r in zip(items, results, strict=True):
         PREDICTIONS.labels(model.name, r.decision).inc()
         CONFIDENCE.labels(model.name).observe(r.confidence)
+        PREDICTED_CATEGORY.labels(r.model_version, r.predicted_category).inc()
+        prediction_log.record(model, item, r)
     return results
 
 

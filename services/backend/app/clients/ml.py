@@ -6,6 +6,7 @@ transaction cannot fail because of the ML service. Requests carry no user id (PR
 
 from __future__ import annotations
 
+import logging
 import threading
 import time
 from collections import deque
@@ -19,6 +20,7 @@ from pydantic import BaseModel, ConfigDict, ValidationError
 from app.core.config import Settings
 from app.core.metrics import ML_CIRCUIT_STATE, ML_CLIENT_DURATION, ML_CLIENT_REQUESTS
 
+log = logging.getLogger(__name__)
 BATCH_LIMIT = 500
 WINDOW = 20  # calls considered for the failure-rate rule
 MIN_CALLS = 10  # the rate rule needs at least this many calls in the window
@@ -203,6 +205,8 @@ class MlClient:
             return [MlResult(error="disabled")] * expected
         if not self.breaker.allow():
             ML_CLIENT_REQUESTS.labels(endpoint, "circuit_open").inc()
+            # Feeds the log-based metric behind the "circuit open > 5 min" alert (PRD 18.1).
+            log.warning("ml circuit open: call skipped (%s)", endpoint)
             return [MlResult(error="circuit_open")] * expected
         started = time.perf_counter()
         try:

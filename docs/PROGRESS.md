@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-34 (see PRD 20.3); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
+**Current focus:** next T-35 (Evidently drift job + reports, PRD 18.3); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-22 — T-34 Metrics, Grafana dashboards, Cloud Monitoring alerts, prediction log sink
+- Done: PRD 18.2 metrics wired into the real code paths (decisions, feedback, CSV imports, events published/consumed, anomalies, outbox gauges at scrape time, `observe_job` for T-37, ML `inference_requests_total` and `predicted_category_total`); one JSON prediction log line per ML prediction (`ml_service/prediction_log.py`); `monitoring/` (Prometheus config and 7 alert rules, 4 generated Grafana dashboards, provisioning, asset tests); compose profile `observability` + `make up-observability`, `make dashboards`; Terraform `monitoring.tf` (5xx, P95 latency per service, DLQ, failed job, ML circuit alerts, log-based metric, Log Router sink to BigQuery with 90-day partitions); PRD addendum and DECISIONS rows.
+- Verified: `make check` OK (701 non-integration tests, 617 backend, coverage 98.40%, 99 Vitest); `terraform test` 12 passed; **local stack**: Prometheus scrapes backend, worker and ml-service (targets up), `promtool check rules` passes (7 rules), Grafana provisions the 4 dashboards and answers a query through its data source, backend counters appear in Prometheus after real requests.
+- Not verified: the ML service has no model registered in this local MLflow, so the prediction log line and the ML counters were exercised only by unit tests with a toy model, not on the live stack; panels built on `rate()` or `increase()` over long windows showed no series yet because the counters had just appeared (the raw counters were checked instead); I did not open Grafana in a browser; none of the Cloud Monitoring policies, the log-based metric or the sink has been applied to GCP (Terraform validate and offline plan tests only).
+- Gotchas: the sink writes `predictions.run_googleapis_com_stdout`, not `prediction_logs` (view left to T-35); GCP alerts do not use the app `/metrics` (no Prometheus sidecar), so outbox, drift and model-quality alerts are local only for now; the circuit-open alert in GCP depends on traffic (it counts skipped calls); alert runbook links point to `docs/RUNBOOK.md`, created in T-36; `shadow_agreement_total` is not registered. T-33 had been committed on `feat/events-monitoring` while the working tree sat on `feat/deployments`; I moved this work to `feat/events-monitoring`.
+- Next: T-35.
 
 ### 2026-11-22 — T-33 Outbox relay, Pub/Sub, worker push endpoint, DLQ, idempotent consumers
 - Done: JSON Schemas `schemas/events/*.v1.json` (enqueue validates them), `app/events/{schema,publisher,relay,bootstrap}.py`, `app/core/internal_auth.py` (Google OIDC, audience + service account), `app/api/internal.py` (`POST /internal/events/transaction`), `ROLE=worker` routing and relay thread in `app/main.py`, `dispatch()` shared by the in-process drain and the push endpoint (idempotent per `(event_id, consumer)`, stale `transaction_version` ignored), settings (`EVENT_BUS`, `PUBSUB_*`, `RELAY_*`, `INTERNAL_*`), compose profile `events` + `make up-events`, Terraform worker kept warm when `event_bus = pubsub`, PRD addendum, DECISIONS rows.
@@ -299,7 +306,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | ID | Task | Deps | Status | Notes |
 |---|---|---|---|---|
 | T-33 | Outbox + relay + Pub/Sub + worker push endpoint + DLQ + idempotent consumers | T-23, T-31 | done 2026-11-22 | emulator verified; not run on GCP |
-| T-34 | Metrics, Grafana dashboards, Cloud Monitoring alerts, prediction log sink | T-32 | todo | |
+| T-34 | Metrics, Grafana dashboards, Cloud Monitoring alerts, prediction log sink | T-32 | done 2026-11-22 | local stack verified; GCP alerts not applied |
 | T-35 | Evidently drift job + reports | T-34 | todo | |
 | T-36 | Runbook (≥ 3 entries, each tested once) + rollback drill | T-34 | todo | |
 | T-37 | Insights engine (FR-09) + batch job scheduler | T-30 | todo | |

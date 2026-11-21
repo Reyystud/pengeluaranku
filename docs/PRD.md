@@ -2884,3 +2884,11 @@ After the project is complete, add real results to this table.
 - Stale rule (FR-11.04): `transaction_version` lower than the stored `transactions.version` is acknowledged without running consumers.
 - Relay (FR-11.02): `publish_pending` (`FOR UPDATE SKIP LOCKED`, batch, `published_at` on success) in a thread of the worker when `EVENT_BUS=pubsub`; failures back off up to 30 s and leave events pending.
 - Local (FR-11.06): compose profile `events`, `make up-events`, `python -m app.events.bootstrap`.
+
+### Addendum T-34: monitoring
+
+- Metric names added (18.2): see `services/backend/app/core/metrics.py` and `services/ml_service/ml_service/metrics/`. `shadow_agreement_total` is not registered yet.
+- Prediction log line (18.4): fields `event`, `severity`, `model`, `model_version`, `feature_version`, `request_id`, `input_hash` (first 12 hex of SHA-256 of `lower(description)|amount|payment_method`), `features_summary{log_amount,payment_method,hour_bucket}`, `output{predicted_category,confidence,decision}`, `shadow`, `latency_ms`.
+- BigQuery table written by the sink: `predictions.run_googleapis_com_stdout`, day partitions, 90-day expiry; `prediction_logs` is a view created by T-35.
+- Local stack: `make up-observability`, `make dashboards`; files under `monitoring/`.
+- GCP alert policies (`monitoring.tf`): 5xx ratio, P95 latency per service, DLQ messages, failed Cloud Run job, ML circuit open (log-based metric `ml_circuit_open_skips`).

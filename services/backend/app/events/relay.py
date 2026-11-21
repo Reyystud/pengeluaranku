@@ -13,6 +13,7 @@ import threading
 from sqlalchemy import select
 from sqlalchemy.orm import Session, sessionmaker
 
+from app.core.metrics import EVENTS_PUBLISHED
 from app.events.publisher import EventPublisher
 from app.models import OutboxEvent
 from app.models.base import utcnow
@@ -34,10 +35,16 @@ def publish_pending(session: Session, publisher: EventPublisher, limit: int) -> 
     )
     if not rows:
         return 0
-    publisher.publish([row.payload for row in rows])
+    try:
+        publisher.publish([row.payload for row in rows])
+    except Exception:
+        for row in rows:
+            EVENTS_PUBLISHED.labels(row.event_type, "error").inc()
+        raise
     now = utcnow()
     for row in rows:
         row.published_at = now
+        EVENTS_PUBLISHED.labels(row.event_type, "ok").inc()
     return len(rows)
 
 

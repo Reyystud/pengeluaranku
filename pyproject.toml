@@ -34,7 +34,7 @@ dev = [
 
 [tool.pytest.ini_options]
 addopts = "--import-mode=importlib"
-testpaths = ["ml", "data_generator", "pipelines", "services", "infrastructure/deploy"]
+testpaths = ["ml", "data_generator", "pipelines", "services", "infrastructure/deploy", "monitoring"]
 markers = ["integration: needs real PostgreSQL / services (testcontainers)"]
 
 [tool.ruff]
@@ -48,6 +48,7 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.ruff.lint.per-file-ignores]
 "services/backend/migrations/versions/*" = ["E501"]  # generated DDL
 "services/backend/tests/integration/*" = ["E501"]  # long request literals
+"monitoring/build_dashboards.py" = ["E501"]  # long PromQL strings
 
 [tool.mypy]
 python_version = "3.12"

@@ -20,6 +20,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from app.core.metrics import EVENTS_CONSUMED, EVENTS_PUBLISHED
 from app.models import OutboxEvent, ProcessedEvent, User
 from app.models.base import utcnow
 from app.repositories import TransactionRepository
@@ -51,6 +52,7 @@ def drain_pending(session: Session, user: User, limit: int) -> int:
     dispatch(session, user, [(e.id, e.payload) for e in events])
     for event in events:
         event.published_at = utcnow()
+        EVENTS_PUBLISHED.labels(event.event_type, "ok").inc()
     return len(events)
 
 
@@ -70,11 +72,25 @@ def dispatch(
         scored = envelope["event_type"] in SCORED_EVENTS
         tx_id = uuid.UUID(envelope["data"]["transaction_id"]) if scored else None
         if tx_id is not None and _is_stale(transactions, user, tx_id, envelope):
+            EVENTS_CONSUMED.labels(CONSUMER, "stale").inc()
+            EVENTS_CONSUMED.labels(RECURRING_CONSUMER, "stale").inc()
             continue
-        if _claim(session, event_id, CONSUMER) and tx_id is not None:
-            service.score_transaction(tx_id)
-        if _claim(session, event_id, RECURRING_CONSUMER) and tx_id is not None:
-            touched.add(tx_id)
+        try:
+            if _claim(session, event_id, CONSUMER):
+                if tx_id is not None:
+                    service.score_transaction(tx_id)
+                EVENTS_CONSUMED.labels(CONSUMER, "processed").inc()
+            else:
+                EVENTS_CONSUMED.labels(CONSUMER, "duplicate").inc()
+            if _claim(session, event_id, RECURRING_CONSUMER):
+                if tx_id is not None:
+                    touched.add(tx_id)
+                EVENTS_CONSUMED.labels(RECURRING_CONSUMER, "processed").inc()
+            else:
+                EVENTS_CONSUMED.labels(RECURRING_CONSUMER, "duplicate").inc()
+        except Exception:
+            EVENTS_CONSUMED.labels(CONSUMER, "error").inc()
+            raise
     if touched:  # FR-08.06: one refresh per known recurring merchant, however many rows arrived
         RecurringService(session, user).refresh_for_transactions(touched)
 

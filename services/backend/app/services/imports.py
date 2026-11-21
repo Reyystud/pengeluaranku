@@ -24,6 +24,7 @@ from app.core.csvparse import (
 )
 from app.core.cursor import Cursor, decode_cursor, encode_cursor
 from app.core.errors import ProblemError, not_found, validation_problem
+from app.core.metrics import CATEGORIZATION_DECISIONS, CSV_IMPORTS
 from app.core.text import clean_text, mask_long_numbers
 from app.events.outbox import enqueue
 from app.models import CategoryPrediction, Transaction, TransactionImport, User
@@ -103,6 +104,7 @@ class ImportService:
         try:
             table = read_table(decode(raw), max_rows=MAX_ROWS)
         except CsvFileError as exc:
+            CSV_IMPORTS.labels("preview", "rejected").inc()
             raise _file_problem(exc) from exc
         sha = hashlib.sha256(raw).hexdigest()
 
@@ -132,6 +134,7 @@ class ImportService:
             created_at=now,
         )
         self.repo.add(self.user.id, imp)
+        CSV_IMPORTS.labels("preview", "ok").inc()
         return self._preview_of(imp, after=0)
 
     def _warnings(self, table: CsvTable, sha: str) -> list[ImportWarning]:
@@ -424,6 +427,7 @@ class ImportService:
         imp.commit_mode = body.mode
         imp.committed_at = utcnow()
         imp.staged_rows = {}  # PRD 12: cleared after commit, counts are kept
+        CSV_IMPORTS.labels("commit", "ok").inc()
         self.session.flush()
         self.tx.after_write()
         enqueue(
@@ -465,6 +469,9 @@ class ImportService:
                     request_id=self.request_id or uuid.uuid4().hex,
                 )
             )
+            CATEGORIZATION_DECISIONS.labels(
+                p.decision, {"rule": "user_rule", "model": "model"}.get(p.source, "fallback")
+            ).inc()
             if p.rule_id:
                 applied[p.rule_id] = applied.get(p.rule_id, 0) + 1
         self.tx.predictions.add_many(self.user.id, rows)
