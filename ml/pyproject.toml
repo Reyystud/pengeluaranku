@@ -20,4 +20,4 @@ dependencies = [
 
 [tool.setuptools]
 package-dir = {"ml" = "."}
-packages = ["ml", "ml.preprocessing", "ml.features", "ml.classification", "ml.anomaly_detection", "ml.forecasting", "ml.clustering", "ml.recurring", "ml.evaluation", "ml.eda", "ml.schemas"]
+packages = ["ml", "ml.preprocessing", "ml.features", "ml.classification", "ml.anomaly_detection", "ml.forecasting", "ml.clustering", "ml.recurring", "ml.monitoring", "ml.evaluation", "ml.eda", "ml.schemas"]

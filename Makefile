@@ -9,7 +9,7 @@ define NOT_YET
 endef
 
 .PHONY: openapi-check web thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
-        data train-local prefect-server up up-events up-observability down seed-demo demo openapi train repro recurring-eval dashboards terraform-check promote rollback loadtest jobs-run
+        data train-local prefect-server up up-events up-observability down seed-demo demo openapi train repro recurring-eval dashboards terraform-check drift-report promote rollback loadtest jobs-run
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -127,6 +127,10 @@ repro: ## Re-run test (PRD 16.2): train the baseline twice in separate processes
 
 recurring-eval: ## Score the recurring detector against the generator's labels on 1,000 sampled users (~40 s, PRD 7.8)
 	uv run python -m ml.recurring.evaluate --users 1000 --out data/recurring_eval.json
+
+drift-report: ## Evidently drift report from captured ml-service logs (LOGS=file [REFERENCE=models/.../reference] [DATE=YYYY-MM-DD])
+	@test -n "$(LOGS)" || { echo "usage: make drift-report LOGS=ml-service.log  (docker compose logs --no-log-prefix ml-service > ml-service.log)"; exit 2; }
+	uv run python -m pipelines drift-report --logs $(LOGS) $(if $(REFERENCE),--reference $(REFERENCE)) $(if $(DATE),--date $(DATE))
 
 terraform-check: ## Terraform fmt, validate and the offline guardrail tests (needs terraform >= 1.7; no GCP credentials)
 	cd infrastructure/terraform && terraform fmt -check -recursive && terraform init -backend=false -input=false && terraform validate && terraform test

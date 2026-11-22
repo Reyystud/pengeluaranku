@@ -5,6 +5,7 @@ from __future__ import annotations
 import argparse
 import os
 import sys
+from pathlib import Path
 
 from pipelines.data_steps import PipelineError
 
@@ -35,6 +36,52 @@ def _alias_command(args: argparse.Namespace) -> int:
     return 0
 
 
+def _drift_command(args: argparse.Namespace) -> int:
+    import datetime as dt
+    import tempfile
+
+    from pipelines.drift import job
+    from pipelines.drift.config import load_config
+    from pipelines.drift.sources import JsonlLogSource
+    from pipelines.drift.store import LocalStore
+
+    if not args.logs:
+        print(
+            "drift-report: BigQuery source needs GCP credentials and is not wired to the CLI yet; "
+            "pass --logs <file> (docs/DECISIONS.md, T-35)",
+            file=sys.stderr,
+        )
+        return 2
+    day = dt.date.fromisoformat(args.date) if args.date else dt.datetime.now(dt.UTC).date()
+    root = Path(__file__).resolve().parents[1]
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            if args.reference is not None:
+                ref_dir, version = args.reference, "local-reference"
+            else:
+                from pipelines.promotion import open_client
+
+                ref_dir, version = job.fetch_reference(
+                    open_client(args.tracking_uri), args.model, Path(tmp)
+                )
+            summary = job.run_drift_report(
+                report_date=day,
+                reference_dir=ref_dir,
+                model_version=version,
+                source=JsonlLogSource(args.logs),
+                store=LocalStore(args.reports_dir or root / "data" / "reports"),
+                cfg=load_config(),
+            )
+    except PipelineError as exc:
+        print(f"drift-report stopped: {exc}", file=sys.stderr)
+        return 2
+    print(
+        f"drift-report {summary.report_date}: {summary.status} "
+        f"(rows {summary.current_rows}, psi_max {summary.psi_max})"
+    )
+    return 1 if summary.status == "drift" else 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="pipelines")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -61,10 +108,22 @@ def main(argv: list[str] | None = None) -> int:
     promote.add_argument(
         "--force", action="store_true", help="allow gate != passed; needs --reason"
     )
+    drift = sub.add_parser("drift-report", help="Evidently drift report for one day (PRD 18.3)")
+    drift.add_argument("--model", default="transaction-classifier")
+    drift.add_argument("--date", default=None, help="report date YYYY-MM-DD (default: today UTC)")
+    drift.add_argument("--tracking-uri", default=None)
+    drift.add_argument("--logs", nargs="+", type=Path, help="captured ml-service log files")
+    drift.add_argument(
+        "--reference", type=Path, default=None, help="reference/ folder (skips MLflow)"
+    )
+    drift.add_argument("--reports-dir", type=Path, default=None, help="local report root")
+    drift.add_argument("--project", default=os.environ.get("GCP_PROJECT_ID"), help="GCP project")
     args = parser.parse_args(argv)
 
     if args.command in ("promote", "rollback"):
         return _alias_command(args)
+    if args.command == "drift-report":
+        return _drift_command(args)
 
     os.environ.setdefault("PYTHONHASHSEED", "0")  # recorded in the run; set it before launching
     from pipelines import train_flow

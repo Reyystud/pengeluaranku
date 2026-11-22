@@ -2892,3 +2892,11 @@ After the project is complete, add real results to this table.
 - BigQuery table written by the sink: `predictions.run_googleapis_com_stdout`, day partitions, 90-day expiry; `prediction_logs` is a view created by T-35.
 - Local stack: `make up-observability`, `make dashboards`; files under `monitoring/`.
 - GCP alert policies (`monitoring.tf`): 5xx ratio, P95 latency per service, DLQ messages, failed Cloud Run job, ML circuit open (log-based metric `ml_circuit_open_skips`).
+
+### Addendum T-35: drift reports
+
+- Prediction log line (18.4) gains `merchant_hash` and `logged_at` (UTC, ISO 8601 with `Z`).
+- Model artifacts gain `reference/reference_sample.parquet` (columns `log_amount`, `payment_method`, `hour_bucket`, `predicted_category`, `confidence`; at most 10 000 validation rows) and `reference/merchants.json` (sorted 12-char merchant hashes of the train split). They are logged to MLflow under `model/reference`.
+- Job `drift-report` (15.1): `python -m pipelines drift-report` (`make drift-report LOGS=<file>` locally). Settings in `config/drift.yaml`. Output `drift/YYYY-MM-DD/report.html` and `summary.json` (fields of `pipelines/drift/report.py::DriftSummary`); status `ok | drift | skipped`; exit code 1 on `drift`, 2 on a stopped pipeline.
+- Alerts (18.1): any key-feature PSI above 0.25 or unseen-merchant share above 2x its 28-day median sets status `drift`; in GCP the log-based metric `drift_report_drift_detected` drives the policy `sei: data drift detected`.
+- Anomaly-feature and forecast-total drift (18.3) are not covered: those models come with T-41 and T-38 to T-40.

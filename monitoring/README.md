@@ -19,3 +19,15 @@ sidecar). Prediction logs reach BigQuery through a Log Router sink.
 Panels backed by later tasks (drift summary T-35, job runs T-37, shadow agreement) are marked in
 the dashboards and show no data until those exist. Alert runbook links point to `docs/RUNBOOK.md`
 (task T-36), which does not exist yet.
+
+## Drift reports (T-35)
+
+```bash
+docker compose logs --no-log-prefix ml-service > ml-service.log
+make drift-report LOGS=ml-service.log          # production model's reference, via MLflow
+make drift-report LOGS=ml-service.log REFERENCE=models/transaction-classifier/<run>/reference
+```
+
+The report lands in `data/reports/drift/<date>/` (`report.html`, `summary.json`). Settings:
+`config/drift.yaml`. The run needs at least 100 prediction lines in the 7-day window, otherwise it is
+`skipped`. Models trained before T-35 have no `reference/` folder: retrain first.

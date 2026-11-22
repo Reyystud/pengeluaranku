@@ -328,7 +328,11 @@ def test_18_4_each_prediction_emits_one_json_line_without_text_or_exact_amount(
     assert line["request_id"] == body["request_id"]
     assert set(line["features_summary"]) == {"log_amount", "payment_method", "hour_bucket"}  # type: ignore[arg-type]
     assert set(line["output"]) == {"predicted_category", "confidence", "decision"}  # type: ignore[arg-type]
-    assert len(str(line["input_hash"])) == 12
+    assert len(str(line["input_hash"])) == 12 and len(str(line["merchant_hash"])) == 12
+    assert str(line["logged_at"]).endswith("Z")
+    # the drift job (pipelines/drift/sources.py parse_lines) reads exactly these fields
+    assert set(line["features_summary"]) >= {"log_amount", "payment_method", "hour_bucket"}  # type: ignore[call-overload]
+    assert set(line["output"]) >= {"predicted_category", "confidence"}  # type: ignore[call-overload]
     assert secret not in out and secret.lower() not in out and "45000" not in out
 
 

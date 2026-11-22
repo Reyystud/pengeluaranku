@@ -410,6 +410,12 @@ def write_run_dir(
             n: {k: v for k, v in r.items() if not k.startswith("_")} for n, r in results.items()
         },
     }
+    from ml.monitoring import build_reference, write_reference
+
+    sample, merchants = build_reference(
+        art, LABELS, frames["validation"], frames["train"], seed=int(cfg["seed"])
+    )
+    write_reference(model_dir, sample, merchants)  # PRD 18.3: reference data travels with the model
     evaluation = model_dir / "evaluation"
     evaluation.mkdir()
     (evaluation / "report.json").write_text(

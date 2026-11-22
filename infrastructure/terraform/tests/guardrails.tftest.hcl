@@ -283,7 +283,7 @@ run "alerts_cover_the_system_layer_of_prd_18_1" {
   assert {
     condition = alltrue([
       for p in concat(
-        [google_monitoring_alert_policy.http_5xx, google_monitoring_alert_policy.dlq, google_monitoring_alert_policy.job_failed, google_monitoring_alert_policy.ml_circuit_open],
+        [google_monitoring_alert_policy.http_5xx, google_monitoring_alert_policy.dlq, google_monitoring_alert_policy.job_failed, google_monitoring_alert_policy.ml_circuit_open, google_monitoring_alert_policy.drift_detected],
         values(google_monitoring_alert_policy.latency_p95)
       ) : length(p.notification_channels) == 1 && strcontains(p.documentation[0].content, "docs/RUNBOOK.md#")
     ])
@@ -307,5 +307,19 @@ run "prediction_logs_go_to_a_partitioned_bigquery_table_for_90_days" {
   assert {
     condition     = google_bigquery_dataset.datasets["predictions"].default_partition_expiration_ms == 7776000000 && google_bigquery_dataset.datasets["curated"].default_partition_expiration_ms == null
     error_message = "only prediction logs expire after 90 days"
+  }
+}
+
+run "drift_alert_reads_the_drift_summary_log_line_of_the_pipelines_job" {
+  command = plan
+
+  assert {
+    condition     = strcontains(google_logging_metric.drift_detected.filter, "jsonPayload.event=\"drift_summary\"") && strcontains(google_logging_metric.drift_detected.filter, "jsonPayload.status=\"drift\"") && strcontains(google_logging_metric.drift_detected.filter, "resource.labels.job_name=\"pipelines\"")
+    error_message = "the metric counts drift_summary lines with status drift from the pipelines job"
+  }
+
+  assert {
+    condition     = google_monitoring_alert_policy.drift_detected.conditions[0].condition_threshold[0].threshold_value == 0
+    error_message = "any drift run alerts"
   }
 }

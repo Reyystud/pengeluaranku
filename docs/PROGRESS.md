@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-35 (Evidently drift job + reports, PRD 18.3); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
+**Current focus:** next T-36 (runbook + rollback drill, PRD 18); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-22 — T-35 Evidently drift job and reports
+- Done: `pipelines/drift/` (config from `config/drift.yaml`, Evidently PSI report, unseen-merchant share against a 28-day median, local and GCS report stores, JSONL and BigQuery log sources, job runner) and the CLI `python -m pipelines drift-report` / `make drift-report LOGS=<file>`; `ml/monitoring/` writes `reference/` (10k validation rows + train merchant hashes) next to every trained model, logged to MLflow with it; the prediction log line gained `merchant_hash` and `logged_at`; Terraform log-based metric and alert policy for drift; PRD addendum and DECISIONS rows.
+- Verified: `make check` OK (721 non-integration tests, 617 backend, coverage 98.52%, 99 Vitest); `terraform test` 13 passed. **Real run**: smoke-trained a model (logreg, 300 rows per class; this was a smoke model, its quality means nothing), served it through the real ML service app with 664 synthetic transactions, and ran the CLI on the logged lines: the matching traffic gave status `ok` (psi_max 0.236), traffic with amounts x6 and all-cash gave `drift` (log_amount and payment_method flagged) and a 3.8 MB HTML report.
+- Not verified: the BigQuery source, the GCS store and the Cloud Monitoring metric and alert were never run against GCP (mocked HTTP transports and offline Terraform tests only), and the CLI does not wire them yet. The unseen-merchant alert never fired in practice because it needs 7 daily summaries. A first run flagged drift on matching traffic because my harness sent a different merchant key and hour than training; fixed in the harness, not in the job. PSI 0.25 is the PRD's number, untested on real traffic: with the smoke model predicted_category came close to it (0.236).
+- Gotchas: Evidently 0.7.23 does not import on pandas 3.1; `evidently_compat.py` restores one removed function. Models trained before T-35 have no `reference/`, so `drift-report` stops with `NO_REFERENCE` until retrained. Anomaly-feature and forecast drift (PRD 18.3) wait for those models. Grafana does not show drift panels, only the HTML report and the log line. The view `predictions.prediction_logs` is only created by `BigQueryLogSource.ensure_view`, not by Terraform. The local MLflow production alias is still empty.
+- Next: T-36.
 
 ### 2026-11-22 — T-34 Metrics, Grafana dashboards, Cloud Monitoring alerts, prediction log sink
 - Done: PRD 18.2 metrics wired into the real code paths (decisions, feedback, CSV imports, events published/consumed, anomalies, outbox gauges at scrape time, `observe_job` for T-37, ML `inference_requests_total` and `predicted_category_total`); one JSON prediction log line per ML prediction (`ml_service/prediction_log.py`); `monitoring/` (Prometheus config and 7 alert rules, 4 generated Grafana dashboards, provisioning, asset tests); compose profile `observability` + `make up-observability`, `make dashboards`; Terraform `monitoring.tf` (5xx, P95 latency per service, DLQ, failed job, ML circuit alerts, log-based metric, Log Router sink to BigQuery with 90-day partitions); PRD addendum and DECISIONS rows.
@@ -307,7 +314,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 |---|---|---|---|---|
 | T-33 | Outbox + relay + Pub/Sub + worker push endpoint + DLQ + idempotent consumers | T-23, T-31 | done 2026-11-22 | emulator verified; not run on GCP |
 | T-34 | Metrics, Grafana dashboards, Cloud Monitoring alerts, prediction log sink | T-32 | done 2026-11-22 | local stack verified; GCP alerts not applied |
-| T-35 | Evidently drift job + reports | T-34 | todo | |
+| T-35 | Evidently drift job + reports | T-34 | done 2026-11-22 | real run on a smoke model; GCP path not run |
 | T-36 | Runbook (≥ 3 entries, each tested once) + rollback drill | T-34 | todo | |
 | T-37 | Insights engine (FR-09) + batch job scheduler | T-30 | todo | |
 | T-38 | Anomaly model (IF/LOF) + forecast models (ETS, LightGBM quantile) vs baselines | T-23, T-24, T-25 | todo | |

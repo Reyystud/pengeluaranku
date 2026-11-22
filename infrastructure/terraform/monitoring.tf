@@ -200,3 +200,48 @@ resource "google_bigquery_dataset_iam_member" "prediction_sink_writer" {
   role       = "roles/bigquery.dataEditor"
   member     = google_logging_project_sink.predictions.writer_identity
 }
+
+# -- Data drift (PRD 18.1, 18.3): the drift-report job logs one `drift_summary` line per run -----
+resource "google_logging_metric" "drift_detected" {
+  name        = "drift_report_drift_detected"
+  description = "Drift report runs that found PSI above the threshold or unseen merchants above 2x their median"
+  filter      = "resource.type=\"cloud_run_job\" AND resource.labels.job_name=\"pipelines\" AND jsonPayload.event=\"drift_summary\" AND jsonPayload.status=\"drift\""
+
+  metric_descriptor {
+    metric_kind = "DELTA"
+    value_type  = "INT64"
+  }
+
+  depends_on = [google_project_service.enabled]
+}
+
+resource "google_monitoring_alert_policy" "drift_detected" {
+  display_name          = "sei: data drift detected"
+  combiner              = "OR"
+  notification_channels = local.alert_channels
+  documentation {
+    mime_type = "text/markdown"
+    content   = "The daily drift report found a key feature with PSI above the configured threshold, or unseen merchants above 2x their 28-day median. The HTML report is in the reports bucket under drift/<date>/. Runbook: docs/RUNBOOK.md#data-drift"
+  }
+
+  conditions {
+    display_name = "drift report flagged drift"
+    condition_threshold {
+      filter          = "metric.type=\"logging.googleapis.com/user/${google_logging_metric.drift_detected.name}\" AND resource.type=\"cloud_run_job\""
+      comparison      = "COMPARISON_GT"
+      threshold_value = 0
+      duration        = "0s"
+      aggregations {
+        alignment_period   = "3600s"
+        per_series_aligner = "ALIGN_SUM"
+      }
+      trigger {
+        count = 1
+      }
+    }
+  }
+
+  alert_strategy {
+    auto_close = "86400s"
+  }
+}

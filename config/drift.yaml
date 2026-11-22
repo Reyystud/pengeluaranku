@@ -1,0 +1,11 @@
+# Drift report configuration (PRD 18.1, 18.3). Versioned; nothing here is learned from data.
+version: drift-1
+window_days: 7              # PRD 18.3: current = the last 7 days of production prediction logs
+min_rows: 100               # below this the report is skipped, not computed (too noisy to read)
+psi_threshold: 0.25         # PRD 18.1: any key feature PSI above this raises an alert
+key_features: [log_amount, payment_method, hour_bucket, predicted_category]
+numeric_features: [log_amount, confidence]
+categorical_features: [payment_method, hour_bucket, predicted_category]
+unseen_ratio_threshold: 2.0 # PRD 18.1: unseen-merchant share above 2x its 28-day median
+unseen_history_days: 28
+unseen_min_history: 7       # fewer daily summaries than this: no median, no ratio, no alert

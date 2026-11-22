@@ -1,13 +1,15 @@
 """One structured log line per prediction (PRD 18.4).
 
 In GCP a Log Router sink filters ``jsonPayload.event="prediction"`` into BigQuery. The line holds
-no description, merchant, notes or exact amount: only a 12-character hash of the input, the
+no description, merchant name, notes or exact amount: only 12-character hashes of the input and of
+the merchant key (the drift job tests the latter against the training vocabulary), the
 features the drift report needs and the model output (PRD 17.3). It is written to stdout as plain
 JSON, which Cloud Run parses into ``jsonPayload``.
 """
 
 from __future__ import annotations
 
+import datetime as dt
 import hashlib
 import json
 import logging
@@ -16,6 +18,7 @@ import sys
 from typing import Any
 
 from ml.features.classifier import hour_bucket
+from ml.monitoring import merchant_hash
 from ml_service.loading.artifact import LoadedClassifier
 from ml_service.schemas import ClassifyRequest, ClassifyResponse
 
@@ -56,6 +59,8 @@ def record(
         "feature_version": response.feature_version,
         "request_id": request.request_id,
         "input_hash": input_hash(request),
+        "merchant_hash": merchant_hash(request.merchant_key),  # null without a merchant (PRD 18.3)
+        "logged_at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
         "features_summary": {
             "log_amount": round(math.log1p(float(request.amount)), 2),
             "payment_method": request.payment_method,
