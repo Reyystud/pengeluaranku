@@ -2905,3 +2905,11 @@ After the project is complete, add real results to this table.
 
 - `docs/RUNBOOK.md` implements 18.8: one entry per alert plus the model rollback procedure; each entry is Symptom, Check, Action, Escalate when, and a Drill record. New entry `#backend-5xx-rate-high`.
 - `make dlq-replay` (18.8, DLQ row) is not implemented; the runbook says so. Re-publishing is manual until it exists.
+
+### Addendum T-37: insights and jobs
+
+- Insights API (13.2): `GET /intelligence/insights` gains `limit` (1 to 200). Response `{period_id, items[]}`; an item has `id, rule_id, rule_version, period_id, subject_key, severity, priority (string, 4 decimals), title, message, message_key, message_params, evidence, dismissed_at, created_at`. `POST /intelligence/insights/refresh` returns `{period_id, created, removed, total}`; `POST .../{id}/dismiss` returns the insight.
+- Rule thresholds: `config/insights.yaml` (`insights-1`). Job settings and retention: `config/jobs.yaml` (`jobs-1`).
+- `POST /internal/jobs/{name}` (worker role, OIDC): runs the job synchronously, optional `?date=YYYY-MM-DD` (that UTC date at 12:00). Response `{job, status: succeeded|failed|skipped, run_id, users, errors, stats, error}`; unknown name is 404 `JOB_NOT_FOUND`.
+- `job_runs.status` is `failed` when at least one user failed; `stats` holds `users`, `errors` and the job's own counters; `error` lists exception class names with counts, never messages.
+- 15.1: `daily-budget-close` runs for all users with budgets and covers the period before the current one; `recategorize-needs-review` (used by the runbook) is added; the jobs that run elsewhere are listed in `app/jobs/catalogue.py`.

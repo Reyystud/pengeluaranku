@@ -1,0 +1,38 @@
+# Insight rule thresholds (PRD 7.9, 0.3 rule 3). Versioned: a change bumps `version` of the rule it
+# touches, and that version is stored on every insight it produces (`rule_version`).
+version: insights-1
+dashboard_top: 3                 # FR-09.05
+rules:
+  INS-01:                        # category change, current period to date vs same days last period
+    version: "1"
+    min_abs_pct: 20
+    min_abs_delta: 50000         # IDR
+    min_previous: 100000         # IDR
+  INS-02:                        # weekend vs weekday daily spend
+    version: "1"
+    weeks: 8
+    min_weekends_with_data: 4
+    min_ratio: 1.3
+  INS-03:                        # recurring share of monthly spending
+    version: "1"
+    periods: 3
+    min_share_pct: 10
+  INS-04:                        # budget pace; bands come from config/forecast.yaml
+    version: "1"
+  INS-05:                        # top merchant
+    version: "1"
+    min_share_pct: 15
+    min_transactions: 5
+  INS-06:                        # small purchases
+    version: "1"
+    below: 25000                 # IDR
+    min_count: 15
+    min_share_pct: 10
+  INS-07:                        # savings rate of the previous period
+    version: "1"
+    positive_at_pct: 10
+  INS-08:                        # recurring amount change; thresholds come from config/recurring.yaml
+    version: "1"
+  INS-09:                        # review queue backlog
+    version: "1"
+    min_queue: 5

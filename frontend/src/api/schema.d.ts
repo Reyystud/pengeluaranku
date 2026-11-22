@@ -296,6 +296,61 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/api/v1/intelligence/insights": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Insights
+         * @description Highest priority first (warning, positive, info, then magnitude); ``limit=3`` is the
+         *     dashboard card (FR-09.05).
+         */
+        get: operations["list_insights_api_v1_intelligence_insights_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/intelligence/insights/refresh": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Refresh Insights */
+        post: operations["refresh_insights_api_v1_intelligence_insights_refresh_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/api/v1/intelligence/insights/{insight_id}/dismiss": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Dismiss Insight */
+        post: operations["dismiss_insight_api_v1_intelligence_insights__insight_id__dismiss_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/intelligence/recurring": {
         parameters: {
             query?: never;
@@ -1278,6 +1333,63 @@ export interface components {
             /** Message */
             message: string;
         };
+        /** InsightList */
+        InsightList: {
+            /** Items */
+            items: components["schemas"]["InsightOut"][];
+            /**
+             * Period Id
+             * Format: date
+             */
+            period_id: string;
+        };
+        /** InsightOut */
+        InsightOut: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Dismissed At */
+            dismissed_at: string | null;
+            /** Evidence */
+            evidence: {
+                [key: string]: unknown;
+            };
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Message */
+            message: string;
+            /** Message Key */
+            message_key: string;
+            /** Message Params */
+            message_params: {
+                [key: string]: string;
+            };
+            /**
+             * Period Id
+             * Format: date
+             */
+            period_id: string;
+            /** Priority */
+            priority: string;
+            /** Rule Id */
+            rule_id: string;
+            /** Rule Version */
+            rule_version: string;
+            /**
+             * Severity
+             * @enum {string}
+             */
+            severity: "info" | "positive" | "warning";
+            /** Subject Key */
+            subject_key: string;
+            /** Title */
+            title: string;
+        };
         /** LoginRequest */
         LoginRequest: {
             /** Email */
@@ -1523,6 +1635,20 @@ export interface components {
             status?: ("user_confirmed" | "user_rejected") | null;
             /** User Expected Amount */
             user_expected_amount?: number | string | null;
+        };
+        /** RefreshOut */
+        RefreshOut: {
+            /** Created */
+            created: number;
+            /**
+             * Period Id
+             * Format: date
+             */
+            period_id: string;
+            /** Removed */
+            removed: number;
+            /** Total */
+            total: number;
         };
         /** RegisterRequest */
         RegisterRequest: {
@@ -2600,6 +2726,90 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["ForecastOut"] | components["schemas"]["ForecastUnavailable"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_insights_api_v1_intelligence_insights_get: {
+        parameters: {
+            query?: {
+                period_id?: string | null;
+                include_dismissed?: boolean;
+                limit?: number | null;
+            };
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    refresh_insights_api_v1_intelligence_insights_refresh_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["RefreshOut"];
+                };
+            };
+        };
+    };
+    dismiss_insight_api_v1_intelligence_insights__insight_id__dismiss_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                insight_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["InsightOut"];
                 };
             };
             /** @description Validation Error */

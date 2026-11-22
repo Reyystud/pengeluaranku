@@ -104,9 +104,11 @@ the review queue. Nothing is lost.
   redeploy the previous revision). The breaker closes by itself: after 30 seconds it lets one call
   through and closes when that call succeeds. No backend restart is needed.
 - Bad model version: [roll back the model](#roll-back-a-model).
-- After recovery, transactions stuck in `needs_review` can be re-run one by one with
-  `POST /api/v1/transactions/{id}/recategorize`. The bulk job
-  `/internal/jobs/recategorize-needs-review` is planned in T-37 and does not exist yet.
+- After recovery, re-run the transactions saved as `needs_review` with the job
+  `recategorize-needs-review` (up to 200 per user per run, oldest first; categories the user chose
+  are never touched): `make jobs-run JOB=recategorize-needs-review` locally, or
+  `POST /internal/jobs/recategorize-needs-review` on the worker in GCP. One transaction at a time
+  is also possible with `POST /api/v1/transactions/{id}/recategorize`.
 
 **Escalate when** the circuit stays open 15 minutes after the ML service reports ready.
 
@@ -116,7 +118,8 @@ the review queue. Nothing is lost.
 above appeared. Restarted `ml-service`: `/readyz` was 200, about 40 seconds later the next
 transaction was `auto_apply` from the model and the circuit was 0, with no backend restart. Not
 drilled: the 5-minute alert delay on a real Prometheus (the rule itself is tested by `make
-alerts-test`), the GCP alert (log-based, never applied), and the bulk re-categorisation.
+alerts-test`) and the GCP alert (log-based, never applied). The recategorize job was added after
+this drill (T-37) and is covered by an integration test with a fake ML service, not by a live drill.
 
 ---
 
@@ -186,13 +189,16 @@ execution failed.
    something shared broke (database, a model, a dependency).
 
 **Action.** Fix the cause and re-run the job for the same date: every job is idempotent (PRD 15.1).
-`make jobs-run JOB=<name>` is a stub until T-37; until then use the Cloud Run job execution with the
-job name argument.
+Locally `make jobs-run JOB=<name> [DATE=YYYY-MM-DD]`; in GCP `POST /internal/jobs/<name>?date=...`
+on the worker (or "force run" in Cloud Scheduler). A run ends `failed` when at least one user failed:
+`job_runs.stats.errors` says how many and `job_runs.error` names the exception classes (never the
+messages). A run refused with `skipped` means the same job is still running.
 
 **Escalate when** the same job fails twice after the fix.
 
-**Drill.** Rule tested by `make alerts-test`. The jobs framework arrives in T-37; nothing here has
-run on a real job.
+**Drill.** Rule tested by `make alerts-test`. The runner (T-37) is covered by integration tests for
+failed users, the lock and the `job_runs` row, and every job ran once on the local demo database;
+no job has failed on a real stack, so the Check steps are untested against a real failure.
 
 ---
 

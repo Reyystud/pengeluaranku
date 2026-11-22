@@ -124,7 +124,7 @@ variable "mlflow_invokers" {
 }
 
 variable "enable_schedulers" {
-  description = "Cloud Scheduler jobs are created paused until the endpoints and job entrypoints they call exist (T-37, T-35). Set true to unpause."
+  description = "Cloud Scheduler jobs are created paused until every endpoint and job entrypoint they call exists (the worker jobs exist since T-37, except demo-reset; the pipelines jobs are not wired to GCP yet). Set true to unpause."
   type        = bool
   default     = false
 }

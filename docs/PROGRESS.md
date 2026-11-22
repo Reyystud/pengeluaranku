@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-37 (jobs framework and the daily jobs, PRD 15); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
+**Current focus:** next T-38 (anomaly model and forecast models vs baselines); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,14 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-22 — T-37 Insights engine and batch jobs
+- Done: insights engine (`app/services/insight_rules.py` INS-01 to INS-09 as pure functions, `insights.py`, repository, schemas, `config/insights.yaml`) with `GET /intelligence/insights` (`limit` for the dashboard top 3), `POST .../{id}/dismiss`, `POST .../refresh` (1 per minute); job runner (`app/jobs/framework.py`: `job_runs` row, chunks of 200, per-user isolation, advisory lock, `observe_job` metrics), 9 jobs (`app/jobs/catalogue.py`: daily-budget-close, daily-forecast, category-surge, recurring-refresh, daily-insights, recurring-due-soon, review-queue-reminder, cleanup, recategorize-needs-review), `POST /internal/jobs/{name}`, CLI `python -m app.jobs`, `make jobs-run`, `config/jobs.yaml` (PRD 12.3 retention), OpenAPI and frontend types regenerated, runbook entries updated, scheduler comments corrected.
+- Verified: `make check` OK (749 non-integration tests, 665 backend, coverage 97.76%, 99 Vitest); 26 unit tests of the rules at their boundaries, 9 insights API tests, 13 job tests (isolation, lock, retention, idempotency, notifications, snapshots and outcomes, ML recategorize with a fake ML service, internal endpoint); BOLA suite covers the new dismiss route. **Real run**: every job ran against the local demo database (5 users, 0 errors); a second `daily-insights` created 0 new rows; the demo user got 15 sensible insights (budget pace, category changes, recurring share, savings rate) and `job_runs` rows were written.
+- Not verified: Cloud Scheduler and the OIDC call to `/internal/jobs/*` on GCP (schedulers stay paused); the 300 s Scheduler deadline against a long synchronous run; `recategorize-needs-review` against the real ML service (fake only); `recurring-due-soon` produced no notification on the demo data (covered by the integration test only); `daily-budget-close` wrote nothing on the demo data (no closed-period forecasts yet).
+- Not done: the dashboard "top 3 insights" card in the frontend (the API is ready: `GET /intelligence/insights?limit=3`); `demo-reset` has no backend job, but Terraform lists it for the demo deployment and it would 404; the jobs that run in the pipelines image (exports, purge, training, clustering) and `shadow-evaluate` (T-39).
+- Gotchas: a first full `make check` failed 3 tests: two BOLA tests asking for a victim `insight` resource (added) and `test_17_1_default_verifier_rejects_a_garbage_token`, which calls out to googleapis.com for certificates and failed on a transient DNS error (passes alone and on rerun; it needs network). INS-07 for a negative rate reads "You saved -2% of your income last period" (the PRD wording, kept). INS-01 compares same days of the previous period, so a payment that falls on a different day shows as a big change (for example Housing "down 100%"). The local docker stack is stopped; the disk was at 100% during the build and I pruned dangling images (18 GB).
+- Next: T-38.
 
 ### 2026-11-22 — T-36 Runbook and rollback drill
 - Done: `docs/RUNBOOK.md` (8 entries for existing alerts, 3 PRD 18.8 entries without an alert yet, the model rollback procedure; each entry has Symptom, Check, Action, Escalate when and a Drill record); `monitoring/prometheus/alerts_test.yml` + `make alerts-test` (promtool unit tests of every alert rule on synthetic series, including a simulated latency incident); tests that every alert link resolves to a runbook entry with all five parts and that every rule has a unit test; fixed the 5xx alerts (Prometheus and Terraform) that linked to `#job-failed`.
@@ -323,7 +331,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-34 | Metrics, Grafana dashboards, Cloud Monitoring alerts, prediction log sink | T-32 | done 2026-11-22 | local stack verified; GCP alerts not applied |
 | T-35 | Evidently drift job + reports | T-34 | done 2026-11-22 | real run on a smoke model; GCP path not run |
 | T-36 | Runbook (≥ 3 entries, each tested once) + rollback drill | T-34 | done 2026-11-22 | 4 drills local; GCP steps not run |
-| T-37 | Insights engine (FR-09) + batch job scheduler | T-30 | todo | |
+| T-37 | Insights engine (FR-09) + batch job scheduler | T-30 | done 2026-11-22 | real run on demo DB; GCP Scheduler not run; frontend card not built |
 | T-38 | Anomaly model (IF/LOF) + forecast models (ETS, LightGBM quantile) vs baselines | T-23, T-24, T-25 | todo | |
 | T-39 | Shadow mode + `shadow-evaluate` | T-27, T-34 | todo | |
 

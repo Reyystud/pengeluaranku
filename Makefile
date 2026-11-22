@@ -150,5 +150,5 @@ rollback: ## make rollback MODEL=transaction-classifier REASON="..." : swap @pro
 loadtest: ## k6 load test (stub: T-43)
 	$(call NOT_YET,T-43)
 
-jobs-run: ## make jobs-run JOB=... (stub: T-37)
-	$(call NOT_YET,T-37)
+jobs-run: ## make jobs-run JOB=<name> [DATE=YYYY-MM-DD] runs a batch job in the running backend container; no JOB lists them
+	docker compose exec backend python -m app.jobs $(JOB) $(if $(DATE),--date $(DATE))

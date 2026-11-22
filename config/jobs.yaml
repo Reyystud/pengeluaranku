@@ -1,0 +1,13 @@
+# Batch job settings (PRD 15, 12.3, 0.3 rule 3). Versioned.
+version: jobs-1
+chunk_size: 200                  # users per chunk (PRD 15.1)
+active_days: 60                  # daily-forecast, category-surge: a transaction in the last N days
+recurring_due_soon_days: 2       # notify when the next expected payment is within N days
+review_queue_min: 5              # review-queue-reminder: only when at least this many are waiting
+recategorize_batch: 200          # needs_review rows re-run per user per run
+retention_days:                  # PRD 12.3
+  notifications: 90
+  idempotency_keys: 1
+  processed_events: 14
+  outbox_published: 7
+  forecast_outcomes: 400

@@ -2,9 +2,11 @@
 # /internal/jobs/{name} with an OIDC token; jobs that run as a Cloud Run job call the Run API for
 # the `pipelines` job and pass the job name as its argument.
 #
-# They are created paused (var.enable_schedulers = false) because the worker endpoint and the
-# pipelines entrypoint are built in later tasks (T-37, T-35); an unpaused scheduler would only
-# collect 404s and failed executions.
+# They are created paused (var.enable_schedulers = false): the worker endpoint exists since T-37,
+# but the pipelines entrypoint only handles `drift-report` locally (T-35), and `demo-reset` has no
+# backend job yet; an unpaused scheduler would collect 404s and failed executions for those.
+# The worker endpoint is synchronous and idempotent: a retry while a run is still going answers
+# `skipped` (PostgreSQL advisory lock), so the 300 s attempt deadline cannot start a second run.
 
 locals {
   worker_jobs = {

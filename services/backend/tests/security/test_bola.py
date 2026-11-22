@@ -97,6 +97,16 @@ def _victim_recurring(client: TestClient, headers: dict[str, str]) -> str:
     return str(items[0]["id"])
 
 
+def _victim_insight(client: TestClient, headers: dict[str, str]) -> str:
+    """Five transactions nobody categorized make the review-queue insight INS-09 (7.9)."""
+    for i in range(5):
+        make(client, headers, amount="10000", description=f"Victim private purchase {i}")
+    assert client.post(f"{API}/intelligence/insights/refresh", headers=headers).status_code == 200
+    items = client.get(f"{API}/intelligence/insights", headers=headers).json()["items"]
+    assert items
+    return str(items[0]["id"])
+
+
 # Path parameter name -> how to create a resource of the victim that it can point to.
 RESOURCES: dict[str, Callable[[TestClient, dict[str, str]], str]] = {
     "transaction_id": _victim_transaction,
@@ -106,6 +116,7 @@ RESOURCES: dict[str, Callable[[TestClient, dict[str, str]], str]] = {
     "notification_id": _victim_notification,
     "anomaly_id": _victim_anomaly,
     "series_id": _victim_recurring,
+    "insight_id": _victim_insight,
 }
 
 # Minimal valid bodies, so a 404 can only come from ownership and never from validation.

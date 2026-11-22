@@ -264,6 +264,16 @@ class TransactionRepository(ScopedRepository[Transaction]):
         result = self.session.execute(stmt)
         return int(result.rowcount)  # type: ignore[attr-defined]
 
+    def needs_review_ids(self, user_id: uuid.UUID, limit: int) -> list[uuid.UUID]:
+        """Oldest first, so a capped run makes progress through the backlog (T-37 job)."""
+        stmt = (
+            select(Transaction.id)
+            .where(Transaction.user_id == user_id, Transaction.category_status == "needs_review")
+            .order_by(Transaction.transaction_date, Transaction.id)
+            .limit(limit)
+        )
+        return list(self.session.execute(stmt).scalars())
+
 
 def _zone(name: str) -> dt.tzinfo:
     from zoneinfo import ZoneInfo

@@ -10,6 +10,7 @@ from app.api import (
     categories,
     forecasts,
     imports,
+    insights,
     merchant_rules,
     notifications,
     recurring,
@@ -30,3 +31,4 @@ api_router.include_router(notifications.router)
 api_router.include_router(anomalies.router)
 api_router.include_router(forecasts.router)
 api_router.include_router(recurring.router)
+api_router.include_router(insights.router)
