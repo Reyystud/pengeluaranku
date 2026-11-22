@@ -22,7 +22,7 @@ resource "google_monitoring_alert_policy" "http_5xx" {
   notification_channels = local.alert_channels
   documentation {
     mime_type = "text/markdown"
-    content   = "More than 2% of requests returned 5xx for 5 minutes. Runbook: docs/RUNBOOK.md#job-failed"
+    content   = "More than 2% of requests returned 5xx for 5 minutes. Runbook: docs/RUNBOOK.md#backend-5xx-rate-high"
   }
 
   conditions {

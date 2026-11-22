@@ -111,3 +111,38 @@ def test_18_1_prometheus_scrapes_every_service_and_loads_the_rules() -> None:
         "backend": "backend:8000", "worker": "worker:8000", "ml-service": "ml-service:8080"
     }  # fmt: skip
     assert cfg["rule_files"] == ["/etc/prometheus/alerts.yml"]
+
+
+def _slug(heading: str) -> str:
+    """GitHub's anchor for a heading: lower case, punctuation dropped, spaces become hyphens."""
+    text = heading.strip().lower()
+    return "".join(c for c in text if c.isalnum() or c in " -_").replace(" ", "-")
+
+
+def test_18_8_every_runbook_link_resolves_to_a_heading_with_the_four_parts() -> None:
+    import re
+
+    root = ROOT.parent
+    runbook = (root / "docs" / "RUNBOOK.md").read_text()
+    headings = {_slug(m.group(1)): m.start() for m in re.finditer(r"^## (.+)$", runbook, re.M)}
+    sources = [
+        ROOT / "prometheus" / "alerts.yml",
+        root / "infrastructure" / "terraform" / "monitoring.tf",
+    ]
+    anchors = {a for f in sources for a in re.findall(r"RUNBOOK\.md#([a-z0-9_-]+)", f.read_text())}
+    assert anchors, "alerts must link to the runbook"
+    assert anchors <= set(headings), f"missing runbook entries: {sorted(anchors - set(headings))}"
+    for anchor in anchors:
+        start = headings[anchor]
+        nxt = min((p for p in headings.values() if p > start), default=len(runbook))
+        body = runbook[start:nxt]
+        for part in ("**Symptom.**", "**Check.**", "**Action", "**Escalate when", "**Drill"):
+            assert part in body, f"{anchor} lacks {part}"
+
+
+def test_18_8_alert_rule_tests_cover_every_rule() -> None:
+    rules = yaml.safe_load((ROOT / "prometheus" / "alerts.yml").read_text())
+    tested = yaml.safe_load((ROOT / "prometheus" / "alerts_test.yml").read_text())
+    names = {r["alert"] for g in rules["groups"] for r in g["rules"]}
+    covered = {t["alertname"] for case in tested["tests"] for t in case.get("alert_rule_test", [])}
+    assert names <= covered, f"alert rules without a unit test: {sorted(names - covered)}"

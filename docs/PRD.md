@@ -2900,3 +2900,8 @@ After the project is complete, add real results to this table.
 - Job `drift-report` (15.1): `python -m pipelines drift-report` (`make drift-report LOGS=<file>` locally). Settings in `config/drift.yaml`. Output `drift/YYYY-MM-DD/report.html` and `summary.json` (fields of `pipelines/drift/report.py::DriftSummary`); status `ok | drift | skipped`; exit code 1 on `drift`, 2 on a stopped pipeline.
 - Alerts (18.1): any key-feature PSI above 0.25 or unseen-merchant share above 2x its 28-day median sets status `drift`; in GCP the log-based metric `drift_report_drift_detected` drives the policy `sei: data drift detected`.
 - Anomaly-feature and forecast-total drift (18.3) are not covered: those models come with T-41 and T-38 to T-40.
+
+### Addendum T-36: runbook
+
+- `docs/RUNBOOK.md` implements 18.8: one entry per alert plus the model rollback procedure; each entry is Symptom, Check, Action, Escalate when, and a Drill record. New entry `#backend-5xx-rate-high`.
+- `make dlq-replay` (18.8, DLQ row) is not implemented; the runbook says so. Re-publishing is manual until it exists.

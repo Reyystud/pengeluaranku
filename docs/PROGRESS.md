@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-36 (runbook + rollback drill, PRD 18); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
+**Current focus:** next T-37 (jobs framework and the daily jobs, PRD 15); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,13 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-22 — T-36 Runbook and rollback drill
+- Done: `docs/RUNBOOK.md` (8 entries for existing alerts, 3 PRD 18.8 entries without an alert yet, the model rollback procedure; each entry has Symptom, Check, Action, Escalate when and a Drill record); `monitoring/prometheus/alerts_test.yml` + `make alerts-test` (promtool unit tests of every alert rule on synthetic series, including a simulated latency incident); tests that every alert link resolves to a runbook entry with all five parts and that every rule has a unit test; fixed the 5xx alerts (Prometheus and Terraform) that linked to `#job-failed`.
+- Drills run (local compose stack, 2026-11-22): (1) ML circuit open: stopped ml-service, circuit opened after 5 failures, all transactions saved as `needs_review`, recovered by itself after restart; (2) outbox backlog: backlog grew with the emulator down, and after its restart it only drained once `pubsub-init` recreated the topics; (3) model rollback: promote v1, v2, rollback, rollback on a local MLflow server with 2 real versions, the ML service followed the alias at its poll ticks; (4) latency alert: simulated with promtool. `make check` OK (723 non-integration tests, 617 backend, coverage 98.40%, 99 Vitest); `terraform test` 13 passed; `make alerts-test` passes and fails when thresholds are broken.
+- Not verified: DLQ, job-failed, hash-mismatch, data-drift retraining and all GCP commands in the runbook (`gcloud ...`) were not run; Cloud Monitoring policies still never applied; the latency check and scale-up steps were not drilled on a real slow service.
+- Gotchas: `docs/ops/rollback-log.md` now holds 4 rows with actor `drill`, and the local MLflow registry now has `production` = v2, `previous` = v1 (drill state, local only; the first row has no earlier production). A model rollback reaches the ML service after up to `MODEL_POLL_INTERVAL_S` (300 in `.env`); a restarted Pub/Sub emulator needs `pubsub-init` again. I stopped the compose stack (`make down`) to free memory; start it with `make up-events up-observability` style commands as needed. `make dlq-replay` and `/internal/jobs/recategorize-needs-review` do not exist (the latter is T-37).
+- Next: T-37.
 
 ### 2026-11-22 — T-35 Evidently drift job and reports
 - Done: `pipelines/drift/` (config from `config/drift.yaml`, Evidently PSI report, unseen-merchant share against a 28-day median, local and GCS report stores, JSONL and BigQuery log sources, job runner) and the CLI `python -m pipelines drift-report` / `make drift-report LOGS=<file>`; `ml/monitoring/` writes `reference/` (10k validation rows + train merchant hashes) next to every trained model, logged to MLflow with it; the prediction log line gained `merchant_hash` and `logged_at`; Terraform log-based metric and alert policy for drift; PRD addendum and DECISIONS rows.
@@ -315,7 +322,7 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-33 | Outbox + relay + Pub/Sub + worker push endpoint + DLQ + idempotent consumers | T-23, T-31 | done 2026-11-22 | emulator verified; not run on GCP |
 | T-34 | Metrics, Grafana dashboards, Cloud Monitoring alerts, prediction log sink | T-32 | done 2026-11-22 | local stack verified; GCP alerts not applied |
 | T-35 | Evidently drift job + reports | T-34 | done 2026-11-22 | real run on a smoke model; GCP path not run |
-| T-36 | Runbook (≥ 3 entries, each tested once) + rollback drill | T-34 | todo | |
+| T-36 | Runbook (≥ 3 entries, each tested once) + rollback drill | T-34 | done 2026-11-22 | 4 drills local; GCP steps not run |
 | T-37 | Insights engine (FR-09) + batch job scheduler | T-30 | todo | |
 | T-38 | Anomaly model (IF/LOF) + forecast models (ETS, LightGBM quantile) vs baselines | T-23, T-24, T-25 | todo | |
 | T-39 | Shadow mode + `shadow-evaluate` | T-27, T-34 | todo | |

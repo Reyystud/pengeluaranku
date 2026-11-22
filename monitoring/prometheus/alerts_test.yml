@@ -1,0 +1,160 @@
+# Unit tests of the alert rules with synthetic series (promtool test rules). No traffic needed.
+# Run: make alerts-test. Every positive case also checks the runbook annotation (PRD 18.8).
+rule_files:
+  - alerts.yml
+
+evaluation_interval: 1m
+
+tests:
+  # --- simulated latency incident: all backend requests take 0.5 to 1 s ---------------------------
+  - name: backend P95 latency incident fires after 10 minutes with the runbook link
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_bucket{service="backend",le="0.5"}'
+        values: '0+0x30'
+      - series: 'http_request_duration_seconds_bucket{service="backend",le="1"}'
+        values: '0+60x30'
+      - series: 'http_request_duration_seconds_bucket{service="backend",le="+Inf"}'
+        values: '0+60x30'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: BackendLatencyP95High
+        exp_alerts: []   # pending: the condition has not held for 10 minutes yet
+      - eval_time: 20m
+        alertname: BackendLatencyP95High
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: Backend P95 latency above 500 ms for 10 minutes
+              runbook: docs/RUNBOOK.md#inference-latency-p95-high
+
+  - name: fast backend requests do not alert
+    interval: 1m
+    input_series:
+      - series: 'http_request_duration_seconds_bucket{service="backend",le="0.5"}'
+        values: '0+60x30'
+      - series: 'http_request_duration_seconds_bucket{service="backend",le="+Inf"}'
+        values: '0+60x30'
+    alert_rule_test:
+      - eval_time: 25m
+        alertname: BackendLatencyP95High
+        exp_alerts: []
+
+  - name: ML inference latency above 200 ms fires
+    interval: 1m
+    input_series:
+      - series: 'inference_duration_seconds_bucket{le="0.2"}'
+        values: '0+0x30'
+      - series: 'inference_duration_seconds_bucket{le="0.5"}'
+        values: '0+30x30'
+      - series: 'inference_duration_seconds_bucket{le="+Inf"}'
+        values: '0+30x30'
+    alert_rule_test:
+      - eval_time: 20m
+        alertname: MlInferenceLatencyP95High
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: ML inference P95 latency above 200 ms for 10 minutes
+              runbook: docs/RUNBOOK.md#inference-latency-p95-high
+
+  # --- 5xx ratio ------------------------------------------------------------------------------------
+  - name: 3 percent 5xx for 5 minutes fires, 1 percent does not
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{status="200"}'
+        values: '0+97x20'
+      - series: 'http_requests_total{status="500"}'
+        values: '0+3x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: High5xxRate
+        exp_alerts:
+          - exp_labels: {severity: critical}
+            exp_annotations:
+              summary: More than 2% of requests fail with 5xx for 5 minutes
+              runbook: docs/RUNBOOK.md#backend-5xx-rate-high
+
+  - name: 1 percent 5xx stays quiet
+    interval: 1m
+    input_series:
+      - series: 'http_requests_total{status="200"}'
+        values: '0+99x20'
+      - series: 'http_requests_total{status="500"}'
+        values: '0+1x20'
+    alert_rule_test:
+      - eval_time: 15m
+        alertname: High5xxRate
+        exp_alerts: []
+
+  # --- circuit breaker ------------------------------------------------------------------------------
+  - name: ML circuit open for 5 minutes fires
+    interval: 1m
+    input_series:
+      - series: 'ml_circuit_state'
+        values: '2x10'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: MlCircuitOpen
+        exp_alerts: []
+      - eval_time: 8m
+        alertname: MlCircuitOpen
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: The ML circuit breaker has been open for 5 minutes (transactions go to needs_review)
+              runbook: docs/RUNBOOK.md#ml-circuit-open
+
+  - name: a circuit that recovers within the window does not fire
+    interval: 1m
+    input_series:
+      - series: 'ml_circuit_state'
+        values: '2 2 2 0 0 0 0 0 0 0'
+    alert_rule_test:
+      - eval_time: 9m
+        alertname: MlCircuitOpen
+        exp_alerts: []
+
+  # --- outbox ---------------------------------------------------------------------------------------
+  - name: oldest outbox row older than 5 minutes for 5 minutes fires
+    interval: 1m
+    input_series:
+      - series: 'outbox_oldest_age_seconds'
+        values: '400x12'
+    alert_rule_test:
+      - eval_time: 8m
+        alertname: OutboxBacklogGrowing
+        exp_alerts:
+          - exp_labels: {severity: warning}
+            exp_annotations:
+              summary: The oldest unpublished outbox event is older than 5 minutes
+              runbook: docs/RUNBOOK.md#outbox-backlog-growing
+
+  # --- model load and jobs --------------------------------------------------------------------------
+  - name: a model load failure fires
+    interval: 1m
+    input_series:
+      - series: 'model_load_failures_total{model="transaction-classifier",reason="HASH_MISMATCH"}'
+        values: '0 0 0 1 1 1 1 1'
+    alert_rule_test:
+      - eval_time: 6m
+        alertname: ModelLoadFailure
+        exp_alerts:
+          - exp_labels: {severity: warning, model: transaction-classifier, reason: HASH_MISMATCH}
+            exp_annotations:
+              summary: The ML service refused a model load (hash mismatch or unreadable artifact)
+              runbook: docs/RUNBOOK.md#model-load-failure--hash-mismatch
+
+  - name: a failed job fires
+    interval: 1m
+    input_series:
+      - series: 'jobs_runs_total{job="daily-forecast",status="error"}'
+        values: '0 0 1 1 1'
+    alert_rule_test:
+      - eval_time: 4m
+        alertname: JobFailed
+        exp_alerts:
+          - exp_labels: {severity: warning, job: daily-forecast, status: error}
+            exp_annotations:
+              summary: A batch job failed in the last hour
+              runbook: docs/RUNBOOK.md#job-failed

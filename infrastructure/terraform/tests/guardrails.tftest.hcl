@@ -289,6 +289,11 @@ run "alerts_cover_the_system_layer_of_prd_18_1" {
     ])
     error_message = "every alert notifies the email channel and links its runbook entry"
   }
+
+  assert {
+    condition     = strcontains(google_monitoring_alert_policy.http_5xx.documentation[0].content, "RUNBOOK.md#backend-5xx-rate-high") && strcontains(google_monitoring_alert_policy.job_failed.documentation[0].content, "RUNBOOK.md#job-failed")
+    error_message = "the 5xx alert and the failed-job alert link to their own runbook entries"
+  }
 }
 
 run "prediction_logs_go_to_a_partitioned_bigquery_table_for_90_days" {

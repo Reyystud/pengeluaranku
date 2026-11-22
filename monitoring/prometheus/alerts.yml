@@ -33,7 +33,7 @@ groups:
         labels: {severity: critical}
         annotations:
           summary: More than 2% of requests fail with 5xx for 5 minutes
-          runbook: docs/RUNBOOK.md#job-failed
+          runbook: docs/RUNBOOK.md#backend-5xx-rate-high
 
       - alert: MlCircuitOpen
         expr: max(ml_circuit_state) == 2

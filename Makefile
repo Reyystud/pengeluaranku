@@ -9,7 +9,7 @@ define NOT_YET
 endef
 
 .PHONY: openapi-check web thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
-        data train-local prefect-server up up-events up-observability down seed-demo demo openapi train repro recurring-eval dashboards terraform-check drift-report promote rollback loadtest jobs-run
+        data train-local prefect-server up up-events up-observability down seed-demo demo openapi train repro recurring-eval dashboards terraform-check drift-report alerts-test promote rollback loadtest jobs-run
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -127,6 +127,9 @@ repro: ## Re-run test (PRD 16.2): train the baseline twice in separate processes
 
 recurring-eval: ## Score the recurring detector against the generator's labels on 1,000 sampled users (~40 s, PRD 7.8)
 	uv run python -m ml.recurring.evaluate --users 1000 --out data/recurring_eval.json
+
+alerts-test: ## promtool unit tests of the alert rules with synthetic series (needs Docker; no stack running)
+	docker run --rm -v "$(CURDIR)/monitoring/prometheus:/p" --entrypoint promtool prom/prometheus:v3.5.0 test rules /p/alerts_test.yml
 
 drift-report: ## Evidently drift report from captured ml-service logs (LOGS=file [REFERENCE=models/.../reference] [DATE=YYYY-MM-DD])
 	@test -n "$(LOGS)" || { echo "usage: make drift-report LOGS=ml-service.log  (docker compose logs --no-log-prefix ml-service > ml-service.log)"; exit 2; }
