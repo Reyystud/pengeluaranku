@@ -1,0 +1,25 @@
+# Behavior clustering (PRD 7.13, 9.5, 11.2.4). Versioned: bump `version` with any value change.
+# The ship rule (PRD 9.1) was written before any run. Segment NAMES are not here: they live in the
+# model artifact `config/clusterer_model.yaml` (FR-13.03), chosen after inspecting centroids.
+version: clustering-1
+seed: 42
+periods: 3                    # PRD 11.2.4: last 3 complete periods
+min_periods: 2                # FR-13.01: users need at least 2 complete periods
+small_tx_amount: 25000        # PRD 11.2.4: small_tx_ratio counts expenses below Rp25.000
+clr_epsilon: 0.001            # decision: share floor before the centred log-ratio transform
+dataset:
+  data_dir: data/synthetic/v1
+  periods: data_splits/synthetic/v1/forecast_periods.csv
+  users: data_splits/synthetic/v1/cluster_users.csv
+  dataset_version: synthetic/v1
+selection:
+  k_min: 3
+  k_max: 8
+  n_init: 10
+  stability_seeds: 5
+ship_rule:
+  min_silhouette: 0.40
+  min_ari_seeds: 0.80
+traits:
+  count: 3                    # FR-13.04: 2 to 3 defining traits
+  min_deviation_percentile: 30   # decision: a trait must sit at least 30 percentile points from the middle

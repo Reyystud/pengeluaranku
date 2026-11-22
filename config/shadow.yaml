@@ -1,0 +1,13 @@
+# Shadow evaluation and online promotion (PRD 16.4). Versioned; nothing here is learned from data.
+version: shadow-1
+min_days: 7                     # PRD 16.4 item 3: shadow period of at least 7 days ...
+min_predictions: 1000           # ... and at least 1,000 shadow predictions
+lookback_days: 30               # logs older than this are not read
+agreement_min: 0.85             # candidate-production agreement on items nobody corrected
+corrected_accuracy_margin: 0.0  # candidate accuracy >= production accuracy + margin on corrected items
+min_corrected_items: 30         # decision: fewer corrections than this cannot support the criterion
+require_corrections: true       # decision: without enough corrections the job does not promote
+p95_slo_ms: 200                 # PRD 5.3: ML inference P95, linear models
+psi_max: 0.2                    # PSI of the predicted-category distribution, candidate vs production
+psi_epsilon: 0.0001             # share floor so an empty category does not give an infinite PSI
+max_error_rate: 0.001           # shadow inference errors / (predictions + errors)

@@ -139,9 +139,7 @@
     "another": "Import another file",
     "expires": "Preview expires {when}"
   },
-  "page": {
-    "settingsSoon": "Profile, merchant rules, export and account deletion arrive in a later task."
-  },
+  "page": {},
   "dash": {
     "title": "Dashboard",
     "range": "Period",
@@ -312,7 +310,8 @@
     "tabAlerts": "Alerts",
     "tabForecast": "Forecast",
     "tabRecurring": "Recurring",
-    "tabs": "Intelligence sections"
+    "tabs": "Intelligence sections",
+    "tabSegment": "Spending style"
   },
   "forecast": {
     "title": "Estimated spending this period",
@@ -399,5 +398,51 @@
       "paused": "The payment is later than usual.",
       "ended": "No payment for a long time."
     }
+  },
+  "segment": {
+    "intro": "A segment groups you with people whose spending looks alike. It is computed weekly from your last complete periods and is only shown here.",
+    "yourSegment": "Your segment",
+    "traits": "What sets you apart",
+    "noTraits": "You are close to the middle of your segment on everything we measure.",
+    "computedAt": "Updated {date} (model {version})",
+    "reason": {
+      "INSUFFICIENT_HISTORY": "We need at least {required} complete budget periods of transactions to find your spending style. You have {have} so far.",
+      "NOT_COMPUTED": "Your spending style has not been worked out yet. It is updated every week.",
+      "MODEL_NOT_AVAILABLE": "Spending styles are not available right now."
+    }
+  },
+  "settings": {
+    "title": "Settings",
+    "profile": "Profile",
+    "displayName": "Name",
+    "timezone": "Time zone",
+    "timezoneHint": "Days, weeks and periods follow this time zone.",
+    "startDay": "Budget period starts on day",
+    "startDayHint": "1 to 28. A change applies from the next period.",
+    "pendingStartDay": "Day {day} takes effect on {date}.",
+    "saved": "Saved.",
+    "consent": "Allow my corrections to help improve categorization",
+    "consentHint": "When on, categories you correct may be used (without your name or email) to retrain the model. When off, they are never used for training.",
+    "rules": "Merchant rules",
+    "rulesIntro": "When you correct a category, we remember it for that merchant. Applied rules always win over the model.",
+    "rulesEmpty": "No merchant rules yet.",
+    "ruleMerchant": "Merchant",
+    "ruleCategory": "Category",
+    "ruleApplied": "Applied {count} times",
+    "ruleLastApplied": "last {date}",
+    "ruleNever": "Never applied",
+    "ruleDelete": "Delete rule for {merchant}",
+    "ruleChange": "Category for {merchant}",
+    "password": "Change password",
+    "currentPassword": "Current password",
+    "newPassword": "New password",
+    "passwordHint": "Use a long password you do not use elsewhere.",
+    "passwordChanged": "Password changed.",
+    "danger": "Delete account",
+    "dangerIntro": "This permanently deletes your account, transactions, budgets and everything derived from them. It cannot be undone.",
+    "dangerPassword": "Your password",
+    "dangerConfirm": "Type DELETE to confirm",
+    "dangerButton": "Delete my account",
+    "exportNote": "Data export is not available yet."
   }
 }

@@ -18,6 +18,9 @@ export interface CommitResult {
   skipped_duplicates: number;
 }
 export type User = S["UserOut"];
+export type MerchantRule = S["MerchantRuleOut"];
+export type MerchantRuleList = S["MerchantRuleList"];
+export type ProfileUpdate = S["UpdateProfileRequest"];
 export type AuthResponse = S["AuthResponse"];
 
 export type TransactionType = "income" | "expense" | "transfer";
@@ -56,6 +59,9 @@ export type ForecastOut = S["ForecastOut"];
 export type ForecastUnavailable = S["ForecastUnavailable"];
 export type ForecastResponse = ForecastOut | ForecastUnavailable;
 export type ExceedBand = NonNullable<ForecastOut["budget"]>["exceed_band"];
+
+export type SegmentResponse = S["SegmentOut"];
+export type SegmentTrait = S["TraitOut"];
 
 export type RecurringSeries = S["RecurringOut"];
 export type RecurringList = S["RecurringList"];

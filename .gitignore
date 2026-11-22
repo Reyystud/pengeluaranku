@@ -10,6 +10,7 @@ graphify-out/
 __pycache__/
 *.py[cod]
 .venv/
+.venv-dl/
 .pytest_cache/
 .mypy_cache/
 .ruff_cache/

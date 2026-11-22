@@ -96,3 +96,103 @@ Findings:
 - The 98.5% precision is an upper bound for real data: the generator's subscriptions are monthly with 0-2 days of jitter and a constant price, which is easier than real billing.
 
 Not done: no real transaction data was evaluated; income detection and the amount-change flag (FR-08.03) have unit tests but no ground truth; the decomposition has not been compared against the plain run rate on closed periods (`forecast_outcomes` arrives with T-37/T-38).
+
+## 3. Anomaly detector: Isolation Forest and LOF vs the baseline (T-38)
+
+Real run: `uv run python -m ml.anomaly_detection.model_train --users 2000 --cache data/anomaly_features.parquet` (MLflow experiment `anomaly-detector`, run `bb7dfea9eba6415f925bbb55f7ac9518`; an earlier 500-user run `e53d7da1b2804a15bf677d7fa66d6c5e` gave the same ranking). Dataset `synthetic/v1`, all 2,000 users, locked anomaly split (`data_splits/synthetic/v1`), features `anomaly-model-features-1`, config `config/train/anomaly.yaml`. The run was made from the working tree before the T-38 commit (the recorded commit `3a4f70d` is the parent), so it does not meet the clean-tree rule of PRD 16.3.
+
+### Setup
+- Both models are unsupervised and fitted on the **train** anomaly split only (1,452,951 expense rows): Isolation Forest (200 trees, 4,096 samples per tree) and LOF (35 neighbours, a 30,000-row sample of train because scoring is linear in the fit size). Features are the 17 user-relative features of PRD 11.2.2, each computed from the user's history strictly before the row (tested by injecting future rows). Raw scores are mapped to [0, 1] with the empirical CDF of the training scores.
+- The flag threshold is chosen on **validation** (311,115 rows): maximum precision subject to recall >= 0.50 (PRD 7.6.3), then applied unchanged to **test** (312,776 rows). The baseline gets the same treatment: its ranking is the modified z-score, gated by the rule's amount conditions (>= Rp50,000 and >= 2x the typical amount), cold-start prior included.
+- Labels are used only to score. Rows labelled `category_surge` are left out (a weekly pattern found by a rule, not a per-transaction score). In the `amount_spike` comparison, rows labelled `frequency_burst` or `new_merchant_high_value` are neither positives nor negatives. The "any anomaly" view treats all three per-transaction types as positives.
+
+### Results: `amount_spike` (test split, 158 positives among 312,776 rows)
+
+| scorer | flagged | precision | recall | PR-AUC | false positives per user per month |
+|---|---|---|---|---|---|
+| **baseline (modified z)** | 1,909 | **0.0377** | 0.456 | **0.0430** | 0.50 |
+| Isolation Forest | 8,659 | 0.0079 | 0.430 | 0.0067 | 2.36 |
+| LOF | 26,026 | 0.0027 | 0.443 | 0.0032 | 7.12 |
+
+On validation the thresholds reach recall 0.52 (baseline), 0.51 (IF) and 0.50 (LOF); on test none of the three keeps 0.50, so the recall target is not met by any of them on unseen time. Limited-history rows (fewer than 30 prior transactions in the category) are too few to compare: 18 positives in 36,748 test rows.
+
+"Any anomaly" view (1,496 positives, models only): Isolation Forest precision 0.019, recall 0.473, PR-AUC 0.047; LOF precision 0.025, recall 0.503, PR-AUC 0.053. Recall by type at the `amount_spike` threshold (baseline / IF / LOF): `amount_spike` 0.456 / 0.430 / 0.443, `frequency_burst` 0.002 / 0.105 / 0.429, `new_merchant_high_value` 0.811 / 0.832 / 0.737.
+
+**Decision: the baseline stays for `amount_spike`.** Neither model beats it on test precision at recall about 0.5 (IF -3.0 points, LOF -3.5 points), which is the rule of PRD 7.6.3 and 16.3. Nothing is registered and no `/v1/anomaly/score` endpoint is built; the three other types stay rule-based as in the PRD.
+
+### Findings
+1. The gap is large (precision 4.8x lower for IF, 14x for LOF), so more users would not flip the verdict; the test has 158 positives, so individual precision figures carry wide error bars.
+2. **The PRD 5.2 initial target (precision >= 0.70 at recall >= 0.50) is not met by anything**: 0.038 is the best. Absolute precision is low for every scorer. The labelled spikes are 0.06% of expense rows and the generator also produces natural large purchases, so most flags are not labelled anomalies. The baseline's 0.5 false positives per user per month is inside the product target of 3 (PRD 9.3); IF at 2.4 is too, LOF at 7.1 is not.
+3. Hypothesis, not tested: a spike is mostly a single feature (`z_cat`), and the other 16 features add rows that are unusual for unrelated reasons, so the forest ranks them above real spikes. An ablation on `z_cat` alone was not run.
+4. LOF is the only scorer with a useful recall on `frequency_burst` (0.43), but at 7 false positives per user per month; bursts stay with the Poisson rule.
+5. Synthetic data: the generator draws spikes as multiples of a category's typical amount, the same signal the baseline measures, which favours the baseline. A holdout generator variant (PRD 9.6 item 6) was not run.
+
+## 4. Forecaster: ETS and LightGBM quantile vs run-rate and seasonal naive (T-38)
+
+Real run: `uv run python -m ml.forecasting.model_eval` (MLflow experiment `expense-forecaster`, run `8e75d9a7d4ff4ede93b8d04eebeb864e`; an earlier identical run `8affb234179c46ef80a66e49a3d56b99` lacks the seasonal-naive check). Dataset `synthetic/v1`, forecast config `forecast-model-1` (`config/train/forecast.yaml`), baseline config `run-rate-2`, features `forecast-model-features-1`. Same dirty-tree remark as section 3.
+
+### Setup
+- **150 users** (SHA-256 sample), **2,400 evaluated origins**: day 5, 10, 15 and 20 of each of the last four periods of each user (`forecast_periods.csv`, periods start on day 1 or day 25). Target: period total of non-recurring expenses (PRD 7.7.1).
+- Baseline: `ml.forecasting.baseline.forecast` as shipped in T-24 (seasonal naive here, since every user has more than 60 days of history), and its `baseline_prediction` (run-rate). ETS: per-user additive error and seasonality (period 7) on the last 112 days, interval = sum of the forecast +- 1.2816 x residual std x sqrt(days left); no fit failed. LightGBM: three quantile models (0.1, 0.5, 0.9), global, trained once on 26,156 origins from the periods that end before each user's first evaluated period; crossings fixed by sorting.
+- Deviation from PRD 11.2.3 and 7.7.3: the LightGBM predicts the **remaining total** directly (one row per origin, `days_remaining` instead of a per-day `days_ahead`), with level features divided by the user's 56-day mean. The sum of daily quantiles is not the quantile of the sum, and only the total is needed.
+- MASE is scaled by the in-sample MAE of the seasonal-naive forecast (lag 7 days) of a total of the same number of remaining days, over the user's last 120 days before the origin. This is my reading of PRD 9.4 at the total level.
+
+### Results (period total, 2,400 origins)
+
+| model | WAPE | MAE (Rp) | MASE | P10-P90 coverage |
+|---|---|---|---|---|
+| run-rate | 0.2149 | 745,298 | 2.27 | 0.466 |
+| **seasonal naive (current baseline)** | 0.1442 | 500,126 | 1.53 | 0.568 |
+| ETS | 0.1413 | 490,256 | 1.51 | 0.718 |
+| **LightGBM quantile** | **0.1251** | **433,878** | **1.34** | **0.770** |
+
+WAPE (MASE) by origin day:
+
+| day | run-rate | seasonal naive | ETS | LightGBM |
+|---|---|---|---|---|
+| 5 | 0.387 (4.12) | 0.184 (2.00) | 0.188 (2.03) | **0.156 (1.71)** |
+| 10 | 0.217 (2.27) | 0.159 (1.66) | 0.156 (1.63) | **0.138 (1.45)** |
+| 15 | 0.148 (1.56) | 0.130 (1.38) | 0.122 (1.31) | **0.115 (1.23)** |
+| 20 | 0.107 (1.13) | 0.104 (1.08) | 0.099 (1.05) | **0.092 (0.95)** |
+
+WAPE by archetype (run-rate / seasonal naive / ETS / LightGBM): student (864 origins) 0.205 / 0.138 / 0.139 / 0.121; young_professional (672) 0.203 / 0.139 / 0.134 / 0.119; freelancer (320) 0.218 / 0.152 / 0.147 / 0.136; subscription_heavy (320) 0.219 / 0.163 / 0.154 / 0.138; impulsive_spender (224) 0.256 / 0.128 / 0.143 / 0.116. LightGBM coverage by archetype is 0.75 to 0.79.
+
+### Ship rule (PRD 9.1: WAPE below run-rate at days 5, 10, 15 and 20, and coverage within 0.70-0.90)
+- **LightGBM: passes**, and also beats the seasonal naive baseline on every origin day and in every archetype (no slice gate failure).
+- **ETS: passes the literal rule** (coverage 0.718) **but is not shipped**: it is worse than seasonal naive at day 5 (0.188 vs 0.184) and in `impulsive_spender` (0.143 vs 0.128), and its gain at the other days is 2 to 6% relative.
+- Initial target of PRD 5.2 (WAPE at day 15 <= 20% and MASE < 1): WAPE is met by seasonal naive and both models; MASE < 1 only for LightGBM at day 20 (0.95), so that target is **not met**.
+
+### Findings
+1. The run-rate baseline is poor early in the period (WAPE 0.39 at day 5) and converges to seasonal naive by day 20, as expected.
+2. **The interval shipped in T-24 under-covers**: the nominal P10-P90 range contains the actual total only 56.8% of the time (seasonal naive baseline), 46.6% for run-rate. LightGBM (77.0%) and ETS (71.8%) are in the 70-90% band. The UI's "range" for the current baseline is therefore too narrow on this data.
+3. The LightGBM gain over seasonal naive is 13% in WAPE overall (0.144 to 0.125), larger early in the period (15% at day 5, 12% at day 20). The gap is moderate; whether it holds on real spending is unknown.
+4. Only the overall non-recurring total was evaluated. Category forecasts, the recurring decomposition and users with fewer than 60 days of history were not.
+5. Synthetic data: the generator has simple weekday and payday patterns that a tree model can learn; a holdout generator variant was not run.
+6. The LightGBM was trained on the same users' earlier periods (production-like: "train on all data strictly before the origin"), but once, not refitted per origin.
+
+## 6. Behavior clusterer (T-41)
+
+Run: MLflow run `412782274ec04a02ac2f9b240653ee7e` (model name `behavior-clusterer`, config `clustering-1`), command `uv run python -m ml.clustering.train --write-model`. Synthetic dataset v1, 2,000 users with at least 2 complete periods, features over each user's last 3 complete periods (PRD 11.2.4, CLR for category shares).
+
+### Ship rule (fixed in `config/clustering.yaml` before the run)
+
+Silhouette >= 0.40, mean ARI across 5 seeds >= 0.80, every segment nameable from its centroid.
+
+### Results
+
+| k (K-Means) | 3 | 4 | 5 | 6 | 7 | 8 |
+|---|---|---|---|---|---|---|
+| silhouette | 0.4148 | **0.4355** | 0.3700 | 0.3676 | 0.2852 | 0.2641 |
+| GMM (diag) silhouette | 0.4148 | 0.4354 | 0.3695 | 0.3588 | 0.2060 | 0.2092 |
+
+- Selected k = 4 (best silhouette). Segment sizes 899 / 700 / 200 / 201.
+- ARI across 5 seeds: mean 1.000, min 1.000. ARI between models fitted on the two user halves and applied to everyone: 1.000.
+- DBSCAN (eps 2/3/4/5, min_samples 10): eps 3 gives 4 clusters with silhouette 0.4366 and 0.5% noise, so it agrees with K-Means; eps 2 gives 9 clusters (0.3715, 15% noise); eps 4 and 5 collapse to one cluster. K-Means was kept because it assigns every user and a new user needs only a centroid lookup.
+- ARI against the generator archetypes (sanity only, FR-13.05): 0.836. `subscription_heavy` users fall into the same segment as `young_professional`; the other three archetypes each map to one segment.
+- Ship rule: silhouette ok, ARI ok, names written by hand after reading the centroids (`config/clusterer_model.yaml`).
+
+### Findings and caveats
+
+- The numbers are high because the synthetic archetypes are well separated by construction. The stability figures (ARI 1.0) say the pipeline is deterministic and the groups are crisp in synthetic data; they say nothing about real users. Real-data silhouette and ARI: `[TBD after run]`.
+- The segment names describe what the centroids show on synthetic data. They must be re-read when the model is refitted on other data.
+- Not deployed: the artifact ships in `config/`; no MLflow registration or alias was made for it.

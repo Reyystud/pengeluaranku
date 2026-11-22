@@ -60,6 +60,14 @@ def _has_budgets(_: JobContext) -> ColumnElement[bool]:
 
 
 # -- per-user jobs -------------------------------------------------------------------------------
+def clustering_weekly(session: Session, user: User, ctx: JobContext) -> dict[str, int]:
+    """Assign the behavior segment of users with at least 2 complete periods (FR-13.01)."""
+    from app.services.segments import SegmentService
+
+    assigned = SegmentService(session, user, ctx.now).compute()
+    return {"assigned": int(assigned), "skipped": int(not assigned)}
+
+
 def daily_budget_close(session: Session, user: User, ctx: JobContext) -> dict[str, int]:
     """Snapshots and forecast outcomes of the period that just closed (FR-05.08, 7.7).
 
@@ -290,6 +298,12 @@ JOBS: dict[str, JobSpec] = {
             "daily-insights",
             "Regenerate insights",
             user_fn=daily_insights,
+            eligible=_has_transactions,
+        ),
+        JobSpec(
+            "clustering-weekly",
+            "Assign behavior segments",
+            user_fn=clustering_weekly,
             eligible=_has_transactions,
         ),
         JobSpec(

@@ -1,0 +1,32 @@
+# Forecast model experiment (PRD 9.1, 9.4, 7.7.3). Versioned: bump `version` with any value change.
+# Ship rule (PRD 9.1): WAPE lower than run-rate at origin days 5, 10, 15 and 20 AND P10-P90
+# coverage within 70-90%. Model hyperparameters are experiment settings, not business thresholds.
+version: forecast-model-1
+seed: 42
+dataset:
+  data_dir: data/synthetic/v1
+  periods: data_splits/synthetic/v1/forecast_periods.csv
+  dataset_version: synthetic/v1
+sample:
+  users: 150                  # decision: deterministic SHA-256 sample (ETS fits one model per origin)
+  salt: forecast-model
+origin_days: [5, 10, 15, 20]
+min_history_days: 60          # PRD 7.7.2: from here the personal methods apply
+ship_rule:
+  coverage_min: 0.70
+  coverage_max: 0.90
+ets:
+  window_days: 112            # decision: 16 weeks of daily spend before the origin
+  seasonal_periods: 7
+lightgbm:
+  n_estimators: 300
+  learning_rate: 0.05
+  num_leaves: 15
+  min_child_samples: 50
+  subsample: 0.8
+  subsample_freq: 1
+  colsample_bytree: 0.8
+  quantiles: [0.1, 0.5, 0.9]
+mase:
+  seasonal_lag_days: 7
+  window_days: 120

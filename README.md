@@ -6,7 +6,7 @@
 
 Many students and young professionals in Indonesia lose track of their daily spending. Existing expense trackers make them record and categorize every transaction by hand, small recurring payments go unnoticed, unusual spending is found only after the balance is low, and nobody can tell whether the money will last until the end of the month. Smart Expense Intelligence uses machine learning to categorize transactions automatically, flag unusual spending with reasons, forecast end-of-period spending with an uncertainty range, detect recurring payments, and produce insights that can be traced back to the user's own data.
 
-## Planned features
+## Features
 
 - Transactions: manual entry and two-step CSV import (preview → atomic commit)
 - Automatic categorization with calibrated confidence and per-user merchant memory
@@ -14,6 +14,8 @@ Many students and young professionals in Indonesia lose track of their daily spe
 - Anomaly detection with explainable reasons
 - Period-end forecasting with P10/P50/P90 range
 - Recurring expense detection and rule-based insights
+- Behavior segments ("spending style") with traits compared to similar users
+- Settings: profile, budget period, training consent, merchant rules, password, account deletion
 - MLOps: Prefect pipeline, MLflow registry, promotion gates, shadow mode, one-command rollback, monitoring
 
 All training and demo data is synthetic (see [ADR-0008](docs/adr/0008-synthetic-data-only.md)).
@@ -37,9 +39,21 @@ make down    # stop the stack (VOLUMES=1 also drops the database and MLflow volu
 
 No GCP account is needed to run locally.
 
+## Results
+
+Every number comes from a real run on synthetic data and is in [`docs/MODEL_EVALUATION.md`](docs/MODEL_EVALUATION.md) with its MLflow run ID. Nothing has been measured on real users: `[TBD after run]`. Load-test results: `[TBD after run]` (script in [`loadtest/`](loadtest/README.md)). Three E2E flows pass locally against a dev stack (`make e2e`).
+
+## Limitations
+
+- Synthetic data only; the classifier baseline has not passed the promotion gates and is over-confident on unseen merchants.
+- Only the classifier baseline is registered in MLflow. Anomaly, forecast and clustering results are experiments or config artifacts.
+- Nothing is deployed to GCP; the Terraform is validated offline only. Data export (FR-16) is not built.
+- No demo video or live link yet.
+
 ## Documentation
 
 - [Product requirements (PRD v3.0)](docs/PRD.md)
+- [Architecture](docs/ARCHITECTURE.md) · [API guide](docs/API.md) · [ML documentation](docs/ML_DOCUMENTATION.md) · [Model evaluation](docs/MODEL_EVALUATION.md) · [Model cards](docs/model_cards/) · [Runbook](docs/RUNBOOK.md)
 - [Architecture decision records](docs/adr/)
 - [Decisions log](docs/DECISIONS.md)
 - [Privacy](docs/PRIVACY.md) · [Security policy](SECURITY.md)

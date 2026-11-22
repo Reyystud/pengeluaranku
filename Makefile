@@ -9,7 +9,7 @@ define NOT_YET
 endef
 
 .PHONY: openapi-check web thresholds coverage-backend api ml-api eda splits verify-splits help setup lint format typecheck test test-integration check \
-        data train-local prefect-server up up-events up-observability down seed-demo demo openapi train repro recurring-eval dashboards terraform-check drift-report alerts-test promote rollback loadtest jobs-run
+        data train-local prefect-server up up-events up-observability down seed-demo demo openapi train repro recurring-eval anomaly-eval forecast-eval shadow-evaluate dashboards terraform-check drift-report alerts-test promote rollback loadtest e2e jobs-run
 
 help: ## List targets
 	@grep -E '^[a-zA-Z_-]+:.*## ' $(MAKEFILE_LIST) | awk -F':.*## ' '{printf "  %-18s %s\n", $$1, $$2}'
@@ -128,12 +128,22 @@ repro: ## Re-run test (PRD 16.2): train the baseline twice in separate processes
 recurring-eval: ## Score the recurring detector against the generator's labels on 1,000 sampled users (~40 s, PRD 7.8)
 	uv run python -m ml.recurring.evaluate --users 1000 --out data/recurring_eval.json
 
+anomaly-eval: ## Isolation Forest / LOF vs the baseline on 2,000 users (~25 min, logs to local MLflow, PRD 7.6.3)
+	uv run python -m ml.anomaly_detection.model_train --users 2000 --cache data/anomaly_features.parquet --out data/anomaly_model_eval.json
+
+forecast-eval: ## ETS / LightGBM quantile vs run-rate and seasonal naive, rolling origin on 150 users (~3 min, PRD 7.7.3)
+	uv run python -m ml.forecasting.model_eval --out data/forecast_model_eval.json
+
 alerts-test: ## promtool unit tests of the alert rules with synthetic series (needs Docker; no stack running)
 	docker run --rm -v "$(CURDIR)/monitoring/prometheus:/p" --entrypoint promtool prom/prometheus:v3.5.0 test rules /p/alerts_test.yml
 
 drift-report: ## Evidently drift report from captured ml-service logs (LOGS=file [REFERENCE=models/.../reference] [DATE=YYYY-MM-DD])
 	@test -n "$(LOGS)" || { echo "usage: make drift-report LOGS=ml-service.log  (docker compose logs --no-log-prefix ml-service > ml-service.log)"; exit 2; }
 	uv run python -m pipelines drift-report --logs $(LOGS) $(if $(REFERENCE),--reference $(REFERENCE)) $(if $(DATE),--date $(DATE))
+
+shadow-evaluate: ## Judge the candidate on shadow logs, promote if all criteria hold (LOGS=file [CORRECTIONS=jsonl] [DRY_RUN=1], PRD 16.4)
+	@test -n "$(LOGS)" || { echo "usage: make shadow-evaluate LOGS=ml-service.log  (SHADOW_ENABLED=true; docker compose logs --no-log-prefix ml-service > ml-service.log)"; exit 2; }
+	uv run python -m pipelines shadow-evaluate --logs $(LOGS) $(if $(CORRECTIONS),--corrections $(CORRECTIONS)) $(if $(DRY_RUN),--dry-run) $(if $(DATE),--date $(DATE))
 
 terraform-check: ## Terraform fmt, validate and the offline guardrail tests (needs terraform >= 1.7; no GCP credentials)
 	cd infrastructure/terraform && terraform fmt -check -recursive && terraform init -backend=false -input=false && terraform validate && terraform test
@@ -147,8 +157,18 @@ promote: ## make promote MODEL=transaction-classifier VERSION=2 [REASON=... FORC
 rollback: ## make rollback MODEL=transaction-classifier REASON="..." : swap @production and @previous (PRD 16.5)
 	MLFLOW_DISABLE_AGENT_HINT=1 uv run python -m pipelines rollback --model $(MODEL) --reason "$(REASON)"
 
-loadtest: ## k6 load test (stub: T-43)
-	$(call NOT_YET,T-43)
+TARGET_URL ?= http://localhost:8000
+SCENARIO ?= mix
+loadtest: ## k6 load test: make loadtest [TARGET_URL=...] [SCENARIO=cold]; see loadtest/README.md
+	@if command -v k6 >/dev/null 2>&1; then \
+		k6 run -e TARGET_URL=$(TARGET_URL) -e SCENARIO=$(SCENARIO) loadtest/main.js; \
+	else \
+		docker run --rm --network host -v $(CURDIR)/loadtest:/loadtest grafana/k6 run \
+			-e TARGET_URL=$(TARGET_URL) -e SCENARIO=$(SCENARIO) /loadtest/main.js; \
+	fi
+
+e2e: ## Playwright flows against a running stack (E2E_BASE_URL, default http://localhost:3000); make up first
+	cd frontend && pnpm e2e
 
 jobs-run: ## make jobs-run JOB=<name> [DATE=YYYY-MM-DD] runs a batch job in the running backend container; no JOB lists them
 	docker compose exec backend python -m app.jobs $(JOB) $(if $(DATE),--date $(DATE))

@@ -1,0 +1,42 @@
+# Playwright E2E (PRD 8.3, 19.5): the three flows against the compose stack.
+# Runs nightly and on pull requests labelled `e2e`. The flows were run locally against
+# uvicorn + `next dev` + Postgres (3 passed); this compose-based workflow itself has not run yet.
+name: e2e
+
+on:
+  schedule:
+    - cron: "0 20 * * *"
+  pull_request:
+    types: [labeled, synchronize]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  e2e:
+    if: github.event_name != 'pull_request' || contains(github.event.pull_request.labels.*.name, 'e2e')
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+      - run: cp .env.example .env
+      - run: docker compose up -d --build --wait postgres redis backend frontend
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm --filter ./frontend exec playwright install --with-deps chromium
+      - run: pnpm --filter ./frontend e2e
+      - if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-report
+          path: |
+            frontend/playwright-report
+            frontend/test-results
+      - if: always()
+        run: docker compose down -v

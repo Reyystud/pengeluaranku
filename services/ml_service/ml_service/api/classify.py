@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from fastapi import APIRouter, Request
+from fastapi import APIRouter, BackgroundTasks, Request
 
 from ml_service import prediction_log
 from ml_service.errors import ProblemError
@@ -17,6 +17,7 @@ from ml_service.metrics import (
     PREDICTIONS,
 )
 from ml_service.schemas import BatchRequest, BatchResponse, ClassifyRequest, ClassifyResponse
+from ml_service.shadow import run_candidate
 
 router = APIRouter(prefix="/v1", tags=["classify"])
 
@@ -68,15 +69,34 @@ def _run(
     return results
 
 
+def _mirror(
+    request: Request,
+    background: BackgroundTasks,
+    items: list[ClassifyRequest],
+    results: list[ClassifyResponse],
+    endpoint: str,
+) -> None:
+    """Queue the candidate run; it starts after the response is sent (PRD 16.4)."""
+    registry: ModelRegistry = request.app.state.registry
+    if registry.shadow_active:
+        background.add_task(run_candidate, registry, items, results, endpoint)
+
+
 @router.post("/classify", response_model=ClassifyResponse)
-def classify_one(body: ClassifyRequest, request: Request) -> ClassifyResponse:
+def classify_one(
+    body: ClassifyRequest, request: Request, background: BackgroundTasks
+) -> ClassifyResponse:
     model = _model(request)
     _check_versions(model, [body])
-    return _run(model, [body], "classify")[0]
+    results = _run(model, [body], "classify")
+    _mirror(request, background, [body], results, "classify")
+    return results[0]
 
 
 @router.post("/classify/batch", response_model=BatchResponse)
-def classify_batch(body: BatchRequest, request: Request) -> BatchResponse:
+def classify_batch(
+    body: BatchRequest, request: Request, background: BackgroundTasks
+) -> BatchResponse:
     model = _model(request)
     limit = request.app.state.settings.batch_max_items
     if len(body.items) > limit:
@@ -84,4 +104,6 @@ def classify_batch(body: BatchRequest, request: Request) -> BatchResponse:
             422, "BATCH_TOO_LARGE", "Batch too large", f"At most {limit} items per batch."
         )
     _check_versions(model, body.items)
-    return BatchResponse(items=_run(model, body.items, "classify_batch"))
+    results = _run(model, body.items, "classify_batch")
+    _mirror(request, background, body.items, results, "classify_batch")
+    return BatchResponse(items=results)

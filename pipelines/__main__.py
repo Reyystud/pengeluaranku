@@ -82,6 +82,47 @@ def _drift_command(args: argparse.Namespace) -> int:
     return 1 if summary.status == "drift" else 0
 
 
+def _shadow_command(args: argparse.Namespace) -> int:
+    import datetime as dt
+
+    from pipelines.promotion import open_client
+    from pipelines.shadow import job
+
+    if not args.logs:
+        print(
+            "shadow-evaluate: the BigQuery source is not wired to the CLI yet; "
+            "pass --logs <file> (docs/DECISIONS.md, T-39)",
+            file=sys.stderr,
+        )
+        return 2
+    day = dt.date.fromisoformat(args.date) if args.date else dt.datetime.now(dt.UTC).date()
+    root = Path(__file__).resolve().parents[1]
+    try:
+        report, outcome = job.run(
+            client=open_client(args.tracking_uri),
+            model=args.model,
+            log_files=args.logs,
+            corrections_file=args.corrections,
+            reports_dir=args.reports_dir or root / "data" / "reports",
+            today=day,
+            promote=not args.dry_run,
+        )
+    except PipelineError as exc:
+        print(f"shadow-evaluate stopped: {exc}", file=sys.stderr)
+        return 2
+    for c in report.criteria:
+        print(f"  {c.status:12} {c.name} value={c.value} threshold={c.threshold} {c.detail}")
+    note = (
+        " (promoted)"
+        if outcome["promoted"]
+        else f" ({outcome['refused']})"
+        if "refused" in outcome
+        else ""
+    )
+    print(f"shadow-evaluate {day}: {report.outcome}{note}")
+    return 0
+
+
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(prog="pipelines")
     sub = parser.add_subparsers(dest="command", required=True)
@@ -108,6 +149,18 @@ def main(argv: list[str] | None = None) -> int:
     promote.add_argument(
         "--force", action="store_true", help="allow gate != passed; needs --reason"
     )
+    shadow = sub.add_parser("shadow-evaluate", help="judge the candidate on shadow logs (PRD 16.4)")
+    shadow.add_argument("--model", default="transaction-classifier")
+    shadow.add_argument(
+        "--date", default=None, help="evaluation date YYYY-MM-DD (default: today UTC)"
+    )
+    shadow.add_argument("--tracking-uri", default=None)
+    shadow.add_argument("--logs", nargs="+", type=Path, help="captured ml-service log files")
+    shadow.add_argument(
+        "--corrections", type=Path, default=None, help="JSONL: input_hash, category"
+    )
+    shadow.add_argument("--reports-dir", type=Path, default=None, help="local report root")
+    shadow.add_argument("--dry-run", action="store_true", help="evaluate only; never move aliases")
     drift = sub.add_parser("drift-report", help="Evidently drift report for one day (PRD 18.3)")
     drift.add_argument("--model", default="transaction-classifier")
     drift.add_argument("--date", default=None, help="report date YYYY-MM-DD (default: today UTC)")
@@ -124,6 +177,8 @@ def main(argv: list[str] | None = None) -> int:
         return _alias_command(args)
     if args.command == "drift-report":
         return _drift_command(args)
+    if args.command == "shadow-evaluate":
+        return _shadow_command(args)
 
     os.environ.setdefault("PYTHONHASHSEED", "0")  # recorded in the run; set it before launching
     from pipelines import train_flow

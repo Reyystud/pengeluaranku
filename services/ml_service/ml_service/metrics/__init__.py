@@ -49,6 +49,18 @@ INFERENCE_SECONDS = Histogram(
 MODEL_LOADED = Gauge(
     "model_loaded_info", "1 for each loaded model", ["model", "version", "alias"], registry=REGISTRY
 )
+SHADOW_AGREEMENT = Counter(
+    "shadow_agreement_total",
+    "Shadow (candidate) top-1 vs production top-1, per mirrored item",
+    ["model", "agree"],
+    registry=REGISTRY,
+)
+SHADOW_MODEL_LOADED = Gauge(
+    "shadow_model_loaded_info",
+    "1 for the candidate loaded for shadow",
+    ["model", "version"],
+    registry=REGISTRY,
+)
 MODEL_LOAD_FAILURES = Counter(
     "model_load_failures_total", "Refused model loads", ["model", "reason"], registry=REGISTRY
 )
@@ -61,3 +73,9 @@ def record_model_loaded(model: str, version: str, alias: str) -> None:
 
 def record_model_load_failure(model: str, reason: str) -> None:
     MODEL_LOAD_FAILURES.labels(model, reason).inc()
+
+
+def record_shadow_loaded(model: str, version: str | None) -> None:
+    SHADOW_MODEL_LOADED.clear()
+    if version is not None:
+        SHADOW_MODEL_LOADED.labels(model, version).set(1)

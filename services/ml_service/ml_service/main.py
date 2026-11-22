@@ -70,6 +70,8 @@ async def poll_models(registry: ModelRegistry, interval_s: float) -> None:
         try:
             if await asyncio.to_thread(registry.refresh):
                 log.info("model swapped")
+            if await asyncio.to_thread(registry.refresh_candidate):
+                log.info("shadow candidate changed")
         except Exception:  # the loop must survive anything; the old model keeps serving
             log.exception("model poll failed")
 
@@ -84,6 +86,7 @@ def create_app(settings: Settings | None = None, registry: ModelRegistry | None 
     @asynccontextmanager
     async def lifespan(_: FastAPI) -> AsyncIterator[None]:
         registry.load()  # a failed load leaves /readyz at 503; the process stays up
+        registry.load_candidate()  # shadow only; never affects readiness
         poller = (
             asyncio.create_task(poll_models(registry, settings.model_poll_interval_s))
             if settings.model_poll_interval_s > 0

@@ -58,6 +58,7 @@ services:
       MLFLOW_TRACKING_URI: http://mlflow:5000
       CLASSIFIER_ALIAS: ${CLASSIFIER_ALIAS:-production}
       MODEL_POLL_INTERVAL_S: ${MODEL_POLL_INTERVAL_S:-30}
+      SHADOW_ENABLED: ${SHADOW_ENABLED:-false}
       MODELS_DIR: /tmp/models
     ports: ["127.0.0.1:${ML_PORT:-8080}:8080"]
     depends_on:

@@ -76,3 +76,18 @@ def record(
     }
     log.info(json.dumps(line, separators=(",", ":")))
     return line
+
+
+def record_shadow_error(model: LoadedClassifier, request: ClassifyRequest, exc: Exception) -> None:
+    """A failed shadow inference (PRD 16.4: errors above 0.1% block promotion). Class name only."""
+    line = {
+        "event": "shadow_error",
+        "severity": "WARNING",
+        "model": model.name,
+        "model_version": model.label,
+        "request_id": request.request_id,
+        "input_hash": input_hash(request),
+        "logged_at": dt.datetime.now(dt.UTC).isoformat(timespec="seconds").replace("+00:00", "Z"),
+        "error_type": type(exc).__name__,
+    }
+    log.info(json.dumps(line, separators=(",", ":")))

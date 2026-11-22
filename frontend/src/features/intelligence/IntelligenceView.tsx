@@ -6,11 +6,13 @@ import { t } from "@/lib/i18n";
 import { AnomaliesView } from "./AnomaliesView";
 import { ForecastView } from "./ForecastView";
 import { RecurringView } from "./RecurringView";
+import { SegmentView } from "./SegmentView";
 
 const TABS = [
   { id: "alerts", key: "intel.tabAlerts" },
   { id: "forecast", key: "intel.tabForecast" },
   { id: "recurring", key: "intel.tabRecurring" },
+  { id: "segment", key: "intel.tabSegment" },
 ] as const;
 
 export function IntelligenceView() {
@@ -47,8 +49,10 @@ export function IntelligenceView() {
           <AnomaliesView />
         ) : tab === "forecast" ? (
           <ForecastView />
-        ) : (
+        ) : tab === "recurring" ? (
           <RecurringView />
+        ) : (
+          <SegmentView />
         )}
       </div>
     </div>

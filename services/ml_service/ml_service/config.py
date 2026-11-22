@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     mlflow_tracking_uri: str = "sqlite:///data/mlflow/mlflow.db"
     classifier_model_name: str = "transaction-classifier"
     classifier_alias: str = "production"
+    # Shadow mode (PRD 16.4): the candidate answers nothing, its output is only logged.
+    shadow_enabled: bool = False
+    classifier_shadow_alias: str = "candidate"
     # Seconds between alias checks (PRD 11.5); 0 turns polling off.
     model_poll_interval_s: float = 300
     batch_max_items: int = 500

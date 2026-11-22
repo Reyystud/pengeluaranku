@@ -20,6 +20,7 @@ from app.repositories.imports import TransactionImportRepository
 from app.repositories.insights import InsightRepository
 from app.repositories.notifications import NotificationRepository
 from app.repositories.recurring import RecurringSeriesRepository
+from app.repositories.segments import SegmentRepository
 from app.repositories.transactions import TransactionFilters, TransactionRepository
 from app.repositories.users import CategoryRepository, UserRepository
 
@@ -48,13 +49,12 @@ KEYED_REPOSITORIES: dict[str, type] = {
     "idempotency_keys": IdempotencyRepository,
     "budget_period_snapshots": BudgetRepository,  # keyed by (budget_id, period_id)
     "anomaly_suppressions": AnomalySuppressionRepository,  # keyed by (user_id, merchant_key)
+    "user_segments": SegmentRepository,  # one row per user
 }
 
 # Tables with a ``user_id`` column but no single ``id`` key, so the generic repository does not
 # fit. The owning task adds a keyed repository with the same user_id-first rule (PRD 12.4).
-KEYED_PENDING: dict[str, str] = {
-    "user_segments": "T-27 (clustering): one row per user",
-}
+KEYED_PENDING: dict[str, str] = {}
 
 # Tables that carry a user_id but are not owned through the scoped repositories, with the reason.
 UNSCOPED_BY_DESIGN: dict[str, str] = {
@@ -68,6 +68,7 @@ __all__ = [
     "AnomalySuppressionRepository",
     "BudgetRepository",
     "NotificationRepository",
+    "SegmentRepository",
     "KEYED_REPOSITORIES",
     "IdempotencyRepository",
     "CategoryFeedbackRepository",

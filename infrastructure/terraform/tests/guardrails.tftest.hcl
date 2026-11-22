@@ -140,7 +140,7 @@ run "schedulers_start_paused_and_use_jakarta_time" {
   }
 
   assert {
-    condition     = length(google_cloud_scheduler_job.worker) == 9 && length(google_cloud_scheduler_job.pipelines) == 7
+    condition     = length(google_cloud_scheduler_job.worker) == 10 && length(google_cloud_scheduler_job.pipelines) == 6
     error_message = "every job of PRD 15.1 is scheduled (demo-reset included in demo mode)"
   }
 }

@@ -2887,7 +2887,7 @@ After the project is complete, add real results to this table.
 
 ### Addendum T-34: monitoring
 
-- Metric names added (18.2): see `services/backend/app/core/metrics.py` and `services/ml_service/ml_service/metrics/`. `shadow_agreement_total` is not registered yet.
+- Metric names added (18.2): see `services/backend/app/core/metrics.py` and `services/ml_service/ml_service/metrics/`. `shadow_agreement_total` is registered since T-39.
 - Prediction log line (18.4): fields `event`, `severity`, `model`, `model_version`, `feature_version`, `request_id`, `input_hash` (first 12 hex of SHA-256 of `lower(description)|amount|payment_method`), `features_summary{log_amount,payment_method,hour_bucket}`, `output{predicted_category,confidence,decision}`, `shadow`, `latency_ms`.
 - BigQuery table written by the sink: `predictions.run_googleapis_com_stdout`, day partitions, 90-day expiry; `prediction_logs` is a view created by T-35.
 - Local stack: `make up-observability`, `make dashboards`; files under `monitoring/`.
@@ -2913,3 +2913,23 @@ After the project is complete, add real results to this table.
 - `POST /internal/jobs/{name}` (worker role, OIDC): runs the job synchronously, optional `?date=YYYY-MM-DD` (that UTC date at 12:00). Response `{job, status: succeeded|failed|skipped, run_id, users, errors, stats, error}`; unknown name is 404 `JOB_NOT_FOUND`.
 - `job_runs.status` is `failed` when at least one user failed; `stats` holds `users`, `errors` and the job's own counters; `error` lists exception class names with counts, never messages.
 - 15.1: `daily-budget-close` runs for all users with budgets and covers the period before the current one; `recategorize-needs-review` (used by the runbook) is added; the jobs that run elsewhere are listed in `app/jobs/catalogue.py`.
+
+### Addendum T-38: anomaly and forecast model experiments
+
+- No API, database or event contract changes.
+- Outcome of 7.6.3 / 9.3: Isolation Forest and LOF did not beat the baseline on precision at recall >= 0.50 for `amount_spike`; the baseline stays and no model detector ships (`docs/MODEL_EVALUATION.md` section 3).
+- Outcome of 7.7.3 / 9.4: the global LightGBM quantile forecaster passes the ship rule of 9.1 and beats seasonal naive; it is not served yet (section 4 of the same document). It predicts the remaining total directly rather than daily values, so 11.2.3 describes the feature family but not the exact row layout; the implemented features are `FEATURES` in `ml/forecasting/model_eval.py` (`forecast-model-features-1`). ETS passes the literal 9.1 rule but is not shipped.
+- New settings files: `config/train/anomaly.yaml` (`anomaly-model-1`) and `config/train/forecast.yaml` (`forecast-model-1`, includes the ship-rule coverage band). Commands: `make anomaly-eval`, `make forecast-eval`.
+
+### Addendum T-39: shadow mode and shadow-evaluate
+
+- ML service: with `SHADOW_ENABLED=true` and `MODEL_SOURCE=mlflow` the registry also loads `models:/transaction-classifier@candidate` (`CLASSIFIER_SHADOW_ALIAS`, default `candidate`). After each `/v1/classify` and `/v1/classify/batch` response the candidate runs on the same items as a background task and its output is logged with `"shadow": true`; the response still carries `"shadow": null`. No shadow run when the candidate version equals production. A candidate that fails to load or to infer never changes readiness or the response; inference failures are logged as `{"event":"shadow_error","model_version","request_id","input_hash","error_type"}` (class name only).
+- `GET /v1/models` lists the candidate with `"shadow": true` while it is active. New metrics: `shadow_agreement_total{model,agree}`, `shadow_model_loaded_info{model,version}`; `inference_requests_total` and `inference_duration_seconds` gain `endpoint="shadow"`.
+- `python -m pipelines shadow-evaluate --logs <files> [--corrections <jsonl>] [--dry-run]` (`make shadow-evaluate`) applies 16.4 item 4 with the settings of `config/shadow.yaml` (`shadow-1`) and, when every criterion passes, calls `promote` (which still requires the version tag `gate=passed`). Outcomes: `passed`, `rejected`, `insufficient_data`. Report: `<reports-dir>/shadow/YYYY-MM-DD.json`. Corrections are keyed by `input_hash`.
+
+### Addendum T-41: behavior segments (FR-13)
+
+- API: `GET /intelligence/segment` returns `SegmentOut {segment: {id, name, description, traits[{feature, direction, percent, value, message}], model_version, computed_at} | null, reason: NOT_COMPUTED | INSUFFICIENT_HISTORY | MODEL_NOT_AVAILABLE | null, complete_periods, required_periods}`. User-scoped; another user's data is never visible.
+- Table `user_segments` unchanged (`traits` JSONB holds `[{feature, value, direction, percent}]`).
+- Job: `clustering-weekly` (worker, Sunday 05:00 Asia/Jakarta). Features use `ml.clustering.features.raw_features`, shared with training (11.1 parity).
+- Model artifact: `config/clusterer_model.yaml`, version `clustering-1`. Contract version of the API is bumped with the OpenAPI regeneration.

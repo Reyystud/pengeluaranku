@@ -1,0 +1,33 @@
+# IndoBERT-family experiment (PRD 9.2 "Tier C", Q3). Versioned: bump `version` with any change.
+# The ship rule below was written BEFORE any training run (PRD 9.1); do not edit it after seeing results.
+version: indobert-1
+seed: 42
+dataset:
+  data_dir: data/synthetic/v1
+  assignments: data/splits/synthetic/v1/assignments.parquet
+  dataset_version: synthetic/v1
+baseline_model_dir: models/transaction-classifier/20261120-024213   # logreg of the T-09 report
+model:
+  name: cahya/distilbert-base-indonesian   # Q3: smallest Indonesian BERT-family model that fits 2 GiB
+  max_length: 48
+train:
+  max_rows_per_class: 1000      # decision: CPU-only budget (about 3.3 s per step measured); the baseline used up to 25,000 per class
+  epochs: 1
+  batch_size: 32
+  learning_rate: 5.0e-5
+  warmup_ratio: 0.1
+  weight_decay: 0.01
+eval:
+  validation_rows: 10000        # used only to fit the temperature
+  test_rows: 30000              # deterministic samples; the baseline is scored on the same rows
+  unseen_rows: 30000
+  batch_size: 256
+  ece_bins: 15
+latency:
+  threads: 2                    # Cloud Run 2 vCPU
+  warmup_requests: 20
+  requests: 300
+ship_rule:
+  min_macro_f1_gain_points: 2.0 # PRD 9.1: macro F1 >= baseline + 2.0 points ...
+  p95_slo_ms: 500               # ... and P95 within the transformer SLO of PRD 5.3
+  ram_limit_gib: 2.0            # PRD Q3: must fit 2 GiB on Cloud Run

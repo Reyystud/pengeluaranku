@@ -2487,6 +2487,93 @@
         "title": "RowValues",
         "type": "object"
       },
+      "SegmentInfo": {
+        "properties": {
+          "computed_at": {
+            "format": "date-time",
+            "title": "Computed At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "id": {
+            "title": "Id",
+            "type": "string"
+          },
+          "model_version": {
+            "title": "Model Version",
+            "type": "string"
+          },
+          "name": {
+            "title": "Name",
+            "type": "string"
+          },
+          "traits": {
+            "items": {
+              "$ref": "#/components/schemas/TraitOut"
+            },
+            "title": "Traits",
+            "type": "array"
+          }
+        },
+        "required": [
+          "id",
+          "name",
+          "description",
+          "traits",
+          "model_version",
+          "computed_at"
+        ],
+        "title": "SegmentInfo",
+        "type": "object"
+      },
+      "SegmentOut": {
+        "properties": {
+          "complete_periods": {
+            "title": "Complete Periods",
+            "type": "integer"
+          },
+          "reason": {
+            "anyOf": [
+              {
+                "enum": [
+                  "NOT_COMPUTED",
+                  "INSUFFICIENT_HISTORY",
+                  "MODEL_NOT_AVAILABLE"
+                ],
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Reason"
+          },
+          "required_periods": {
+            "title": "Required Periods",
+            "type": "integer"
+          },
+          "segment": {
+            "anyOf": [
+              {
+                "$ref": "#/components/schemas/SegmentInfo"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          }
+        },
+        "required": [
+          "segment",
+          "complete_periods",
+          "required_periods"
+        ],
+        "title": "SegmentOut",
+        "type": "object"
+      },
       "StagedRow": {
         "properties": {
           "duplicate_of": {
@@ -2640,6 +2727,43 @@
           "expires_in"
         ],
         "title": "TokenResponse",
+        "type": "object"
+      },
+      "TraitOut": {
+        "properties": {
+          "direction": {
+            "enum": [
+              "higher",
+              "lower"
+            ],
+            "title": "Direction",
+            "type": "string"
+          },
+          "feature": {
+            "title": "Feature",
+            "type": "string"
+          },
+          "message": {
+            "title": "Message",
+            "type": "string"
+          },
+          "percent": {
+            "title": "Percent",
+            "type": "integer"
+          },
+          "value": {
+            "title": "Value",
+            "type": "number"
+          }
+        },
+        "required": [
+          "feature",
+          "direction",
+          "percent",
+          "value",
+          "message"
+        ],
+        "title": "TraitOut",
         "type": "object"
       },
       "TransactionCreate": {
@@ -5080,6 +5204,28 @@
           }
         },
         "summary": "Patch Recurring",
+        "tags": [
+          "intelligence"
+        ]
+      }
+    },
+    "/api/v1/intelligence/segment": {
+      "get": {
+        "description": "The user's segment with its defining traits, or the reason there is none yet.",
+        "operationId": "get_segment_api_v1_intelligence_segment_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/SegmentOut"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Segment",
         "tags": [
           "intelligence"
         ]

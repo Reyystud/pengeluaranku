@@ -19,6 +19,7 @@ locals {
     "demo-reset"            = "0 5 * * *"
     "recurring-due-soon"    = "0 7 * * *"
     "review-queue-reminder" = "0 8 * * 1"
+    "clustering-weekly"     = "0 5 * * 0"
   }
 
   pipeline_jobs = {
@@ -26,7 +27,6 @@ locals {
     "feedback-export"     = "45 3 * * *"
     "purge-deleted-users" = "0 4 * * *"
     "training-weekly"     = "0 2 * * 0"
-    "clustering-weekly"   = "0 5 * * 0"
     "drift-report"        = "0 6 * * *"
     "shadow-evaluate"     = "30 6 * * *"
   }

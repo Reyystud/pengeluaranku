@@ -4,7 +4,7 @@ Status of every task in PRD §20.3. Update this file at the end of each session.
 
 Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped at a cut line, with reason).
 
-**Current focus:** next T-38 (anomaly model and forecast models vs baselines); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
+**Current focus:** next T-40 (IndoBERT experiment); before a real deploy read the known gaps in `infrastructure/terraform/README.md`; remember the `suggest` band is empty, unseen merchants are over-confident (T-09/T-10 notes) and the T-09 baseline fails the golden gate (T-26)
 **Current tier:** A (weeks 1–6) — target: Cut line A (`make demo` works locally)
 
 ---
@@ -12,6 +12,21 @@ Status values: `todo` · `in-progress` · `blocked` · `done` · `cut` (dropped 
 ## Session handoff
 
 Newest entry on top. Keep each entry short: what was done, what is half-done, what to do next, gotchas.
+
+### 2026-11-22 — T-39 Shadow mode and shadow-evaluate
+- Done: ML service shadow mode (`ml_service/shadow/runner.py`; registry loads `@candidate` when `SHADOW_ENABLED=true`; background task after the response; `shadow=true` prediction lines, `shadow_error` lines, `shadow_agreement_total`, `/v1/models` lists the candidate); `pipelines/shadow/` (`config/shadow.yaml`, log parser, pure `evaluate` with the six criteria of PRD 16.4, job that writes `data/reports/shadow/<date>.json` and promotes through `promotion.promote`); CLI `python -m pipelines shadow-evaluate`, `make shadow-evaluate`; compose and Terraform env `SHADOW_ENABLED`; PRD addendum T-39; decisions.
+- Verified: 7 new ML service tests (response is production's, shadow only logged, batch agreement counts, failing candidate leaves the response alone and logs class name only, same version means no shadow, off by default, alias follow) and 14 pipelines tests (each criterion, insufficient vs rejected, promotion on a throw-away MLflow registry, refusal when `gate` is not `passed`, dry run, CLI); ruff, mypy, Terraform validate. Full `make check` is deferred to the end of T-46 by the user's choice.
+- Not verified: a live run with the compose stack and a real candidate model (shadow lines from a real second model version, `make shadow-evaluate` on captured logs); that shadow adds no latency to the response (design guarantee only, not measured); GCP: BigQuery log source and the corrections export are not wired (CLI takes `--logs` and `--corrections` files), the Cloud Scheduler job for `shadow-evaluate` stays paused.
+- Next: T-40.
+
+### 2026-11-22 — T-38 Anomaly and forecast models vs baselines
+- Done: `ml/anomaly_detection/model_features.py` (17 user-relative features of PRD 11.2.2, point-in-time) and `model_train.py` (Isolation Forest and LOF fitted on the train split, threshold chosen on validation, same procedure for the baseline, gate of 7.6.3); `ml/forecasting/model_eval.py` (rolling origin day 5/10/15/20 of the last 4 periods, run-rate, seasonal naive, per-user ETS, global LightGBM quantile on the remaining total; WAPE, MAE, MASE, coverage, by origin day and archetype, ship rule of 9.1); `ml/tracking.py`; `config/train/anomaly.yaml`, `config/train/forecast.yaml`; `make anomaly-eval`, `make forecast-eval`; 10 unit tests (no leakage, formulas, threshold choice, gates); `docs/MODEL_EVALUATION.md` sections 3 and 4; decisions in `docs/DECISIONS.md`; PRD addendum T-38.
+- Real runs (MLflow experiments `anomaly-detector`, `expense-forecaster` in `data/mlflow`): anomaly on all 2,000 users, run `bb7dfea9eba6415f925bbb55f7ac9518`; forecast on 150 users / 2,400 origins, run `8e75d9a7d4ff4ede93b8d04eebeb864e`.
+- Results: **anomaly baseline stays** (`amount_spike` test precision at recall about 0.5: baseline 0.0377, IF 0.0079, LOF 0.0027). **LightGBM quantile forecaster passes the ship rule** and beats seasonal naive (WAPE 0.125 vs 0.144; coverage 0.77 vs 0.57). ETS passes the literal rule but loses to seasonal naive at day 5 and for impulsive_spender, so it is not shipped.
+- Findings to act on: the PRD 5.2 anomaly target (precision >= 0.70) is far from met by anything (0.038); the shipped baseline forecast interval covers only 56.8% of actual totals (nominal 80%); the forecast MASE < 1 target is met only by LightGBM at day 20.
+- Not done: serving the LightGBM forecaster (no registered model, no ML service forecast endpoint, no backend client or feature parity, no `FORECAST_FORCE_BASELINE` switch); nothing is registered because both runs were made on an uncommitted tree (reproducibility gate of 16.3); category forecasts, the recurring decomposition and users under 60 days were not evaluated; no holdout-generator circularity check; no `z_cat`-only ablation for the anomaly result (the explanation is a hypothesis); no model cards (no model registered); forecast sample is 150 users, not all 2,000.
+- Gotchas: anomaly features for 2,000 users take about 16 min (cached in a parquet; `make anomaly-eval` uses `data/anomaly_features.parquet`, delete it after a feature change); pandas needs `format="mixed"` for the dataset's mixed date strings (date only or date and time); the forecast run is deterministic (two runs gave identical numbers).
+- Next: T-39.
 
 ### 2026-11-22 — T-37 Insights engine and batch jobs
 - Done: insights engine (`app/services/insight_rules.py` INS-01 to INS-09 as pure functions, `insights.py`, repository, schemas, `config/insights.yaml`) with `GET /intelligence/insights` (`limit` for the dashboard top 3), `POST .../{id}/dismiss`, `POST .../refresh` (1 per minute); job runner (`app/jobs/framework.py`: `job_runs` row, chunks of 200, per-user isolation, advisory lock, `observe_job` metrics), 9 jobs (`app/jobs/catalogue.py`: daily-budget-close, daily-forecast, category-surge, recurring-refresh, daily-insights, recurring-due-soon, review-queue-reminder, cleanup, recategorize-needs-review), `POST /internal/jobs/{name}`, CLI `python -m app.jobs`, `make jobs-run`, `config/jobs.yaml` (PRD 12.3 retention), OpenAPI and frontend types regenerated, runbook entries updated, scheduler comments corrected.
@@ -332,8 +347,8 @@ Newest entry on top. Keep each entry short: what was done, what is half-done, wh
 | T-35 | Evidently drift job + reports | T-34 | done 2026-11-22 | real run on a smoke model; GCP path not run |
 | T-36 | Runbook (≥ 3 entries, each tested once) + rollback drill | T-34 | done 2026-11-22 | 4 drills local; GCP steps not run |
 | T-37 | Insights engine (FR-09) + batch job scheduler | T-30 | done 2026-11-22 | real run on demo DB; GCP Scheduler not run; frontend card not built |
-| T-38 | Anomaly model (IF/LOF) + forecast models (ETS, LightGBM quantile) vs baselines | T-23, T-24, T-25 | todo | |
-| T-39 | Shadow mode + `shadow-evaluate` | T-27, T-34 | todo | |
+| T-38 | Anomaly model (IF/LOF) + forecast models (ETS, LightGBM quantile) vs baselines | T-23, T-24, T-25 | done 2026-11-22 | anomaly baseline kept; LightGBM forecaster passes offline, not served |
+| T-39 | Shadow mode + `shadow-evaluate` | T-27, T-34 | done 2026-11-22 | offline-tested; no live shadow run; BigQuery source not wired |
 
 ### Week 9 — Depth
 | ID | Task | Deps | Status | Notes |

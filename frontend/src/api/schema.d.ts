@@ -385,6 +385,26 @@ export interface paths {
         patch: operations["patch_recurring_api_v1_intelligence_recurring__series_id__patch"];
         trace?: never;
     };
+    "/api/v1/intelligence/segment": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Segment
+         * @description The user's segment with its defining traits, or the reason there is none yet.
+         */
+        get: operations["get_segment_api_v1_intelligence_segment_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/api/v1/merchant-rules": {
         parameters: {
             query?: never;
@@ -1727,6 +1747,34 @@ export interface components {
             /** Transaction Type */
             transaction_type: string;
         };
+        /** SegmentInfo */
+        SegmentInfo: {
+            /**
+             * Computed At
+             * Format: date-time
+             */
+            computed_at: string;
+            /** Description */
+            description: string;
+            /** Id */
+            id: string;
+            /** Model Version */
+            model_version: string;
+            /** Name */
+            name: string;
+            /** Traits */
+            traits: components["schemas"]["TraitOut"][];
+        };
+        /** SegmentOut */
+        SegmentOut: {
+            /** Complete Periods */
+            complete_periods: number;
+            /** Reason */
+            reason?: ("NOT_COMPUTED" | "INSUFFICIENT_HISTORY" | "MODEL_NOT_AVAILABLE") | null;
+            /** Required Periods */
+            required_periods: number;
+            segment: components["schemas"]["SegmentInfo"] | null;
+        };
         /** StagedRow */
         StagedRow: {
             /** Duplicate Of */
@@ -1775,6 +1823,22 @@ export interface components {
             access_token: string;
             /** Expires In */
             expires_in: number;
+        };
+        /** TraitOut */
+        TraitOut: {
+            /**
+             * Direction
+             * @enum {string}
+             */
+            direction: "higher" | "lower";
+            /** Feature */
+            feature: string;
+            /** Message */
+            message: string;
+            /** Percent */
+            percent: number;
+            /** Value */
+            value: number;
         };
         /** TransactionCreate */
         TransactionCreate: {
@@ -2874,6 +2938,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_segment_api_v1_intelligence_segment_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["SegmentOut"];
                 };
             };
         };

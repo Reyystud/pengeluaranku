@@ -16,6 +16,7 @@ interface AuthValue {
   login: (email: string, password: string) => Promise<void>;
   register: (email: string, password: string, displayName: string) => Promise<void>;
   logout: () => Promise<void>;
+  updateUser: (user: User) => void;
 }
 
 const AuthContext = createContext<AuthValue | null>(null);
@@ -89,6 +90,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
           ),
         );
       },
+      updateUser: (next) => setUser(next),
       logout: async () => {
         try {
           await api.post("/auth/logout", undefined, { anonymous: true });

@@ -43,6 +43,7 @@ locals {
     MLFLOW_TRACKING_URI   = local.run_urls["mlflow"]
     CLASSIFIER_ALIAS      = "production"
     MODEL_POLL_INTERVAL_S = "300"
+    SHADOW_ENABLED        = "false" # set true while a candidate is being shadowed (PRD 16.4)
     MODELS_DIR            = "/tmp/models"
   }
 

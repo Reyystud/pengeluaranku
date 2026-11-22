@@ -29,4 +29,19 @@ def list_models(request: Request) -> dict[str, Any]:
                 "labels": len(c.labels),
             }
         )
+    cand = registry.candidate
+    if cand is not None and registry.shadow_active:
+        loaded.append(
+            {
+                "name": cand.name,
+                "version": cand.version,
+                "alias": cand.alias,
+                "loaded_at": cand.loaded_at.isoformat(),
+                "feature_version": cand.feature_version,
+                "taxonomy_version": cand.taxonomy_version,
+                "thresholds": {"t_high": cand.t_high, "t_low": cand.t_low},
+                "labels": len(cand.labels),
+                "shadow": True,
+            }
+        )
     return {"models": loaded, "last_load_error": registry.error.code if registry.error else None}

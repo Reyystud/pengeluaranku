@@ -62,6 +62,6 @@ mypy_path = [".", "services/backend", "services/ml_service"]
 omit = ["*/tests/*", "ml/eda/*"]
 
 [[tool.mypy.overrides]]
-module = ["threadpoolctl.*", "pyarrow.*", "sklearn.*", "lightgbm.*", "mlflow.*", "joblib.*", "scipy.*", "matplotlib.*", "jsonschema.*", "google.*", "evidently.*"]
+module = ["threadpoolctl.*", "pyarrow.*", "sklearn.*", "lightgbm.*", "mlflow.*", "joblib.*", "scipy.*", "matplotlib.*", "jsonschema.*", "google.*", "evidently.*", "statsmodels.*", "torch.*", "transformers.*", "psutil.*"]
 ignore_missing_imports = true
 follow_imports = "skip"

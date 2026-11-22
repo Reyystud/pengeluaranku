@@ -14,6 +14,7 @@ from app.api import (
     merchant_rules,
     notifications,
     recurring,
+    segments,
     transactions,
     users,
 )
@@ -32,3 +33,4 @@ api_router.include_router(anomalies.router)
 api_router.include_router(forecasts.router)
 api_router.include_router(recurring.router)
 api_router.include_router(insights.router)
+api_router.include_router(segments.router)

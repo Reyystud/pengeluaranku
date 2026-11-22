@@ -1,0 +1,21 @@
+# Anomaly model experiment (PRD 9.3, 7.6.3). Versioned: bump `version` with any value change.
+# Thresholds of the model itself are NOT here: they are chosen on validation and written to the run
+# report / model metadata (PRD 0.3 rule 3, 11.6). Values below are experiment settings.
+version: anomaly-model-1
+seed: 42
+dataset:
+  data_dir: data/synthetic/v1
+  assignments: data/splits/synthetic/v1/assignments.parquet
+  dataset_version: synthetic/v1
+sample:
+  users: 500                  # decision: deterministic SHA-256 sample; the full set is ~2 million rows
+  salt: anomaly-model
+isolation_forest:
+  n_estimators: 200
+  max_samples: 4096
+lof:
+  n_neighbors: 35
+  fit_rows: 30000             # LOF scoring is O(fit_rows) per row; the fit sample is drawn with the seed
+selection:
+  recall_target: 0.50         # PRD 7.6.3: threshold maximizes precision subject to recall >= 0.50
+  min_precision_gain: 0.0     # model replaces the baseline only if it beats it (7.6.3, 16.3)
